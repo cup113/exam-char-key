@@ -1,0 +1,6 @@
+__pycache__
+Qwen-1_8B
+train/result/**/*
+train/textbooks/*.pdf
+.vscode
+train/chinese-gushiwen/**/*.json
