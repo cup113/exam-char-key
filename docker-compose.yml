@@ -1,0 +1,9 @@
+vversion: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "4122:4122"
+    environment:
+      - APP_ENV=production
