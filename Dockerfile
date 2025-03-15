@@ -11,7 +11,7 @@ RUN cd client && \
 FROM python:3.11-slim AS backend
 WORKDIR /app
 
-COPY --from=frontend-builder /app/client/build ./client/build
+COPY --from=frontend-builder /app/client/dist ./client/dist
 
 COPY server/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
