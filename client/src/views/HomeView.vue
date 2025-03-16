@@ -27,17 +27,8 @@ const confidence = computed(() => {
     </section>
     <section class="flex items-start justify-center gap-2">
       <div class="flex flex-col gap-4">
-        <section class="w-96 min-h-24 px-4 py-2 shadow-lg text-center">
-          <div class="font-bold text-lg mb-4">{{ queryStore.instantStructured.answer }}</div>
-          <div class="text-2xl" v-if="confidence !== 0">
-            <ProgressRoot v-model="confidence"
-              class="rounded-full relative h-4 w-40 mx-auto overflow-hidden bg-white border border-muted">
-              <ProgressIndicator
-                class="indicator rounded-full block relative w-full h-full bg-green-800 transition-transform overflow-hidden ease-in-out"
-                :style="`transform: translateX(-${100 - confidence}%)`" />
-            </ProgressRoot>
-          </div>
-        </section>
+        <pre
+          class="w-96 min-h-24 px-4 py-2 shadow-lg text-center text-wrap break-words">{{ queryStore.aiInstantResponse }}</pre>
         <iframe :src="iframeSrc" frameborder="0" width="384" height="600"></iframe>
       </div>
       <section class="flex flex-col gap-4 w-48 md:w-60 lg:w-96">
