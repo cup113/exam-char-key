@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { useLocalStorage } from '@vueuse/core';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 type JsonType<T> = T extends Date ? string
     : T extends Function | undefined | symbol ? never
@@ -32,6 +32,15 @@ export const useQueryStore = defineStore("query", () => {
 
     const textAnnotations = ref(new Array<PassageAnnotation>());
     const aiInstantResponse = ref("");
+    const aiThoughtResponse = ref("");
+
+    const instantStructured = computed(() => {
+        const lines = aiInstantResponse.value.trim().split("\n");
+        return {
+            answer: lines[0],
+            confidence: ((/\d+/).exec(lines[1]) ?? [])[0] ?? "/",
+        }
+    });
 
     async function query(word: string) {
         queryWord.value = word;
@@ -44,6 +53,7 @@ export const useQueryStore = defineStore("query", () => {
         }
 
         aiInstantResponse.value = "";
+        aiThoughtResponse.value = "";
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -54,17 +64,23 @@ export const useQueryStore = defineStore("query", () => {
             done = streamDone;
             if (value) {
                 const data = decoder.decode(value, { stream: true });
-                const { type, result } = JSON.parse(data);
-                switch (type) {
-                    case "text":
-                        textAnnotations.value = result.map((raw: JsonType<PassageAnnotation>) => new PassageAnnotation(raw));
-                        break;
-                    case "ai-instant":
-                        aiInstantResponse.value += result.content;
-                        break;
-                    default:
-                        console.error(`Unknown type: ${type}`);
-                        break;
+                const chunks = data.trim().split("\n");
+                for (const chunk of chunks) {
+                    const { type, result } = JSON.parse(chunk);
+                    switch (type) {
+                        case "text":
+                            textAnnotations.value = result.map((raw: JsonType<PassageAnnotation>) => new PassageAnnotation(raw));
+                            break;
+                        case "ai-instant":
+                            aiInstantResponse.value += result.content;
+                            break;
+                        case "ai-thought":
+                            aiThoughtResponse.value += result.content;
+                            break;
+                        default:
+                            console.error(`Unknown type: ${type}`);
+                            break;
+                    }
                 }
             }
         }
@@ -76,6 +92,8 @@ export const useQueryStore = defineStore("query", () => {
         queryWord,
         textAnnotations,
         aiInstantResponse,
+        instantStructured,
+        aiThoughtResponse,
         query,
     }
 });

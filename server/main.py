@@ -23,6 +23,26 @@ with open("server/textbook.json", "r", encoding="utf-8") as f:
             tender_dict[ch].add(i)
 
 
+def prompt_ai_instant():
+    return """你是一位高中语文老师，对高考文言文词语解释与句子翻译有着深入研究。
+高考的词语解释答案常常在 5 字以内，且首先要回答出原义，如果语境中需要另外解释再回答衍生义。
+现在，用户会提供一个短句，并指定一个字。
+请你输出两行，第一行直接按高考要求回答该字的词语解释。
+第二行为一个 0~10 的数字表示置信度。
+不要输出其他多余内容。"""
+
+
+def prompt_ai_thought():
+    return """你是一位高中语文老师，对高考文言文词语解释与句子翻译有着深入研究。
+高考的词语解释答案常常在 6 字以内，且首先要回答出原义，如果语境中需要另外解释再回答衍生义。
+现在，用户会提供一个短句，并指定一个字。对你的回答要求如下：
+1. 分析句子，可以用多行和列表，分析完成后用输出分隔线---。
+2. 输出一行，表示你能想到的义项。
+3. 输出多行无序列表。每一行，针对你能想到的一个义项进行逐个分析，形如 "<义项>/<分析>"，然后输出分隔线。
+4. 用有序列表输出你认为最可能的 1~3 个答案，形如"1. <符合高考要求的词语解释>/<置信度(0~10)>"。
+尖括号仅表示占位符，不要出现在输出内容中。敢于分析，但不要输出多余内容。"""
+
+
 def query_generator(q: str, context: str):
     if not q:
         return
@@ -30,17 +50,28 @@ def query_generator(q: str, context: str):
     for ch in q[1:]:
         possible_set = possible_set & (tender_dict.get(ch) or set())
     result = [textbook_data[i] for i in possible_set]
-    yield dumps({"type": "text", "result": result})
+    yield dumps({"type": "text", "result": result}) + "\n"
 
-    completion = client.chat.completions.create(
+    instant_completion = client.chat.completions.create(
         model="qwen-plus-2025-01-25",
         messages=[
             {
                 "role": "system",
-                "content": """你是一位高中语文老师，对高考文言文词语解释与句子翻译有着深入研究。
-高考的词语解释答案常常在 5 字以内，且首先要回答出原义，如果语境中需要另外解释再回答衍生义。
-现在，用户会提供一个短句，并指定一个字。请你直接按高考要求回答该字的词语解释，并给出一个 0~10 的数字表示置信度。
-除最终释义和置信度外，不要输出其他内容。""",
+                "content": prompt_ai_instant(),
+            },
+            {"role": "user", "content": f"语境: {context}\n需要解释的字: {q}"},
+        ],
+        stream=True,
+        temperature=0.6,
+        top_p=0.9,
+    )
+
+    thought_completion = client.chat.completions.create(
+        model="qwen-plus-2025-01-25",
+        messages=[
+            {
+                "role": "system",
+                "content": prompt_ai_thought(),
             },
             {"role": "user", "content": f"语境: {context}\n需要解释的字: {q}"},
         ],
@@ -49,7 +80,7 @@ def query_generator(q: str, context: str):
         top_p=0.9,
     )
 
-    for answer in completion:
+    for answer in instant_completion:
         yield dumps(
             {
                 "type": "ai-instant",
@@ -58,7 +89,18 @@ def query_generator(q: str, context: str):
                     "stopped": bool(answer.choices[0].finish_reason),
                 },
             }
-        )
+        ) + "\n"
+
+    for answer in thought_completion:
+        yield dumps(
+            {
+                "type": "ai-thought",
+                "result": {
+                    "content": answer.choices[0].delta.content,
+                    "stopped": bool(answer.choices[0].finish_reason),
+                },
+            }
+        ) + "\n"
 
 
 @app.get("/api/query")
