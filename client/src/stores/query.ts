@@ -29,12 +29,12 @@ class PassageAnnotation {
 
 export const useQueryStore = defineStore("query", () => {
     const querySentence = useLocalStorage("EC_querySentence", "");
-    const queryWord = useLocalStorage("EC_queryWord", "");
 
+    const queryWord = ref("");
     const textAnnotations = ref(new Array<PassageAnnotation>());
     const aiInstantResponse = ref("");
     const aiThoughtResponse = ref("");
-    const zdicResponse = ref({ basic_explanations: new Array<string>(), });
+    const zdicResponse = ref({ basic_explanations: new Array<string>(), detailed_explanations: new Array<string>() });
 
     const instantStructured = computed(() => {
         const lines = aiInstantResponse.value.split("\n").filter(line => !line.startsWith("```"));
@@ -135,8 +135,7 @@ export const useQueryStore = defineStore("query", () => {
         }
     }
 
-    async function query(word: string) {
-        queryWord.value = word;
+    async function query() {
         await Promise.all([queryInstant(), queryThought()]);
         console.log("Request Ended");
     }

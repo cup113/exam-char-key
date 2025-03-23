@@ -5,8 +5,8 @@ import { NavigationMenuRoot, NavigationMenuItem, NavigationMenuList } from 'reka
 </script>
 
 <template>
-  <header class="flex items-center justify-center gap-4 p-2 border-b border-b-green-800 mb-8">
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="32" height="32" />
+  <header class="flex items-center justify-center gap-4 py-4">
+    <img alt="Vue logo" class="logo" src="/favicon.ico" width="32" height="32" />
     <div>
       <h1 class="text-xl font-semibold">Exam Char Key</h1>
     </div>

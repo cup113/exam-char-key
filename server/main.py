@@ -27,7 +27,7 @@ with open("server/textbook.json", "r", encoding="utf-8") as f:
 
 def prompt_ai_instant():
     return """你是一位高中语文老师，对高考文言文词语解释与句子翻译有着深入研究。高考的词语解释答案常常在 6 字以内，不能太过意译，若语境确实特殊可以表示为：(原义)，这里指(引申义)。若涉及通假字，则需答：同“(通假字)”，(含义)。
-现在，你的学生会提供一个短句，并指定一个字。你要先简短地思考，然后给出能够写在高考试卷上的答题解释，简短地解释原因，并给出置信度(0~10)。你的输出格式遵循 YAML，不要输出其他多余内容，格式如下：
+现在，你的学生会提供一个短句，并指定一个字。你要先简短地思考，然后给出能够写在高考试卷上的答题解释，简短地解释原因，并给出置信度(0~10)。你的输出格式遵循 YAML，且非必要不用引号，不要输出其他多余内容，格式如下：
 ```yaml
 think: 思考过程
 answer: 答案
@@ -39,7 +39,7 @@ conf: 置信度（数字）
 def prompt_ai_thought():
     return """你是一位高中语文老师，对高考文言文词语解释与句子翻译有着深入研究。高考的词语解释答案常常在 6 字以内，不能太过意译，，若语境确实特殊可以表示为：(原义)，这里指(引申义)。若涉及通假字，则需答：同“(通假字)”，(含义)。
 汉典是一个权威的网站，你可以由此获得了该字的基本义项，但不一定全面。
-现在，你的学生会提供一个短句，并指定一个字。你要先分析句子，包括句子大意和成分分析，然后给出你猜测的义项范围，接着逐个分析，最后给出 1~3 个能够写在高考试卷上的答题解释，并对每一个给出置信度(0~10)。你的输出格式遵循 YAML，不要输出其他多余内容，格式如下：
+现在，你的学生会提供一个短句，并指定一个字。你要先分析句子，包括句子大意和成分分析，然后给出你猜测的义项范围，接着逐个分析，最后给出 1~3 个能够写在高考试卷上的答题解释，并对每一个给出置信度(0~10)。你的输出格式遵循 YAML，且非必要不用引号，不要输出其他多余内容，格式如下：
 ```yaml
 analysis: 句意分析
 candidates: [多个候选项]
@@ -100,13 +100,35 @@ async def thought_query_generator(q: str, context: str):
     try:
         zdic_result = await request_zdic(q)
         soup = BeautifulSoup(zdic_result, "html.parser")
-        basic_explanations = [li.get_text() for li in soup.select("div.content.definitions.jnr>ol>li")]
-        zdic_prompt = "\n汉典给出的解释有：\n" + "\n".join(f"{i + 1}. {exp}" for i, exp in enumerate(basic_explanations))
-        yield dumps({"type": "zdic", "result": { "basic_explanations": basic_explanations }}) + "\n"
-    except:
-        zdic_prompt = ""
-        yield dumps({"type": "zdic", "result": { "basic_explanations": [] }}) + "\n"
+        basic_explanations = [
+            li.get_text() for li in soup.select("div.content.definitions.jnr>ol>li")
+        ]
+        detailed_explanations = [p.prettify(formatter="html5") for p in soup.select("div.content.definitions.xnr>p")]
 
+        zdic_prompt = "\n汉典给出的解释有：\n" + "\n".join(
+            f"{i + 1}. {exp}" for i, exp in enumerate(basic_explanations)
+        )
+        yield dumps(
+            {
+                "type": "zdic",
+                "result": {
+                    "basic_explanations": basic_explanations,
+                    "detailed_explanations": detailed_explanations,
+                },
+            }
+        ) + "\n"
+    except Exception as err:
+        print(err)
+        zdic_prompt = ""
+        yield dumps(
+            {
+                "type": "zdic",
+                "result": {
+                    "basic_explanations": ["无"],
+                    "detailed_explanations": ["无"],
+                },
+            }
+        ) + "\n"
 
     response = await client.chat.completions.create(
         model="qwen-plus-2025-01-25",
@@ -115,10 +137,13 @@ async def thought_query_generator(q: str, context: str):
                 "role": "system",
                 "content": prompt_ai_thought(),
             },
-            {"role": "user", "content": f"语境: {context}\n需要解释的字: {q}{zdic_prompt}"},
+            {
+                "role": "user",
+                "content": f"语境: {context}\n需要解释的字: {q}{zdic_prompt}",
+            },
         ],
         stream=True,
-        temperature=0.7,
+        temperature=0.6,
         top_p=0.9,
     )
 
