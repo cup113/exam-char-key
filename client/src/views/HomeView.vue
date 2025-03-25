@@ -31,9 +31,10 @@ function toggleIndex(index: number) {
 <template>
   <main>
     <section class="flex flex-col gap-2">
-      <div class="text-center">
+      <div class="text-center flex justify-center items-center gap-2">
         <input type="text" class="rounded-lg border border-gray-500 text-center p-1 w-96"
           v-model="queryStore.querySentence" placeholder="请输入要翻译词语的上下文">
+        <span class="text-sm">已用量：{{ (queryStore.usage / 1e7).toFixed(4) }}</span>
       </div>
       <div class="flex justify-center items-center gap-4">
         <div class="flex">
@@ -83,11 +84,11 @@ function toggleIndex(index: number) {
               <span class="font-mono text-lg" v-show="answer.conf && !isNaN(answer.conf)"> ({{ answer.conf }})</span>
             </p>
           </div>
-          <p class="text-gray-500 text-sm indent-4" v-show="queryStore.thoughtStructured.analysis">{{
-            queryStore.thoughtStructured.analysis }}</p>
+          <p class="text-gray-500 text-sm indent-4" v-show="queryStore.thoughtStructured.think">{{
+            queryStore.thoughtStructured.think }}</p>
           <div class="indent-4">
             <div v-for="candidate in queryStore.thoughtStructured.candidates">
-              <strong>{{ candidate }}</strong> / {{ queryStore.thoughtStructured.filter[candidate] }}
+              <strong>{{ candidate.answer }}</strong> / {{ candidate.explanation }}
             </div>
           </div>
         </div>

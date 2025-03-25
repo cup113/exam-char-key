@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 import { useLocalStorage } from '@vueuse/core';
 import { computed, ref } from 'vue';
-import { parse as parse_yaml } from 'yaml';
 
 type JsonType<T> = T extends Date ? string
     : T extends Function | undefined | symbol ? never
@@ -29,6 +28,7 @@ class PassageAnnotation {
 
 export const useQueryStore = defineStore("query", () => {
     const querySentence = useLocalStorage("EC_querySentence", "");
+    const usage = useLocalStorage("EC_usage", 0); // 1e-7 yuan
 
     const queryWord = ref("");
     const textAnnotations = ref(new Array<PassageAnnotation>());
@@ -37,25 +37,63 @@ export const useQueryStore = defineStore("query", () => {
     const zdicResponse = ref({ basic_explanations: new Array<string>(), detailed_explanations: new Array<string>() });
 
     const instantStructured = computed(() => {
-        const lines = aiInstantResponse.value.split("\n").filter(line => !line.startsWith("```"));
-        const parseResult = parse_yaml(lines.join("\n"), { strict: false }) ?? {};
-        return {
-            'think': String(parseResult.think ?? ""),
-            'answer': String(parseResult.answer ?? ""),
-            'explain': String(parseResult.explain ?? ""),
-            'conf': parseInt(parseResult.conf ?? NaN),
-        }
+        const lines = aiInstantResponse.value.split("\n");
+        const result = {
+            think: '',
+            answer: '',
+            explain: '',
+            conf: NaN,
+        };
+
+        lines.forEach(line => {
+            if (line.startsWith("think/")) {
+                result.think = line.substring("think/".length);
+            } else if (line.startsWith("answer/")) {
+                result.answer = line.substring("answer/".length);
+            } else if (line.startsWith("explain/")) {
+                result.explain = line.substring("explain/".length);
+            } else if (line.startsWith("conf/")) {
+                result.conf = parseInt(line.substring("conf/".length));
+            }
+        });
+
+        return result
     });
 
     const thoughtStructured = computed(() => {
-        const lines = aiThoughtResponse.value.split("\n").filter(line => !line.startsWith("```"));
-        const parseResult = parse_yaml(lines.join("\n"), { strict: false }) ?? {};
-        return {
-            'analysis': String(parseResult.analysis ?? ""),
-            'candidates': (parseResult.candidates ?? []) as string[],
-            'filter': (parseResult.filter ?? {}) as Record<string, string>,
-            'answers': (parseResult.answers ?? []) as { answer: string, conf?: number }[],
-        }
+        const lines = aiThoughtResponse.value.split("\n");
+        const result = {
+            think: '',
+            candidates: new Array<{ answer: string, explanation: string }>(),
+            answers: new Array<{ answer: string, conf: number }>(),
+        };
+
+        let multiLineArea: '' | 'candidates' | 'answers' = '';
+
+        lines.forEach(line => {
+            if (line.startsWith('think/')) {
+                result.think = line.substring("think/".length);
+                multiLineArea = '';
+            } else if (line.startsWith('candidates/')) {
+                multiLineArea = 'candidates';
+            } else if (line.startsWith('answers/')) {
+                multiLineArea = 'answers';
+            } else if (multiLineArea === 'candidates') {
+                const slashIndex = line.indexOf('/');
+                result.candidates.push({
+                    answer: line.substring(0, slashIndex),
+                    explanation: line.substring(slashIndex + 1),
+                });
+            } else if (multiLineArea === 'answers') {
+                const slashIndex = line.indexOf('/');
+                result.answers.push({
+                    answer: line.substring(0, slashIndex),
+                    conf: parseInt(line.substring(slashIndex + 1)),
+                });
+            }
+        });
+
+        return result;
     });
 
     function update_from_query(type: string, result: any) {
@@ -65,9 +103,11 @@ export const useQueryStore = defineStore("query", () => {
                 break;
             case "ai-instant":
                 aiInstantResponse.value += result.content;
+                usage.value += result.content.length * 20;
                 break;
             case "ai-thought":
                 aiThoughtResponse.value += result.content;
+                usage.value += result.content.length * 20;
                 break;
             case "zdic":
                 zdicResponse.value = result;
@@ -88,6 +128,7 @@ export const useQueryStore = defineStore("query", () => {
         }
 
         aiInstantResponse.value = "";
+        usage.value += 300 * 8;
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -117,6 +158,7 @@ export const useQueryStore = defineStore("query", () => {
         }
 
         aiThoughtResponse.value = "";
+        usage.value += 650 * 8
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -143,6 +185,7 @@ export const useQueryStore = defineStore("query", () => {
     return {
         querySentence,
         queryWord,
+        usage,
         textAnnotations,
         aiInstantResponse,
         instantStructured,
