@@ -103,11 +103,12 @@ export const useQueryStore = defineStore("query", () => {
                 break;
             case "ai-instant":
                 aiInstantResponse.value += result.content;
-                usage.value += result.content.length * 20;
                 break;
             case "ai-thought":
                 aiThoughtResponse.value += result.content;
-                usage.value += result.content.length * 20;
+                break;
+            case 'ai-usage':
+                usage.value += result.prompt_tokens * 8 + result.completion_tokens * 20;
                 break;
             case "zdic":
                 zdicResponse.value = result;
@@ -128,7 +129,6 @@ export const useQueryStore = defineStore("query", () => {
         }
 
         aiInstantResponse.value = "";
-        usage.value += 300 * 8;
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -158,7 +158,6 @@ export const useQueryStore = defineStore("query", () => {
         }
 
         aiThoughtResponse.value = "";
-        usage.value += 650 * 8
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();

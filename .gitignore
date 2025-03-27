@@ -4,3 +4,4 @@ train/result/**/*
 train/textbooks/*.pdf
 .vscode
 train/chinese-gushiwen/**/*.json
+.env
