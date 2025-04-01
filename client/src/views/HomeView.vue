@@ -1,31 +1,14 @@
 <script setup lang="ts">
-import { useQueryStore } from '@/stores/query';
+import { useQueryStore, type HistoryRecord } from '@/stores/query';
 import PassageAnnotation from '@/components/PassageAnnotation.vue';
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 
 const queryStore = useQueryStore();
-const queryIndex = ref(new Set<number>());
 
-watch(() => queryStore.querySentence, (newSentence, oldSentence) => {
-  if (newSentence !== oldSentence) {
-    queryIndex.value.clear();
-    if (newSentence.length <= 2 && newSentence.length >= 1) {
-      queryIndex.value.add(0);
-      if (newSentence.length === 2) {
-        queryIndex.value.add(1);
-      }
-    }
-  }
-})
-
-function toggleIndex(index: number) {
-  if (queryIndex.value.has(index)) {
-    queryIndex.value.delete(index);
-  } else {
-    queryIndex.value.add(index);
-  }
-  queryStore.queryWord = Array.from(queryIndex.value).sort().map(i => queryStore.querySentence[i]).join();
-}
+const selectedRecords = ref<HistoryRecord[]>([]);
+const export_selected = () => {
+  queryStore.export_history(selectedRecords.value);
+};
 </script>
 
 <template>
@@ -39,8 +22,8 @@ function toggleIndex(index: number) {
       <div class="flex justify-center items-center gap-4">
         <div class="flex">
           <div v-for="word, i in queryStore.querySentence" class="cursor-pointer rounded-md hover:bg-gray-100 px-1 py-0"
-            :class="{ 'bg-green-100': queryIndex.has(i), 'hover:bg-green-200': queryIndex.has(i) }"
-            @click="toggleIndex(i)">{{ word }}</div>
+            :class="{ 'bg-green-100': queryStore.queryIndex.has(i), 'hover:bg-green-200': queryStore.queryIndex.has(i) }"
+            @click="queryStore.toggle_index(i)">{{ word }}</div>
         </div>
         <button @click="queryStore.query()"
           class="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white p-1 rounded-lg px-2">搜索</button>
@@ -50,7 +33,8 @@ function toggleIndex(index: number) {
       <div class="flex flex-col gap-4">
         <div class="w-96 min-h-24 px-4 py-2 shadow-lg flex flex-col gap-2">
           <h2 class="text-2xl font-bold text-center">AI 快速回答</h2>
-          <p class="text-center text-xl font-bold bg-green-200 mx-auto px-4 rounded-xl" v-show="queryStore.instantStructured.answer">
+          <p class="text-center text-xl font-bold bg-green-200 mx-auto px-4 rounded-xl"
+            v-show="queryStore.instantStructured.answer">
             {{ queryStore.instantStructured.answer }}
             <span class="text-lg font-mono" v-show="!isNaN(queryStore.instantStructured.conf)"> ({{
               queryStore.instantStructured.conf }})</span>
@@ -94,6 +78,29 @@ function toggleIndex(index: number) {
         </div>
         <section class="w-full flex flex-col">
           <PassageAnnotation v-for="(_, index) in queryStore.textAnnotations" :key="index" :index="index" />
+        </section>
+        <section class="history-section p-4 bg-white rounded-lg shadow-md">
+          <div class="history-header mb-4">
+            <button @click="export_selected"
+              class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded-xl">
+              导出选中记录
+            </button>
+          </div>
+          <div class="history-list space-y-3">
+            <div v-for="record in queryStore.history" :key="record.id"
+              class="history-item flex p-3 bg-white rounded-lg shadow-sm hover:bg-gray-50">
+              <input type="checkbox" v-model="selectedRecords" :value="record"
+                class="form-checkbox h-5 w-5 mr-2 text-blue-500" />
+              <div class="record-content flex-1">
+                <div class="front-text mb-2 text-gray-700" v-html="record.front"></div>
+                <div class="back-answer flex items-center">
+                  <div class="mr-4 text-gray-600">{{ record.back }}</div>
+                  <input v-model="record.userModifiedBack" placeholder="修改答案"
+                    class="flex-1 px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500" />
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
       </section>
     </section>

@@ -13,6 +13,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.0.14",
     "@vueuse/core": "^13.0.0",
+    "nanoid": "^5.1.5",
     "pinia": "^3.0.1",
     "reka-ui": "^2.1.0",
     "tailwindcss": "^4.0.14",
