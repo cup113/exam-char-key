@@ -46,6 +46,7 @@ export const useQueryStore = defineStore("query", () => {
     const textAnnotations = ref(new Array<PassageAnnotation>());
     const aiInstantResponse = ref("");
     const aiThoughtResponse = ref("");
+    const currentRecorded = ref(false);
     const zdicResponse = ref({ basic_explanations: new Array<string>(), detailed_explanations: new Array<string>() });
 
 
@@ -213,20 +214,9 @@ export const useQueryStore = defineStore("query", () => {
     }
 
     async function query() {
+        currentRecorded.value = false;
         await Promise.all([queryInstant(), queryThought()]);
         console.log("Request Ended");
-        const newRecord: HistoryRecord = {
-            id: nanoid(),
-            level: "A",
-            front: format_front(querySentence.value, queryIndex.value), // 新增高亮逻辑
-            back: instantStructured.value.answer,
-            userModifiedBack: undefined,
-            additions: []
-        };
-        history.value.unshift(newRecord);
-        if (history.value.length > MAX_HISTORY) {
-            history.value.pop();
-        }
     }
 
     function export_history(selected: HistoryRecord[]) {
@@ -250,6 +240,10 @@ export const useQueryStore = defineStore("query", () => {
         URL.revokeObjectURL(url);
     };
 
+    function delete_history(selected: HistoryRecord[]) {
+        history.value = history.value.filter(record => !selected.some(item => item.id === record.id));
+    }
+
     function format_front(sentence: string, indices: Set<number>) {
         const chars = Array.from(sentence);
         indices.forEach(i => {
@@ -257,6 +251,21 @@ export const useQueryStore = defineStore("query", () => {
         });
         return chars.join('');
     };
+
+    function adopt_answer(answer: string) {
+        currentRecorded.value = true;
+        const newRecord: HistoryRecord = {
+            id: nanoid(),
+            level: "A",
+            front: format_front(querySentence.value, queryIndex.value), // 新增高亮逻辑
+            back: answer,
+            additions: [],
+        };
+        history.value.unshift(newRecord);
+        if (history.value.length > MAX_HISTORY) {
+            history.value.pop();
+        }
+    }
 
     return {
         querySentence,
@@ -270,8 +279,11 @@ export const useQueryStore = defineStore("query", () => {
         zdicResponse,
         queryIndex,
         history,
+        currentRecorded,
         toggle_index,
         export_history,
+        delete_history,
+        adopt_answer,
         query,
     }
 });
