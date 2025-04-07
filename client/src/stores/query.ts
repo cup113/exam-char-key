@@ -221,7 +221,7 @@ export const useQueryStore = defineStore("query", () => {
 
     function export_history(selected: HistoryRecord[]) {
         const json = {
-            version: 1,
+            version: 3,
             title: `文言文字词梳理 ${new Date().toLocaleString()}`,
             records: selected.map(r => ({
                 id: r.id,
@@ -229,7 +229,9 @@ export const useQueryStore = defineStore("query", () => {
                 front: r.front,
                 back: r.userModifiedBack ?? r.back,
                 additions: r.additions
-            }))
+            })),
+            footer: "",
+            deckType: "type",
         };
         const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
