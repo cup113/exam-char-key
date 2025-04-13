@@ -9,8 +9,6 @@ const queryStore = useQueryStore();
         <p class="text-center text-xl font-bold bg-green-200 mx-auto px-4 rounded-xl"
             v-show="queryStore.instantStructured.answer">
             {{ queryStore.instantStructured.answer }}
-            <span class="text-lg font-mono" v-show="!isNaN(queryStore.instantStructured.conf)"> ({{
-                queryStore.instantStructured.conf }})</span>
             <button @click="queryStore.adopt_answer(queryStore.instantStructured.answer)"
                 v-if="!queryStore.currentRecorded"
                 class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded-xl ml-2 text-base">

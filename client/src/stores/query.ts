@@ -47,7 +47,7 @@ export const useQueryStore = defineStore("query", () => {
     const aiInstantResponse = ref("");
     const aiThoughtResponse = ref("");
     const currentRecorded = ref(false);
-    const zdicResponse = ref({ basic_explanations: new Array<string>(), detailed_explanations: new Array<string>() });
+    const zdicResponse = ref({ basic_explanations: new Array<string>(), detailed_explanations: new Array<string>(), phrase_explanations: new Array<string>() });
 
 
     const queryIndex = ref(new Set<number>());
@@ -77,20 +77,37 @@ export const useQueryStore = defineStore("query", () => {
         const lines = aiInstantResponse.value.split("\n");
         const result = {
             think: '',
-            answer: '',
             explain: '',
-            conf: NaN,
+            answer: '',
         };
 
+        let area: 'think' | 'explain' | 'answer' | '' = '';
+
         lines.forEach(line => {
-            if (line.startsWith("think/")) {
-                result.think = line.substring("think/".length);
-            } else if (line.startsWith("answer/")) {
-                result.answer = line.substring("answer/".length);
-            } else if (line.startsWith("explain/")) {
-                result.explain = line.substring("explain/".length);
-            } else if (line.startsWith("conf/")) {
-                result.conf = parseInt(line.substring("conf/".length));
+            let startIndex = 0;
+            let endIndex = line.length;
+
+            if (line.startsWith("<think>")) {
+                area = 'think';
+                startIndex = line.indexOf('>') + 1;
+            } else if (line.startsWith("<explain>")) {
+                area = 'explain';
+                startIndex = line.indexOf('>') + 1;
+            } else if (line.startsWith("<answer>")) {
+                area = 'answer';
+                startIndex = line.indexOf('>') + 1;
+            }
+
+            if (line.endsWith("</think>") || line.endsWith("</explain>") || line.endsWith("</answer>")) {
+                endIndex = line.lastIndexOf('<');
+            }
+
+            if (area) {
+                result[area] += line.substring(startIndex, endIndex) + '\n';
+            }
+
+            if (endIndex !== line.length) {
+                area = '';
             }
         });
 
@@ -101,32 +118,42 @@ export const useQueryStore = defineStore("query", () => {
         const lines = aiThoughtResponse.value.split("\n");
         const result = {
             think: '',
-            candidates: new Array<{ answer: string, explanation: string }>(),
-            answers: new Array<{ answer: string, conf: number }>(),
+            explain: '',
+            answers: new Array<string>(),
         };
 
-        let multiLineArea: '' | 'candidates' | 'answers' = '';
+        let area: 'think' | 'explain' | 'answers' | '' = '';
 
         lines.forEach(line => {
-            if (line.startsWith('think/')) {
-                result.think = line.substring("think/".length);
-                multiLineArea = '';
-            } else if (line.startsWith('candidates/')) {
-                multiLineArea = 'candidates';
-            } else if (line.startsWith('answers/')) {
-                multiLineArea = 'answers';
-            } else if (multiLineArea === 'candidates') {
-                const slashIndex = line.indexOf('/');
-                result.candidates.push({
-                    answer: line.substring(0, slashIndex),
-                    explanation: line.substring(slashIndex + 1),
-                });
-            } else if (multiLineArea === 'answers') {
-                const slashIndex = line.indexOf('/');
-                result.answers.push({
-                    answer: line.substring(0, slashIndex),
-                    conf: parseInt(line.substring(slashIndex + 1)),
-                });
+            let startIndex = 0;
+            let endIndex = line.length;
+
+            if (line.startsWith("<think>")) {
+                area = 'think';
+                startIndex = line.indexOf('>') + 1;
+            } else if (line.startsWith("<explain>")) {
+                area = 'explain';
+                startIndex = line.indexOf('>') + 1;
+            } else if (line.startsWith("<answers>")) {
+                area = 'answers';
+                startIndex = line.indexOf('>') + 1;
+            }
+
+            if (line.endsWith("</think>") || line.endsWith("</explain>") || line.endsWith("</answers>")) {
+                endIndex = line.lastIndexOf('<');
+            }
+
+            if (area) {
+                const text = line.substring(startIndex, endIndex);
+                if (area === 'answers') {
+                    result.answers.push(...(text.trim() ? text.split("\n") : []));
+                } else {
+                    result[area] += text + '\n';
+                }
+            }
+
+            if (endIndex !== line.length) {
+                area = '';
             }
         });
 

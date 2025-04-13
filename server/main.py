@@ -6,6 +6,7 @@ from json import load, dumps
 from os import getenv
 from httpx import AsyncClient
 from bs4 import BeautifulSoup
+from urllib.parse import quote
 
 app = FastAPI()
 
@@ -26,47 +27,37 @@ with open("server/textbook.json", "r", encoding="utf-8") as f:
 
 
 def prompt_ai_instant():
-    return """你是一位高中语文老师，对高考文言文词语解释与句子翻译有着深入研究。高考的词语解释答案常常在 6 字以内，不能太过意译，若语境确实特殊可以表示为：(原义)，这里指(引申义)。若涉及通假字，则需答：通“(通假字)”，(含义)。
-现在，你的学生会提供一个短句，并指定一个字。你要先简短地思考，然后给出能够写在高考试卷上的答题解释，简短地解释原因，并给出置信度(1~5)。请不要输出其他多余内容。例如：
-问：“举类迩而见义远”的“迩”的意思是什么？
-回答示例：
-think/句中的“迩”应该是形容词，和“远”形成对照，应该表示“近”之类的意思。结合“举类”即举例，可以很确定为浅近之义。
-answer/浅近
-explain/与“远”形成对照，表示举的例子很浅近。
-conf/5"""
+    return """<prompt>
+你是一位高中语文老师，对高考文言文词语解释与句子翻译有着深入研究。高考的词语解释答案常常在 6 字以内，不能太过意译。一般地可以给出一个精准解释，若语境确实特殊可以表示为：(原义)，这里指(引申义)。若涉及通假字，则需答：通“(通假字)”，(含义)。
+汉典是一个权威的网站，你可以由此获得了该字的基本义项，但不一定全面。
+你要做的事情如下：
+对句义进行简单思考。用<think></think>标签包裹。
+给出用你思考结果代入的句子解释。用<explain></explain>标签包裹。
+输出你认为最好的 1 个可以写在高考试卷上的词语解释，用<answer></answer>包裹。
+输出的最外层不需要做任何修饰，每步需要换行，每步内部可以换行。
+</prompt>"""
 
 
 def prompt_ai_thought():
-    return """你是一位高中语文老师，对高考文言文词语解释与句子翻译有着深入研究。高考的词语解释答案常常在 6 字以内，不能太过意译，，若语境确实特殊可以表示为：(原义)，这里指(引申义)。若涉及通假字，则需答：通“(通假字)”，(含义)。
+    return """<prompt>
+你是一位高中语文老师，对高考文言文词语解释与句子翻译有着深入研究。高考的词语解释答案常常在 6 字以内，不能太过意译，一般地可以给出一个精准解释，若语境确实特殊可以表示为：(原义)，这里指(引申义)。若涉及通假字，则需答：通“(通假字)”，(含义)。
 汉典是一个权威的网站，你可以由此获得了该字的基本义项，但不一定全面。
-现在，你的学生会提供一个短句，并指定一个字。你要先分析句子，包括句子大意和成分分析，然后按照你猜测的义项和汉典的义项逐个分析，最后给出 1~3 个能够写在高考试卷上的答题解释，并对每一个给出置信度(1~5)。请不要输出其他多余内容，遵循如下格式输出：
-问：“其称文小而其指极大”的“指”的意思是什么？汉典的意思有：
-1. 手伸出的支体（脚趾亦作“脚指”）：手～。巨～（大拇指）。～甲。～纹。～印。屈～可数。
-2. 量词，一个手指的宽度：下了三～雨。
-3. （手指或物体尖端）对着，向着：～着。～画。～南针。～手画脚。
-4. 点明，告知：～导。～引。～正。～责。～控（指名控告）。～摘。～挥。～日可待。
-5. 直立，竖起：令人发（fà）～（形容极为愤怒）。
-6. 意向针对：～标。～定。
-7. 古同“旨”，意义，目的。
-回答示例：
-think/句意为文章的表述虽然简短，但其“指”却很深远。句中“指”为主语，表示一种抽象的概念。
-candidates/
-手指/身体部位，显然不符。
-意向/虽然接近，但过于宽泛，未完全符合文言文中的精确含义。
-目的/古同“旨”，意义、目的，在此语境下恰当。
-点明/动作，不符合成分。
-answers/
-同“旨”，意义/4
-意向/2"""
+你要做的事情如下：
+对句义进行详细而有深度的思考，敢于多次尝试并依照汉典义项（若有）代入阐释。用<think></think>标签包裹。
+给出用你思考结果代入的句子解释。用<explain></explain>标签包裹。
+输出 1~3 个可以写在高考试卷上的词语解释，用<answers></answers>包裹，每个义项之间用分号“；”分隔。
+输出的最外层不需要做任何修饰，每步需要换行，每步内部可以换行。
+</prompt>"""
 
 
 async def request_zdic(word: str):
     async with AsyncClient() as client:
-        response = await client.get("https://www.zdic.net/hans/" + word, timeout=10)
+        response = await client.get(
+            "https://www.zdic.net/hans/" + quote(word), timeout=10
+        )
         if response.status_code == 200:
             return response.text
-        else:
-            return "Error: " + response.text
+        return "Error " + str(response.status_code) + ": " + response.text
 
 
 async def instant_query_generator(q: str, context: str):
@@ -95,7 +86,6 @@ async def instant_query_generator(q: str, context: str):
 
     async for answer in response:
         if answer.usage:
-            # usage info
             yield dumps(
                 {
                     "type": "ai-usage",
@@ -122,25 +112,73 @@ async def thought_query_generator(q: str, context: str):
         zdic_result = await request_zdic(q)
         soup = BeautifulSoup(zdic_result, "html.parser")
         basic_explanations = [
-            li.get_text() for li in soup.select("div.content.definitions.jnr>ol>li")
+            li.get_text()
+            for li in soup.select(".zdict div.content.definitions.jnr>ol>li")
+        ]
+        detailed_explanations_prettified = [
+            p.prettify(formatter="html5")
+            for p in soup.select("#xxjs div.content.definitions.xnr>p")
         ]
         detailed_explanations = [
-            p.prettify(formatter="html5")
-            for p in soup.select("div.content.definitions.xnr>p")
+            p.get_text() for p in soup.select("#xxjs div.content.definitions.xnr>p")
+        ]
+        phrase_explanations = [
+            p.get_text() for p in soup.select(".nr-box div.content.definitions .jnr>p")
         ]
 
-        zdic_prompt = "\n汉典给出的解释有：\n" + "\n".join(
-            f"{i + 1}. {exp}" for i, exp in enumerate(basic_explanations)
+        prompt_basic = (
+            (
+                "【基本解释】\n"
+                + "\n".join(
+                    f"{i + 1}. {exp}" for i, exp in enumerate(basic_explanations)
+                )
+                + "\n"
+            )
+            if basic_explanations
+            else ""
         )
+        prompt_detailed = (
+            (
+                "【详细解释】\n"
+                + "\n".join(
+                    f"{i + 1}. {exp}" for i, exp in enumerate(detailed_explanations)
+                )
+                + "\n"
+            )
+            if detailed_explanations
+            else ""
+        )
+
+        prompt_phrase = (
+            (
+                "【词语解释】\n"
+                + "\n".join(
+                    f"{i + 1}. {exp}" for i, exp in enumerate(phrase_explanations)
+                )
+                + "\n"
+            )
+            if phrase_explanations
+            else ""
+        )
+
+        zdic_prompt = prompt_basic + prompt_detailed + prompt_phrase
+        zdic_prompt = (
+            f"\n汉典给出的解释有：\n{zdic_prompt}"
+            if zdic_prompt.strip()
+            else "汉典未给出解释"
+        )
+
         yield dumps(
             {
                 "type": "zdic",
                 "result": {
                     "basic_explanations": basic_explanations,
-                    "detailed_explanations": detailed_explanations,
+                    "detailed_explanations": detailed_explanations_prettified,
+                    "phrase_explanations": phrase_explanations,
                 },
             }
         ) + "\n"
+
     except Exception as err:
         print(err)
         zdic_prompt = ""
@@ -148,8 +186,9 @@ async def thought_query_generator(q: str, context: str):
             {
                 "type": "zdic",
                 "result": {
-                    "basic_explanations": ["无"],
-                    "detailed_explanations": ["无"],
+                    "basic_explanations": [],
+                    "detailed_explanations": [],
+                    "phrase_explanations": [],
                 },
             }
         ) + "\n"
