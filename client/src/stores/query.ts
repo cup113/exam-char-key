@@ -146,7 +146,7 @@ export const useQueryStore = defineStore("query", () => {
             if (area) {
                 const text = line.substring(startIndex, endIndex);
                 if (area === 'answers') {
-                    result.answers.push(...(text.trim() ? text.split("\n") : []));
+                    result.answers.push(...(text.trim() ? text.replace("；", ";").split(";") : []));
                 } else {
                     result[area] += text + '\n';
                 }
