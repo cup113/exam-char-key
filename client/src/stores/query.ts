@@ -2,39 +2,9 @@ import { defineStore } from 'pinia';
 import { useLocalStorage } from '@vueuse/core';
 import { computed, ref, watch } from 'vue';
 import { nanoid } from 'nanoid';
-
-type JsonType<T> = T extends Date ? string
-    : T extends Function | undefined | symbol ? never
-    : T extends object ? { [K in keyof T]: JsonType<T[K]> } : T;
-
-class PassageAnnotation {
-    public context: string;
-    public core_detail: string;
-    public detail: string;
-    public index_range: [number, number];
-    public name_passage: string;
-
-    constructor(raw: JsonType<PassageAnnotation>) {
-        this.context = raw.context;
-        this.core_detail = raw.core_detail;
-        this.detail = raw.detail;
-        this.index_range = raw.index_range;
-        this.name_passage = raw.name_passage;
-    }
-
-    public get_keyword() {
-        return this.context.substring(this.index_range[0], this.index_range[1]);
-    }
-}
-
-export interface HistoryRecord {
-    id: string;
-    level: string;
-    front: string;
-    back: string;
-    userModifiedBack?: string; // 用户修改的答案
-    additions: any[];
-}
+import { PassageAnnotation, type HistoryRecord } from './types';
+import { format_front } from './utils';
+import { queryInstant, queryThought } from './api';
 
 export const useQueryStore = defineStore("query", () => {
     const querySentence = useLocalStorage("EC_querySentence", "");
@@ -43,35 +13,12 @@ export const useQueryStore = defineStore("query", () => {
     const MAX_HISTORY = 100;
 
     const queryWord = ref("");
+    const queryIndex = ref(new Set<number>());
     const textAnnotations = ref(new Array<PassageAnnotation>());
     const aiInstantResponse = ref("");
     const aiThoughtResponse = ref("");
     const currentRecorded = ref(false);
     const zdicResponse = ref({ basic_explanations: new Array<string>(), detailed_explanations: new Array<string>(), phrase_explanations: new Array<string>() });
-
-
-    const queryIndex = ref(new Set<number>());
-
-    watch(querySentence, (newSentence, oldSentence) => {
-        if (newSentence !== oldSentence) {
-            queryIndex.value.clear();
-            if (newSentence.length <= 2 && newSentence.length >= 1) {
-                queryIndex.value.add(0);
-                if (newSentence.length === 2) {
-                    queryIndex.value.add(1);
-                }
-            }
-        }
-    });
-
-    function toggle_index(index: number) {
-        if (queryIndex.value.has(index)) {
-            queryIndex.value.delete(index);
-        } else {
-            queryIndex.value.add(index);
-        }
-        queryWord.value = Array.from(queryIndex.value).sort().map(i => querySentence.value[i]).join();
-    }
 
     const instantStructured = computed(() => {
         const lines = aiInstantResponse.value.split("\n");
@@ -146,7 +93,7 @@ export const useQueryStore = defineStore("query", () => {
             if (area) {
                 const text = line.substring(startIndex, endIndex);
                 if (area === 'answers') {
-                    result.answers.push(...(text.trim() ? text.replace("；", ";").split(";") : []));
+                    result.answers.push(...(text.trim() ? text.split("；") : []));
                 } else {
                     result[area] += text + '\n';
                 }
@@ -160,89 +107,12 @@ export const useQueryStore = defineStore("query", () => {
         return result;
     });
 
-    function update_from_query(type: string, result: any) {
-        switch (type) {
-            case "text":
-                textAnnotations.value = result.map((raw: JsonType<PassageAnnotation>) => new PassageAnnotation(raw));
-                break;
-            case "ai-instant":
-                aiInstantResponse.value += result.content;
-                break;
-            case "ai-thought":
-                aiThoughtResponse.value += result.content;
-                break;
-            case 'ai-usage':
-                usage.value += result.prompt_tokens * 8 + result.completion_tokens * 20;
-                break;
-            case "zdic":
-                zdicResponse.value = result;
-                break;
-            default:
-                console.error(`Unknown type: ${type}`);
-                break;
-        }
-    }
-
-    async function queryInstant() {
-        const response = await fetch(`/api/query?q=${encodeURIComponent(queryWord.value)}&context=${encodeURIComponent(querySentence.value)}`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        if (!response.body) {
-            throw new Error("No response body");
-        }
-
-        aiInstantResponse.value = "";
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let done = false;
-
-        while (!done) {
-            const { value, done: streamDone } = await reader.read();
-            done = streamDone;
-            if (value) {
-                const data = decoder.decode(value, { stream: true });
-                const chunks = data.trim().split("\n");
-                for (const chunk of chunks) {
-                    const { type, result } = JSON.parse(chunk);
-                    update_from_query(type, result);
-                }
-            }
-        }
-    }
-
-    async function queryThought() {
-        const response = await fetch(`/api/query?q=${encodeURIComponent(queryWord.value)}&context=${encodeURIComponent(querySentence.value)}&instant=0`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        if (!response.body) {
-            throw new Error("No response body");
-        }
-
-        aiThoughtResponse.value = "";
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let done = false;
-        while (!done) {
-            const { value, done: streamDone } = await reader.read();
-            done = streamDone;
-            if (value) {
-                const data = decoder.decode(value, { stream: true });
-                const chunks = data.trim().split("\n");
-                for (const chunk of chunks) {
-                    const { type, result } = JSON.parse(chunk);
-                    update_from_query(type, result);
-                }
-            }
-        }
-    }
-
     async function query() {
         currentRecorded.value = false;
-        await Promise.all([queryInstant(), queryThought()]);
+        await Promise.all([
+            queryInstant(queryWord, querySentence, aiInstantResponse, textAnnotations, aiThoughtResponse, usage, zdicResponse),
+            queryThought(queryWord, querySentence, aiThoughtResponse, textAnnotations, aiInstantResponse, usage, zdicResponse)
+        ]);
         console.log("Request Ended");
     }
 
@@ -273,20 +143,12 @@ export const useQueryStore = defineStore("query", () => {
         history.value = history.value.filter(record => !selected.some(item => item.id === record.id));
     }
 
-    function format_front(sentence: string, indices: Set<number>) {
-        const chars = Array.from(sentence);
-        indices.forEach(i => {
-            chars[i] = `<strong>${chars[i]}</strong>`;
-        });
-        return chars.join('');
-    };
-
     function adopt_answer(answer: string) {
         currentRecorded.value = true;
         const newRecord: HistoryRecord = {
             id: nanoid(),
             level: "A",
-            front: format_front(querySentence.value, queryIndex.value), // 新增高亮逻辑
+            front: format_front(querySentence.value, queryIndex.value),
             back: answer,
             additions: [],
         };
@@ -299,6 +161,7 @@ export const useQueryStore = defineStore("query", () => {
     return {
         querySentence,
         queryWord,
+        queryIndex,
         usage,
         textAnnotations,
         aiInstantResponse,
@@ -306,10 +169,8 @@ export const useQueryStore = defineStore("query", () => {
         aiThoughtResponse,
         thoughtStructured,
         zdicResponse,
-        queryIndex,
         history,
         currentRecorded,
-        toggle_index,
         export_history,
         delete_history,
         adopt_answer,

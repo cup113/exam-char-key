@@ -17,10 +17,10 @@ const queryStore = useQueryStore();
             <li v-for="item in queryStore.zdicResponse.detailed_explanations" v-html="item"></li>
         </ol>
         <h2 v-if="queryStore.zdicResponse.phrase_explanations.length" class="text-2xl font-bold text-center">汉典补充解释
+        </h2>
         <ol class="flex flex-col gap-1 indent-4">
             <li v-for="item in queryStore.zdicResponse.phrase_explanations" v-html="item"></li>
         </ol>
-        </h2>
     </div>
 </template>
 

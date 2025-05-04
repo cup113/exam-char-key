@@ -9,11 +9,6 @@ const queryStore = useQueryStore();
         <p class="text-center text-xl font-bold bg-green-200 mx-auto px-4 rounded-xl"
             v-show="queryStore.instantStructured.answer">
             {{ queryStore.instantStructured.answer }}
-            <button @click="queryStore.adopt_answer(queryStore.instantStructured.answer)"
-                v-if="!queryStore.currentRecorded"
-                class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded-xl ml-2 text-base">
-                采用
-            </button>
         </p>
         <p class="text-gray-500 text-sm indent-4" v-show="queryStore.instantStructured.think">{{
             queryStore.instantStructured.think }}</p>
