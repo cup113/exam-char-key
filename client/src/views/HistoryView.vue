@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { ToolbarRoot, ToolbarButton } from 'reka-ui';
 import type { HistoryRecord } from '@/stores/types';
-import { useQueryStore } from '@/stores/query';
+import { useHistoryStore } from '@/stores/history';
+import ExportIcon from '@/components/icons/ExportIcon.vue';
+import DeleteIcon from '@/components/icons/DeleteIcon.vue';
+import CheckAllIcon from '@/components/icons/CheckAllIcon.vue';
+import SelectBackIcon from '@/components/icons/SelectBackIcon.vue';
+import SelectForwardIcon from '@/components/icons/SelectForwardIcon.vue';
 
-const queryStore = useQueryStore();
+const historyStore = useHistoryStore();
 const selectedRecords = ref<HistoryRecord[]>([]);
 
 const export_selected = () => {
-  queryStore.export_history(selectedRecords.value);
+  historyStore.exportHistory(selectedRecords.value);
 };
 
 const delete_selected = () => {
@@ -17,62 +23,64 @@ const delete_selected = () => {
   if (!confirm(`确定要删除选中的 ${selectedRecords.value.length} 条记录吗？`)) {
     return;
   }
-  queryStore.delete_history(selectedRecords.value);
+  historyStore.deleteHistory(selectedRecords.value);
   selectedRecords.value.splice(0, selectedRecords.value.length);
 };
 
 const select_all = () => {
-  if (selectedRecords.value.length === queryStore.history.length) {
+  if (selectedRecords.value.length === historyStore.history.length) {
     selectedRecords.value.splice(0, selectedRecords.value.length);
     return;
   }
-  selectedRecords.value.splice(0, selectedRecords.value.length, ...queryStore.history);
+  selectedRecords.value.splice(0, selectedRecords.value.length, ...historyStore.history);
 };
 
 const select_old = () => {
   const newestIndex = Math.min.apply(undefined,
-    selectedRecords.value.map(record => queryStore.history.findIndex(r => r.id === record.id))
+    selectedRecords.value.map(record => historyStore.history.findIndex(r => r.id === record.id))
   );
-  selectedRecords.value.splice(0, selectedRecords.value.length, ...queryStore.history.slice(newestIndex));
+  selectedRecords.value.splice(0, selectedRecords.value.length, ...historyStore.history.slice(newestIndex));
 }
 
 const select_new = () => {
   const oldestIndex = Math.max.apply(undefined,
-    selectedRecords.value.map(record => queryStore.history.findIndex(r => r.id === record.id))
+    selectedRecords.value.map(record => historyStore.history.findIndex(r => r.id === record.id))
       .filter(index => index !== -1)
   );
-  selectedRecords.value.splice(0, selectedRecords.value.length, ...queryStore.history.slice(0, oldestIndex + 1));
+  selectedRecords.value.splice(0, selectedRecords.value.length, ...historyStore.history.slice(0, oldestIndex + 1));
 }
 
-// 定义按钮配置数组，使用 className 且只保留颜色差异部分
 const buttons = [
-  { text: '导出选中记录', click: export_selected, className: 'bg-blue-500 hover:bg-blue-600' },
-  { text: '删除选中记录', click: delete_selected, className: 'bg-red-500 hover:bg-red-600' },
-  { text: '全选', click: select_all, className: 'bg-green-500 hover:bg-green-600' },
-  { text: '选中旧记录', click: select_old, className: 'bg-gray-500 hover:bg-gray-600' },
-  { text: '选中新记录', click: select_new, className: 'bg-gray-500 hover:bg-gray-600' },
+  { text: '导出选中', click: export_selected, icon: ExportIcon, className: 'bg-accent-600 hover:bg-accent-700' },
+  { text: '删除选中', click: delete_selected, icon: DeleteIcon, className: 'bg-secondary-600 hover:bg-secondary-700' },
+  { text: '全部选中', click: select_all, icon: CheckAllIcon, className: 'bg-primary-600 hover:bg-primary-700' },
+  { text: '选择旧项', click: select_old, icon: SelectBackIcon, className: 'bg-secondary-600 hover:bg-secondary-700' },
+  { text: '选择新项', click: select_new, icon: SelectForwardIcon, className: 'bg-primary-600 hover:bg-primary-700' },
 ];
 </script>
 
 <template>
   <main class="p-4">
-    <div class="history-header mb-4 flex gap-2 items-center">
-      <button v-for="(button, index) in buttons" :key="index" @click="button.click"
-        class="text-white py-1 px-2 rounded-xl cursor-pointer disabled:cursor-no-drop" :class="button.className"
-        :disabled="button.text !== '全选' && selectedRecords.length === 0">
-        {{ button.text }}
-      </button>
-    </div>
-    <div>
-      <div v-for="record in queryStore.history" :key="record.id"
-        class="flex flex-col p-3 bg-white rounded-lg shadow-sm hover:bg-gray-50">
+    <toolbar-root class="bg-white flex flex-wrap justify-center p-2 shadow-md rounded-md">
+      <toolbar-button v-for="button in buttons" :key="button.text" @click="button.click" :class="button.className"
+        :disabled="button.text !== '全部选中' && selectedRecords.length === 0"
+        class="text-white py-2 px-4 cursor-pointer disabled:cursor-not-allowed">
+        <Component :is="button.icon" class="inline-block mr-2" />
+        <span>{{ button.text }}</span>
+      </toolbar-button>
+    </toolbar-root>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <div v-for="record in historyStore.history" :key="record.id"
+        class="flex p-3 rounded-lg gap-1 hover:bg-gray-50">
         <div class="flex items-center">
           <input type="checkbox" v-model="selectedRecords" :value="record"
             class="form-checkbox h-5 w-5 mr-2 text-blue-500" />
-          <div class="record-content flex-1">
-            <div class="front-text text-gray-700" v-html="record.front"></div>
+          <div>
+            <div class="record-content flex-1 px-2 py-1">
+              <div class="front-text text-gray-700" v-html="record.front"></div>
+            </div>
+            <input v-model="record.userModifiedBack" :placeholder="record.back" class="px-2 py-1 w-full border-b text-primary-800" />
           </div>
-          <input v-model="record.userModifiedBack" :placeholder="record.back" class="px-2 py-1 w-48" />
         </div>
       </div>
     </div>

@@ -1,15 +1,10 @@
 import { update_from_query } from './utils';
-import { type Ref } from 'vue';
-import type { ResponseChunk, PassageAnnotation, ZdicResult } from './types';
+import type { ResponseChunk, FrontendHandler, SearchTarget } from './types';
 
 async function readStream(
     reader: ReadableStreamDefaultReader<Uint8Array>,
     decoder: TextDecoder,
-    textAnnotations: Ref<PassageAnnotation[]>,
-    aiInstantResponse: Ref<string>,
-    aiThoughtResponse: Ref<string>,
-    usage: Ref<number>,
-    zdicResponse: Ref<ZdicResult>
+    frontendHandler: FrontendHandler,
 ) {
     let done = false;
     while (!done) {
@@ -21,14 +16,7 @@ async function readStream(
             for (const chunk of chunks) {
                 try {
                     const responseChunk: ResponseChunk = JSON.parse(chunk);
-                    update_from_query(
-                        responseChunk,
-                        textAnnotations,
-                        aiInstantResponse,
-                        aiThoughtResponse,
-                        usage,
-                        zdicResponse
-                    );
+                    update_from_query(responseChunk, frontendHandler);
                 } catch (error) {
                     console.error('Error parsing JSON chunk:', error);
                 }
@@ -37,16 +25,9 @@ async function readStream(
     }
 }
 
-export async function queryInstant(
-    queryWord: Ref<string>,
-    querySentence: Ref<string>,
-    aiInstantResponse: Ref<string>,
-    textAnnotations: Ref<PassageAnnotation[]>,
-    aiThoughtResponse: Ref<string>,
-    usage: Ref<number>,
-    zdicResponse: Ref<ZdicResult>
-) {
-    const response = await fetch(`/api/query?q=${encodeURIComponent(queryWord.value)}&context=${encodeURIComponent(querySentence.value)}`);
+async function guardResponse(fetched: Promise<Response>) {
+    const response = await fetched;
+
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -54,34 +35,39 @@ export async function queryInstant(
         throw new Error("No response body");
     }
 
-    aiInstantResponse.value = "";
-
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
 
-    await readStream(reader, decoder, textAnnotations, aiInstantResponse, aiThoughtResponse, usage, zdicResponse);
+    return { reader, decoder, response };
+}
+
+export async function queryInstant(
+    queryWord: string,
+    querySentence: string,
+    frontendHandler: FrontendHandler,
+) {
+    const { reader, decoder } = await guardResponse(
+        fetch(`/api/query?q=${encodeURIComponent(queryWord)}&context=${encodeURIComponent(querySentence)}&instant=1`)
+    );
+
+    await readStream(reader, decoder, frontendHandler);
 }
 
 export async function queryThought(
-    queryWord: Ref<string>,
-    querySentence: Ref<string>,
-    aiThoughtResponse: Ref<string>,
-    textAnnotations: Ref<PassageAnnotation[]>,
-    aiInstantResponse: Ref<string>,
-    usage: Ref<number>,
-    zdicResponse: Ref<ZdicResult>
+    queryWord: string,
+    querySentence: string,
+    frontendHandler: FrontendHandler,
 ) {
-    const response = await fetch(`/api/query?q=${encodeURIComponent(queryWord.value)}&context=${encodeURIComponent(querySentence.value)}&instant=0`);
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    if (!response.body) {
-        throw new Error("No response body");
-    }
+    const { reader, decoder } = await guardResponse(
+        fetch(`/api/query?q=${encodeURIComponent(queryWord)}&context=${encodeURIComponent(querySentence)}&instant=0`)
+    );
 
-    aiThoughtResponse.value = "";
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
+    await readStream(reader, decoder, frontendHandler);
+}
 
-    await readStream(reader, decoder, textAnnotations, aiInstantResponse, aiThoughtResponse, usage, zdicResponse);
+export async function searchOriginalText(excerpt: string, target: SearchTarget, frontendHandler: FrontendHandler) {
+    const { reader, decoder } = await guardResponse(
+        fetch(`/api/search-original?excerpt=${encodeURIComponent(excerpt)}&target=${target}`));
+
+    await readStream(reader, decoder, frontendHandler);
 }

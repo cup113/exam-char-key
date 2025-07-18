@@ -4,7 +4,7 @@ const queryStore = useQueryStore();
 </script>
 
 <template>
-    <div class="w-96 min-h-24 px-4 py-2 shadow-lg flex flex-col gap-2">
+    <div class="w-xs lg:w-md min-h-24 px-4 py-2 shadow-lg flex flex-col gap-2">
         <h2 class="text-2xl font-bold text-center">汉典基本解释</h2>
         <ol class="indent-4">
             <li v-for="item, i in queryStore.zdicResponse.basic_explanations" :key="i">

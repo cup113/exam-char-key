@@ -29,6 +29,7 @@ export interface HistoryRecord {
     back: string;
     userModifiedBack?: string; // 用户修改的答案
     additions: never[];
+    createdAt: string;
 }
 
 export interface AiResult {
@@ -50,4 +51,20 @@ export interface ZdicResult {
 
 export type TextAnnotationResult = JsonType<PassageAnnotation>[];
 
-export type ResponseChunk = { type: "text", result: TextAnnotationResult } | { type: "ai-instant", result: AiResult } | { type: "ai-thought", result: AiResult } | { type: "ai-usage", result: AiUsageResult } | { type: "zdic", result: ZdicResult };
+export type ResponseChunk = { type: "text", result: TextAnnotationResult } | { type: "ai-instant", result: AiResult } | { type: "ai-thought", result: AiResult } | { type: "ai-usage", result: AiUsageResult } | { type: "zdic", result: ZdicResult } | { type: "search-original", result: AiResult };
+
+export interface FrontendHandler {
+    updateTextAnnotations: (annotations: PassageAnnotation[]) => void;
+    updateInstant: (contentChunk: string) => void;
+    updateThought: (contentChunk: string) => void;
+    updateUsage: (usageResult: AiUsageResult) => void;
+    updateZdic: (zdicResult: ZdicResult) => void;
+    updateSearchOriginal: (contentChunk: string) => void;
+}
+
+export enum SearchTarget {
+    None = "none",
+    Sentence = "sentence",
+    Paragraph = "paragraph",
+    FullText = "full-text"
+}
