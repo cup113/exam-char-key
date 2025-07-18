@@ -1,40 +1,18 @@
-from dataclasses import dataclass
-from dataclasses_json import dataclass_json
-from enum import Enum
 from tqdm import tqdm
 from fitz import open as fitz_open  # type: ignore
 from fitz import Page  # type: ignore
-from re import search
-from os import getenv
-from openai import OpenAI
-from json import loads, dumps
 from warnings import warn
+from enum import Enum
+from json import dumps, loads
 from fitz_types import Span, Block
-from datetime import datetime
+from dataclasses import dataclass
+
+from models import Note, Passage
 
 
 NOTE_LINES = [(60, 204), (67, 211)]
 PAGE_INFO_Y = 798
 TEXT_BLOCK_TYPE = 0
-NOTE_PAIR = ({"〔", "﹝"}, "〕")
-PUNCTUATIONS = set("，。；？！")
-CONTEXT_CLAUSES = (2, 2)
-
-client = OpenAI(
-    api_key=getenv("API_KEY"),
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-)
-
-
-def chat_with_model(system_prompt: str, message: str):
-    completion = client.chat.completions.create(
-        model="qwen2.5-14b-instruct",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": message},
-        ],
-    )
-    return loads(completion.model_dump_json())["choices"][0]["message"]["content"]
 
 
 class FeatureType(Enum):
@@ -70,136 +48,63 @@ class Feature:
         return True
 
 
-@dataclass_json
-@dataclass
-class Note:
-    name_passage: str
-    context: str
-    index_range: tuple[int, int]
-    detail: str
-    core_detail: str
-
-    def get_original_text(self):
-        return self.context[self.index_range[0] : self.index_range[1]]
-
-
-@dataclass
-class Passage:
-    title: str
-    author: str
-    content: str
-    notes: list[tuple[int, str]]
-    text_end: bool
-
-    def __str__(self):
-        result = f"标 题: {self.title}\n作 者: {self.author}\n原 文: {self.content}\n"
-        if self.notes:
-            result += "注 释:\n"
-            result += "".join(f"{index}\t{content}\n" for index, content in self.notes)
-        return result
-
-    def judge_ancient(self) -> tuple[float, str]:
-        system_prompt = "你是一个文言文判断专家，用户的好帮手，你需要根据文章内容判断它是否是文言文。\n主要依据为其中语言是否可能包含一些文言词汇，因此近代诗文可能也包含在内。你应当在回答的结尾输出形如<p=0.5>的结果，其中数字表示偏向文言文的程度，经典文言文为1.0，经典现代文为0.0，你可以打得绝对一些。"
-        prompt = f"以下为文本：\n标题：{self.title}\n作者：{self.author}\n内容节选：{self.content[:100]}\n\n请根据上述内容，判断它是否是文言文。"
-        answer = chat_with_model(system_prompt, prompt)
-        # 提取<p=0.5>内容
-        match_result = search(r"<p=(\d*\.\d*)>", answer)
-        if match_result is None:
-            warn(f"No <p=[number]> found in {repr(answer)}")
-            return (float("nan"), answer)
-        else:
-            return (float(match_result.group(1)), answer)
-
-    def get_context(self, index_range: tuple[int, int]) -> tuple[str, tuple[int, int]]:
-        original_left, original_right = index_range
-        if original_left < 0:
-            original_left = 0 # TODO: pinyin
-        punctuations_left, punctuations_right = CONTEXT_CLAUSES
-
-        left, right = original_left, original_right
-
-        while left > 0 and punctuations_left > 0:
-            left -= 1
-            if self.content[left] in PUNCTUATIONS:
-                punctuations_left -= 1
-        if self.content[left] in PUNCTUATIONS:
-            left += 1
-
-        while right < len(self.content) and punctuations_right > 0:
-            right += 1
-            if self.content[right - 1] in PUNCTUATIONS:
-                punctuations_right -= 1
-        return (self.content[left : right], (original_left - left, original_right - left))
-
-    def extract_primary_notes(self) -> list[Note]:
-        notes: list[Note] = []
-
-        for note in self.notes:
-            end_index, note_text = note
-            if not note_text:
-                warn(f"Empty note in {self.title}:{end_index}")
-                continue
-            if note_text[0] in NOTE_PAIR[0]:
-                index_right_sep = note_text.index(NOTE_PAIR[1])
-                original_text = note_text[1:index_right_sep]
-                detail = note_text[index_right_sep + 1 :]
-
-                start_index = end_index
-                note_chars = list(original_text)
-                while start_index > 0 and note_chars:
-                    start_index -= 1
-                    if self.content[start_index] in note_chars:
-                        note_chars.remove(self.content[start_index])
-                    else:
-                        start_index += 1
-                        break
-
-                index_range_original = (start_index, end_index)
-                context, index_range = self.get_context(index_range_original)
-            elif end_index == 0:
-                # Note right after title
-                context = self.title
-                detail = note_text
-                index_range = (0, len(self.title))
-            else:
-                continue
-            note = Note(
-                name_passage=self.title,
-                context=context,
-                index_range=index_range,
-                detail=detail,
-                core_detail=detail,
-            )
-            notes.append(note)
-
-        return notes
-
-    @classmethod
-    def with_title(cls, title: str):
-        return cls(title, "", "", [], False)
-
-    @staticmethod
-    def add_note_text(info: "tuple[Passage, int, int]", text: str):
-        passage, note_index, _ = info
-        pos, original_text = passage.notes[note_index]
-        passage.notes[note_index] = (pos, original_text + text)
-
-    @staticmethod
-    def note_str_to_number(text: str) -> int:
-        """
-        a -> 1, b -> 2 ...
-        @1 -> 21, @2 -> 22, ...
-        #0 -> 30, #1 -> 31, ...
-        """
-        text = "".join(
-            filter(lambda x: x in "abcdefghijklmnopqrstuvwxyz@#0123456789", text)
-        )
-        if text.startswith("@"):
-            return int(text[1:]) + 20
-        elif text.startswith("#"):
-            return int(text[1:]) + 30
-        else:
-            return ord(text[0]) - ord("a") + 1
+FEATURES = [
+    Feature(
+        FeatureType.SEQ_NUMBER,
+        font_in=["FZZHUNYSJW--GB1-0"],
+        size_within=(23, 25),
+        color="af6b5c",
+    ),
+    Feature(
+        FeatureType.TITLE,
+        font_in=["FZZHUNYSK--GBK1-0"],
+        size_within=(20, 22),
+        color="af6b5c",
+    ),
+    Feature(
+        FeatureType.CHANT_TITLE,
+        font_in=["FZZHUNYSK--GBK1-0"],
+        size_within=(17, 19),
+        color="231f20",
+    ),
+    Feature(
+        FeatureType.TEXT,
+        font_in=["FZSSJW--GB1-0", "FZSSK--GBK1-0", "FZKTJW--GB1-0", "FZFSJW--GB1-0"],
+        size_within=(11, 13),
+        color="231f20",
+    ),
+    Feature(
+        FeatureType.NOTE_IN_TEXT,
+        font_in=["RopeSequenceNumberST-R"],
+        size_within=(6, 8),
+        color="231f20",
+    ),
+    Feature(
+        FeatureType.NOTE_KEY,
+        font_in=["RopeSequenceNumberST-R"],
+        size_within=(8, 10),
+        color="231f20",
+    ),
+    Feature(
+        FeatureType.NOTE_DETAIL,
+        font_in=["FZSSJW--GB1-0", "FZSSK--GBK1-0"],
+        size_within=(8, 10),
+        color="231f20",
+    ),
+    Feature(FeatureType.NUMBER, font_in=["Times-Roman"]),
+    Feature(
+        FeatureType.PIN_YIN,
+        font_in=["NEU-XT-Regular"],
+        size_within=(8, 10),
+        color="231f20",
+    ),
+    Feature(
+        FeatureType.LEARN_HINT,
+        font_in=["FZLTZHK--GBK1-0"],
+        color="af6b5c",
+        size_within=(13, 15),
+    ),
+]
 
 
 class PageHelper:
@@ -274,78 +179,14 @@ class PageHelper:
         return result
 
 
-FEATURES = [
-    Feature(
-        FeatureType.SEQ_NUMBER,
-        font_in=["FZZHUNYSJW--GB1-0"],
-        size_within=(23, 25),
-        color="af6b5c",
-    ),
-    Feature(
-        FeatureType.TITLE,
-        font_in=["FZZHUNYSK--GBK1-0"],
-        size_within=(20, 22),
-        color="af6b5c",
-    ),
-    Feature(
-        FeatureType.CHANT_TITLE,
-        font_in=["FZZHUNYSK--GBK1-0"],
-        size_within=(17, 19),
-        color="231f20",
-    ),
-    Feature(
-        FeatureType.TEXT,
-        font_in=["FZSSJW--GB1-0", "FZSSK--GBK1-0", "FZKTJW--GB1-0", "FZFSJW--GB1-0"],
-        size_within=(11, 13),
-        color="231f20",
-    ),
-    Feature(
-        FeatureType.NOTE_IN_TEXT,
-        font_in=["RopeSequenceNumberST-R"],
-        size_within=(6, 8),
-        color="231f20",
-    ),
-    Feature(
-        FeatureType.NOTE_KEY,
-        font_in=["RopeSequenceNumberST-R"],
-        size_within=(8, 10),
-        color="231f20",
-    ),
-    Feature(
-        FeatureType.NOTE_DETAIL,
-        font_in=["FZSSJW--GB1-0", "FZSSK--GBK1-0"],
-        size_within=(8, 10),
-        color="231f20",
-    ),
-    Feature(FeatureType.NUMBER, font_in=["Times-Roman"]),
-    Feature(
-        FeatureType.PIN_YIN,
-        font_in=["NEU-XT-Regular"],
-        size_within=(8, 10),
-        color="231f20",
-    ),
-    Feature(
-        FeatureType.LEARN_HINT,
-        font_in=["FZLTZHK--GBK1-0"],
-        color="af6b5c",
-        size_within=(13, 15),
-    ),
-]
-
-
-def get_datetime_str():
-    now = datetime.now()
-    return now.strftime("%Y%m%d%H%M%S") + f"{now.microsecond:06d}"
-
-
 def almost_same(a: float | int, b: float | int) -> bool:
     return abs(a - b) < 1
 
 
-def get_raw_data(pdf_path: str):
+def get_raw_data(pdf_path: str, is_first: bool):
     doc = fitz_open(pdf_path)
 
-    file = open(f"train/result/raw_{get_datetime_str()}.txt", "w", encoding="utf-8")
+    file = open(f"train/result/raw.txt", "w" if is_first else "a", encoding="utf-8")
 
     progress = tqdm(desc="RawData", total=len(doc), unit="Page")
 
@@ -371,10 +212,12 @@ def get_raw_data(pdf_path: str):
     doc.close()
 
 
-def draw_feature(pdf_path: str):
+def draw_feature(pdf_path: str, is_first: bool):
     doc = fitz_open(pdf_path)
 
-    file = open(f"train/result/featured_{get_datetime_str()}.txt", "w", encoding="utf-8")
+    file = open(
+        f"train/result/featured.txt", "w" if is_first else "a", encoding="utf-8"
+    )
 
     total_pages = len(doc)
     progress = tqdm(desc="Feature", total=total_pages, unit="Page")
@@ -409,7 +252,7 @@ def draw_feature(pdf_path: str):
                 ):
                     if active_passage and not active_passage.content:
                         # Likely to be disrupted by font changes
-                        active_passage.title += text
+                        active_passage.title += text.replace(" ", "")
                     else:
                         active_passage = Passage.with_title(text)
                         passages.append(active_passage)
@@ -461,26 +304,16 @@ def draw_feature(pdf_path: str):
     return passages
 
 
-def judge_passages(passages: list[Passage]):
-    with open(f"train/result/judge_{get_datetime_str()}.txt", "w", encoding="utf-8") as f:
-        progress = tqdm(desc="Judge", total=len(passages), unit="Passage")
-        for passage in passages:
-            prob, answer = passage.judge_ancient()
-            answer_nowrap = answer.replace("\r", "").replace("\n", "  ")
-            f.write(f"{passage.title}\t{prob}\t{answer_nowrap}\n")
-            f.flush()
-            progress.update(1)
-            yield (passage, prob)
-
-
 def export_notes(passages: list[Passage]):
     passage_notes: list[Note] = []
     for passage in passages:
         primary_notes = passage.extract_primary_notes()
         passage_notes.extend(primary_notes)
 
-    with open(f"train/result/textbook_{get_datetime_str()}.json", "w", encoding="utf-8") as f:
-        f.write(dumps([n.to_dict() for n in passage_notes], indent=2, ensure_ascii=False))
+    with open(f"train/result/textbook.jsonl", "w", encoding="utf-8") as f:
+        for note in passage_notes:
+            f.write(dumps(note.to_dict(), ensure_ascii=False) + "\n")
+
 
 PATHS_TEXTBOOK = [
     "train/textbooks/统编版-高中语文必修上册.pdf",
@@ -490,27 +323,38 @@ PATHS_TEXTBOOK = [
     "train/textbooks/统编版-高中语文选择性必修下册.pdf",
 ][0:5]
 RAW_DATA = False
-FILTER_ANCIENT = False
 
 
 if __name__ == "__main__":
+    try:
+        with open(
+            "./train/result/textbook-is-ancient.jsonl", "r", encoding="utf-8"
+        ) as f:
+            is_ancient_arr = [loads(line) for line in f]
+    except:
+        is_ancient_arr = []
+    is_ancient_dict = {item["title"]: item["is_ancient"] for item in is_ancient_arr}
+
     main_progress = tqdm(desc="Total", total=len(PATHS_TEXTBOOK), unit="Book")
     target_passages: list[Passage] = []
-    for path_textbook in PATHS_TEXTBOOK:
+    for i, path_textbook in enumerate(PATHS_TEXTBOOK):
         RAW_DATA_POINT = 4
         FEATURE_POINT = 6
-        FILTER_ANCIENT_POINT = 88
-        points = RAW_DATA_POINT * int(RAW_DATA) + FEATURE_POINT + FILTER_ANCIENT_POINT * int(FILTER_ANCIENT)
+        points = RAW_DATA_POINT * int(RAW_DATA) + FEATURE_POINT
         if RAW_DATA:
-            get_raw_data(path_textbook)
+            get_raw_data(path_textbook, is_first=(i == 0))
             main_progress.update(RAW_DATA_POINT / points)
-        passages = draw_feature(path_textbook)
+        passages = draw_feature(path_textbook, is_first=(i == 0))
         main_progress.update(FEATURE_POINT / points)
-        if FILTER_ANCIENT:
-            for passage, prob in judge_passages(passages):
-                main_progress.update(FILTER_ANCIENT_POINT / points / len(passages))
-                if prob >= 0.5:  # TODO confirm between [0.3, 0.7]
-                    target_passages.append(passage)
-        else:
-            target_passages.extend(passages)
+        default_is_target = len(is_ancient_dict) == 0
+        for passage in passages:
+            if is_ancient_dict.get(passage.title, default_is_target):
+                target_passages.append(passage)
     export_notes(target_passages)
+    with open("train/result/textbook-notes.jsonl", "w", encoding="utf-8") as f:
+        for passage in target_passages:
+            for note in passage.extract_primary_notes():
+                f.write(dumps(note.to_dict(), ensure_ascii=False) + "\n")
+    with open("train/result/textbook-passages.jsonl", "w", encoding="utf-8") as f:
+        for passage in target_passages:
+            f.write(dumps(passage.to_dict(), ensure_ascii=False) + "\n")

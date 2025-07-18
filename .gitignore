@@ -3,5 +3,8 @@ Qwen-1_8B
 train/result/**/*
 train/textbooks/*.pdf
 .vscode
-train/chinese-gushiwen/**/*.json
+train/chinese-gushiwen/**/*.jsonl
 .env
+train/textbook*.json
+train/word-frequency.json
+train/*.jsonl
