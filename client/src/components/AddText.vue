@@ -32,11 +32,11 @@ function handleAddText() {
             <DialogContent
                 class="fixed top-1/2 left-1/2 w-full max-w-md p-6 bg-white rounded-xl transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4">
                 <DialogTitle class="text-xl font-semibold">添加文本</DialogTitle>
-                <textarea name="text" rows="5" class="block w-full min-h-20 bg-secondary-300 p-2"
+                <textarea name="text" rows="5" class="block w-full min-h-20 bg-secondary-200 p-2"
                     placeholder="请输入文言文文本……" v-model="inputText"></textarea>
                 <label class="flex items-center gap-4">
                     <span>语境搜索选项</span>
-                    <select name="context-search" class="bg-secondary-300 p-2 rounded-md" v-model="queryStore.searchTarget">
+                    <select name="context-search" class="bg-secondary-200 p-2 rounded-md" v-model="queryStore.searchTarget">
                         <option value="none">不搜索，语境充足</option>
                         <option value="sentence">搜索对应句子</option>
                         <option value="paragraph">搜索对应段落</option>
@@ -50,7 +50,7 @@ function handleAddText() {
                     </DialogClose>
                     <DialogClose>
                         <button
-                            class="text-white bg-secondary-600 px-4 py-2 rounded-md hover:bg-primary-700">取消</button>
+                            class="text-white bg-secondary-400 px-4 py-2 rounded-md hover:bg-secondary-500">取消</button>
                     </DialogClose>
                 </div>
             </DialogContent>

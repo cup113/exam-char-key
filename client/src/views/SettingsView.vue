@@ -26,7 +26,7 @@ const usageDisplay = computed(() => {
             <div class="grid grid-cols-1 border-collapse">
                 <div v-for="usage in usageDisplay" :key="usage.item" class="flex justify-between p-2 border-b">
                     <span>{{ usage.item }}</span>
-                    <span class="font-mono font-bold text-primary-800">{{ usage.value }}</span>
+                    <span class="font-mono font-bold text-primary-700">{{ usage.value }}</span>
                 </div>
             </div>
         </section>

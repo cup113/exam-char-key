@@ -1,36 +1,47 @@
 @import 'tailwindcss';
 
 @theme {
-    --color-primary-50: #FDFCFA;
-    --color-primary-100: #FAF9F5;
-    --color-primary-200: #F4F1E7;
-    --color-primary-300: #EDE8D8;
-    --color-primary-400: #DFD6BA;
-    --color-primary-500: #D1C59D;
-    --color-primary-600: #BCB18D;
-    --color-primary-700: #7D765E;
-    --color-primary-800: #5E5947;
-    --color-primary-900: #3F3B2F;
+    --color-danger-50: #FEF6F6;
+    --color-danger-100: #FDEEEE;
+    --color-danger-200: #FAD4D4;
+    --color-danger-300: #F7BBBB;
+    --color-danger-400: #F28787;
+    --color-danger-500: #EC5454;
+    --color-danger-600: #D44C4C;
+    --color-danger-700: #8E3232;
+    --color-danger-800: #6A2626;
+    --color-danger-900: #471919;
 
-    --color-secondary-50: #FEFEFD;
-    --color-secondary-100: #FEFDFC;
-    --color-secondary-200: #FBFBF6;
-    --color-secondary-300: #F9F8F1;
-    --color-secondary-400: #F5F2E7;
-    --color-secondary-500: #F0EDDC;
-    --color-secondary-600: #D8D5C6;
-    --color-secondary-700: #908E84;
-    --color-secondary-800: #6C6B63;
-    --color-secondary-900: #484742;
+    --color-primary-50: #FFFDF7;
+    --color-primary-100: #FFFBF0;
+    --color-primary-200: #FEF4D8;
+    --color-primary-300: #FEEEC1;
+    --color-primary-400: #FDE193;
+    --color-primary-500: #FCD464;
+    --color-primary-600: #E3BF5A;
+    --color-primary-700: #977F3C;
+    --color-primary-800: #715F2D;
+    --color-primary-900: #4C401E;
 
-    --color-accent-50: #FBF9F5;
-    --color-accent-100: #F6F2EB;
-    --color-accent-200: #E9E0CD;
-    --color-accent-300: #DCCDAF;
-    --color-accent-400: #C1A774;
-    --color-accent-500: #A78138;
-    --color-accent-600: #967432;
-    --color-accent-700: #644D22;
-    --color-accent-800: #4B3A19;
-    --color-accent-900: #322711;
+    --color-warning-50: #FEF8F5;
+    --color-warning-100: #FEF2EC;
+    --color-warning-200: #FCDECE;
+    --color-warning-300: #FBCBB1;
+    --color-warning-400: #F7A377;
+    --color-warning-500: #F47C3C;
+    --color-warning-600: #DC7036;
+    --color-warning-700: #924A24;
+    --color-warning-800: #6E381B;
+    --color-warning-900: #492512;
+
+    --color-secondary-50: #F4F6F7;
+    --color-secondary-100: #EAECEF;
+    --color-secondary-200: #CAD0D6;
+    --color-secondary-300: #ABB4BE;
+    --color-secondary-400: #6B7C8D;
+    --color-secondary-500: #2C445C;
+    --color-secondary-600: #283D53;
+    --color-secondary-700: #1A2937;
+    --color-secondary-800: #141F29;
+    --color-secondary-900: #0D141C;
 }

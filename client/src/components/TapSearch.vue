@@ -112,7 +112,7 @@ function adoptAnswer() {
             <h2 class="text-xl font-bold mb-2 text-center">原文内容</h2>
             <div v-for="(chunk, index) in chunks" :key="index" class="inline-flex">
                 <span class="cursor-pointer"
-                    :class="{ 'bg-accent-300': chunk.selected, 'hover:bg-primary-300': !chunk.selected }"
+                    :class="{ 'bg-warning-300': chunk.selected, 'hover:bg-primary-500': !chunk.selected }"
                     @click="selectChunk(index)">{{ chunk.text }}</span>
                 <span>{{ chunk.nextPunctuation }}</span>
                 <br v-if="chunk.nextPunctuation.includes('\n')">
@@ -124,7 +124,7 @@ function adoptAnswer() {
             <div v-else>
                 <div class="flex flex-wrap gap-1 text-lg justify-center">
                     <div v-for="(char, index) in chars" :key="index" class="p-1 rounded-md cursor-pointer"
-                        :class="{ 'bg-accent-300': char.selected, 'hover:bg-primary-300': !char.selected }"
+                        :class="{ 'bg-warning-300': char.selected, 'hover:bg-primary-500': !char.selected }"
                         @click="selectChar(index)">
                         {{ char.char }}
                     </div>
@@ -133,7 +133,7 @@ function adoptAnswer() {
         </section>
         <section class="flex justify-center gap-4">
             <button @click="queryStore.query"
-                class="rounded-lg text-lg cursor-pointer flex items-center gap-2 bg-accent-600 text-white px-4 py-2 hover:bg-accent-700">
+                class="rounded-lg text-lg cursor-pointer flex items-center gap-2 bg-warning-600 text-white px-4 py-2 hover:bg-warning-700">
                 <search-icon></search-icon>
                 <span>搜索</span>
             </button>

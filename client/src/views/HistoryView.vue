@@ -51,8 +51,8 @@ const select_new = () => {
 }
 
 const buttons = [
-  { text: '导出选中', click: export_selected, icon: ExportIcon, className: 'bg-accent-600 hover:bg-accent-700' },
-  { text: '删除选中', click: delete_selected, icon: DeleteIcon, className: 'bg-secondary-600 hover:bg-secondary-700' },
+  { text: '导出选中', click: export_selected, icon: ExportIcon, className: 'bg-primary-600 hover:bg-primary-700' },
+  { text: '删除选中', click: delete_selected, icon: DeleteIcon, className: 'bg-danger-600 hover:bg-danger-700' },
   { text: '全部选中', click: select_all, icon: CheckAllIcon, className: 'bg-primary-600 hover:bg-primary-700' },
   { text: '选择旧项', click: select_old, icon: SelectBackIcon, className: 'bg-secondary-600 hover:bg-secondary-700' },
   { text: '选择新项', click: select_new, icon: SelectForwardIcon, className: 'bg-primary-600 hover:bg-primary-700' },

@@ -24,27 +24,24 @@ const queryStore = useQueryStore();
     </div>
 </template>
 
-<style>
+<style lang="css">
+@reference "tailwindcss";
+
 .detail li:nth-child(1) {
-    display: none;
+    @apply hidden;
 }
 
 .detail .cino {
-    color: green;
-    font-weight: bolder;
-    font-size: 0.875rem;
+    @apply font-bold text-sm;
 }
 
 .detail .encs {
-    color: green;
-    font-size: 0.75rem;
-    font-family: Georgia, 'Times New Roman', Times, serif;
+    @apply text-amber-700 text-xs font-serif;
 }
 
 .detail .diczx1,
 .detail .diczx2,
 .detail .smcs {
-    color: rgb(87, 87, 87);
-    font-size: 0.875rem;
+    @apply text-stone-700 text-sm;
 }
 </style>
