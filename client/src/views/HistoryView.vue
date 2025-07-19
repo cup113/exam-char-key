@@ -72,10 +72,10 @@ const buttons = [
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       <div v-for="record in historyStore.history" :key="record.id"
         class="flex p-3 rounded-lg gap-1 hover:bg-gray-50">
-        <div class="flex items-center">
+        <div class="flex items-center w-full">
           <input type="checkbox" v-model="selectedRecords" :value="record"
             class="form-checkbox h-5 w-5 mr-2 text-blue-500" />
-          <div>
+          <div class="flex-grow">
             <div class="record-content flex-1 px-2 py-1">
               <div class="front-text text-gray-700" v-html="record.front"></div>
             </div>

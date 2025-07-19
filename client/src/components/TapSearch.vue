@@ -5,8 +5,19 @@ import { PopoverArrow, PopoverContent, PopoverClose, PopoverPortal, PopoverRoot,
 import SearchIcon from './icons/SearchIcon.vue';
 import AdoptIcon from './icons/AdoptIcon.vue';
 
-const PUNCTUATIONS = ['，', '。', '；', '：', '！', '？', '“', '”', '‘', '’', '\n'];
-const PUNCTUATIONS_REGEX = new RegExp(`[${PUNCTUATIONS.join('')}]`, 'g');
+const PUNCTUATIONS = {
+    NONSTOP: ['，', '；', '：', '“', "”", "‘", "’"],
+    STOP: ['。', '！', '？'],
+    getFull() {
+        return this.NONSTOP.join('') + this.STOP.join('');
+    }
+};
+const PUNCTUATIONS_REGEX = new RegExp(`[${PUNCTUATIONS.getFull()}]`, 'g');
+
+interface Paragraph {
+    leadingPunctuation: string;
+    chunks: Chunk[];
+}
 
 interface Chunk {
     text: string;
@@ -21,7 +32,7 @@ interface Character {
 }
 
 const queryStore = useQueryStore();
-const chunks = reactive(new Array<Chunk>());
+const paragraphs = reactive(new Array<Paragraph>());
 const chars = reactive(new Array<Character>);
 const aiAdoptSuggestions = computed(() => {
     return [...queryStore.aiThoughtStructured.answers, queryStore.aiInstantResponse];
@@ -29,28 +40,82 @@ const aiAdoptSuggestions = computed(() => {
 const adoptText = ref("");
 
 watch(() => queryStore.activeText, () => {
-    const result = new Array<Chunk>();
-    const text = queryStore.activeText.trim();
-    const defaultSelected = text.length <= 25; // If the text is short, the user probably wants to select the whole text.
-    for (let i = 0; i < text.length;) {
-        const subsequentText = text.slice(i);
-        let nextPunctuationIndex = subsequentText.search(PUNCTUATIONS_REGEX);
-        const textEnd = nextPunctuationIndex;
-        while (nextPunctuationIndex < subsequentText.length - 1 && subsequentText[nextPunctuationIndex + 1].match(PUNCTUATIONS_REGEX)) {
-            nextPunctuationIndex++;
+    const fullText = queryStore.activeText.trim();
+    paragraphs.splice(0, paragraphs.length);
+    fullText.split("\n").forEach(paragraphText => {
+        const result = new Array<Chunk>();
+        const text = paragraphText.trim();
+        if (!text) {
+            return; // Skip empty paragraphs
         }
-        if (nextPunctuationIndex === -1) {
-            result.push({ text: text.slice(i), start: i, nextPunctuation: '', selected: defaultSelected });
-            break;
+        let leadingPunctuation = "";
+        for (let i = 0; i < text.length;) {
+            if (i === 0) {
+                while (text[i].match(PUNCTUATIONS_REGEX)) {
+                    leadingPunctuation += text[i];
+                    i++;
+                }
+            }
+            const subsequentText = text.slice(i);
+            let nextPunctuationRelative = subsequentText.search(PUNCTUATIONS_REGEX);
+            if (nextPunctuationRelative === -1) {
+                result.push({ text: text.slice(i), start: i, nextPunctuation: '', selected: false });
+                break;
+            }
+            const textEndRelative = nextPunctuationRelative;
+            while (nextPunctuationRelative < subsequentText.length - 1 && subsequentText[nextPunctuationRelative + 1].match(PUNCTUATIONS_REGEX)) {
+                nextPunctuationRelative++;
+            }
+            const endRelative = nextPunctuationRelative + 1;
+            const chunkText = subsequentText.slice(0, textEndRelative);
+            const nextPunctuation = subsequentText.slice(textEndRelative, endRelative);
+            result.push({ text: chunkText, start: i, nextPunctuation, selected: false });
+            i += endRelative;
         }
-        const end = i + nextPunctuationIndex + 1;
-        const chunkText = subsequentText.slice(0, textEnd);
-        const nextPunctuation = subsequentText[nextPunctuationIndex];
-        result.push({ text: chunkText, start: i, nextPunctuation, selected: defaultSelected });
-        i = end;
-    }
-    chunks.splice(0, chunks.length, ...result);
+        if (result.length > 0) {
+            paragraphs.push({ leadingPunctuation, chunks: result });
+        }
+    });
 }, { immediate: true });
+
+watch(paragraphs, () => {
+    const ELLIPSE = "……";
+
+    queryStore.querySentence = "";
+    queryStore.queryIndex.clear();
+
+    const addPart = (part: string) => queryStore.querySentence += part;
+
+    paragraphs.forEach(paragraph => {
+        let lastChunk: Chunk | null = null;
+        paragraph.chunks.forEach((chunk, chunkIndex) => {
+            if (chunk.selected) {
+                if (chunkIndex === 0) {
+                    addPart(paragraph.leadingPunctuation ?? "");
+                } else if (lastChunk) {
+                    addPart(lastChunk.nextPunctuation);
+                }
+                addPart(chunk.text);
+                lastChunk = chunk;
+                if (chunkIndex === paragraph.chunks.length - 1) {
+                    addPart(chunk.nextPunctuation);
+                }
+            } else {
+                if (lastChunk) {
+                    if (PUNCTUATIONS.STOP.includes(lastChunk.nextPunctuation)) {
+                        addPart(lastChunk.nextPunctuation);
+                    }
+                    addPart(ELLIPSE);
+                    lastChunk = null;
+                }
+            }
+        });
+    });
+
+    if (queryStore.querySentence.endsWith(ELLIPSE)) {
+        queryStore.querySentence = queryStore.querySentence.slice(0, queryStore.querySentence.length - ELLIPSE.length);
+    }
+}, { immediate: true, deep: true });
 
 watch(() => queryStore.querySentence, () => {
     chars.splice(0, chars.length);
@@ -60,38 +125,32 @@ watch(() => queryStore.querySentence, () => {
     queryStore.queryIndex.clear();
 }, { immediate: true });
 
-function selectChunk(index: number) {
-    chunks[index].selected = !chunks[index].selected;
-    queryStore.querySentence = "";
-    let lastIndex = chunks.length;
-    for (let i = 0; i < chunks.length; i++) {
-        if (chunks[i].selected) {
-            if (lastIndex < i - 1) {
-                queryStore.querySentence += "……";
-            } else if (lastIndex === i - 1) {
-                queryStore.querySentence += chunks[lastIndex].nextPunctuation;
-            }
-            queryStore.querySentence += chunks[i].text;
-            lastIndex = i;
-            if (i === chunks.length - 1) {
-                queryStore.querySentence += chunks[i].nextPunctuation;
-            }
+watch(chars, () => {
+    queryStore.queryIndex.clear();
+
+    chars.forEach((char, index) => {
+        if (char.selected) {
+            queryStore.queryIndex.add(index);
         }
-    }
+    })
+}, { immediate: true, deep: true });
+
+function selectChunk(indexPara: number, indexChunk: number) {
+    const paragraph = paragraphs[indexPara];
+    const chunk = paragraph.chunks[indexChunk];
+    chunk.selected = !chunk.selected;
 }
 
 function clearChunkSelection() {
-    chunks.forEach(chunk => chunk.selected = false);
+    paragraphs.forEach(paragraph => paragraph.chunks.forEach(chunk => chunk.selected = false));
     queryStore.querySentence = "";
 }
 
 function selectChar(index: number) {
     if (chars[index].selected) {
         chars[index].selected = false;
-        queryStore.queryIndex.delete(index);
     } else {
         chars[index].selected = true;
-        queryStore.queryIndex.add(index);
     }
 }
 
@@ -102,26 +161,29 @@ function fillAdoptedAnswer(answer: string) {
 function adoptAnswer() {
     queryStore.adopt_answer(adoptText.value);
     adoptText.value = "";
+    clearChunkSelection();
 }
 
 </script>
 
 <template>
     <div class="max-w-2xs sm:max-w-md lg:max-w-3xl flex flex-col gap-4">
-        <section>
-            <h2 class="text-xl font-bold mb-2 text-center">原文内容</h2>
-            <div v-for="(chunk, index) in chunks" :key="index" class="inline-flex">
-                <span class="cursor-pointer"
-                    :class="{ 'bg-warning-300': chunk.selected, 'hover:bg-primary-500': !chunk.selected }"
-                    @click="selectChunk(index)">{{ chunk.text }}</span>
-                <span>{{ chunk.nextPunctuation }}</span>
-                <br v-if="chunk.nextPunctuation.includes('\n')">
+        <section class="flex flex-col items-center">
+            <h2 class="text-xl font-bold mb-2">原文内容</h2>
+            <div v-for="(para, paraIndex) in paragraphs" :key="paraIndex">
+                <div class="inline-block">{{ para.leadingPunctuation }}</div>
+                <div v-for="(chunk, index) in para.chunks" :key="index" class="inline-block">
+                    <span class="cursor-pointer"
+                        :class="{ 'bg-warning-300': chunk.selected, 'hover:bg-primary-500': !chunk.selected }"
+                        @click="selectChunk(paraIndex, index)">{{ chunk.text }}</span>
+                    <span>{{ chunk.nextPunctuation }}</span>
+                </div>
             </div>
         </section>
         <section>
-            <h2 class="text-xl font-bold mb-2 text-center">上下文</h2>
-            <div v-if="chunks.length === 0">暂无文本</div>
-            <div v-else>
+            <h2 class="text-xl font-bold mb-2 text-center">已选中</h2>
+            <div class="min-h-10" v-if="paragraphs.length === 0">暂无文本</div>
+            <div class="min-h-10" v-else>
                 <div class="flex flex-wrap gap-1 text-lg justify-center">
                     <div v-for="(char, index) in chars" :key="index" class="p-1 rounded-md cursor-pointer"
                         :class="{ 'bg-warning-300': char.selected, 'hover:bg-primary-500': !char.selected }"
@@ -149,10 +211,12 @@ function adoptAnswer() {
                         <div class="flex flex-col gap-2">
                             <label class="w-full flex px-2 gap-4 items-center">
                                 <strong>{{ queryStore.queryWord }}</strong>
-                                <input type="text" class="min-w-20 flex-grow border rounded-md text-center p-1" v-model="adoptText">
+                                <input type="text" class="min-w-20 flex-grow border rounded-md text-center p-1"
+                                    v-model="adoptText">
                                 <popover-close as-child>
                                     <button
-                                        class="w-16 text-center p-1 rounded-lg bg-primary-600 text-white hover:bg-primary-700" @click="adoptAnswer">采纳</button>
+                                        class="w-16 text-center p-1 rounded-lg bg-primary-600 text-white hover:bg-primary-700"
+                                        @click="adoptAnswer">采纳</button>
                                 </popover-close>
                             </label>
                             <div class="flex flex-wrap gap-2 justify-around">

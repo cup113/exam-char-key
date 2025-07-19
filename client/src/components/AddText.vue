@@ -12,7 +12,9 @@ function handleAddText() {
     const trimmedText = inputText.value.trim();
     if (trimmedText) {
         queryStore.activeText = trimmedText;
-        queryStore.searchOriginal();
+        if (queryStore.searchTarget !== 'none') {
+            queryStore.searchOriginal();
+        }
     }
 }
 </script>
