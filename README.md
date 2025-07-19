@@ -1,28 +1,27 @@
 # Exam Char Key
 
-A comprehensive Chinese language learning platform that specializes in ancient Chinese text analysis, character explanations, and AI-powered study assistance.
+A comprehensive Chinese language learning platform that specializes in **ancient Chinese character explanations**, and AI-powered study assistance.
 
 ## Features
+
+**Note**: This application currently requires an API key from Alibaba Cloud's DashScope service to access the Qwen AI models. Please ensure you have the necessary credentials before running the application. This might be configurable later.
 
 ### 🎯 Core Functionality
 
 - **AI-Powered Quick Answers**: Get instant responses to Chinese language questions
 - **Deep Text Analysis**: Comprehensive analysis of ancient Chinese texts with detailed annotations
 - **Character Dictionary Integration**: Real-time character explanations and definitions from ZDIC
-- **Passage Annotation**: Interactive text annotation system for ancient Chinese literature
-- **Search & Query System**: Advanced search functionality for Chinese characters and texts
+- **Textbook Integration**: Verbatim related character definitions in textbook
 
 ### 🤖 AI Capabilities
 
-- **Multiple AI Models**: Integration with Qwen models for different use cases
-- **Ancient Text Classification**: Automatic detection of classical Chinese texts
+- **Multiple AI Models**: Integration with Qwen models, both official (for general tasks) and fine-tuned model (for explanations)
 - **Contextual Understanding**: AI models trained specifically for Chinese language nuances
 - **Real-time Processing**: Streaming AI responses for better user experience
 
 ### 📚 Educational Tools
 
-- **Textbook Integration**: Built-in textbook content for structured learning
-- **History Tracking**: Keep track of your queries and learning progress
+- **History Tracking**: Keep track of your queries and learning progress, with export functionality for future revision
 - **Interactive Interface**: Modern Vue.js frontend with responsive design
 
 ## Technology Stack
@@ -34,31 +33,24 @@ A comprehensive Chinese language learning platform that specializes in ancient C
 - **TailwindCSS** for styling
 - **Pinia** for state management
 - **Vue Router** for navigation
-- **TipTap** for rich text editing
 - **Reka UI** for component library
+- **pnpm** for package management
 
 ### Backend
 
 - **FastAPI** for high-performance API
-- **Python 3.8+**
+- **Python 3.9+**
 - **OpenAI API** integration (Qwen models)
-- **BeautifulSoup** for web scraping
-- **Uvicorn** ASGI server
-
-### Development & Deployment
-
 - **Docker** & **Docker Compose** for containerization
-- **pnpm** for package management
-- **TypeScript** for type safety
 
 ## Installation
 
 ### Prerequisites
 
-- Python 3.8+
-- Node.js 16+
+- Python 3.9+
+- Node.js 18+
 - pnpm
-- Docker (optional)
+- Docker (or deployment tools that support Docker)
 
 ### Quick Start with Docker
 
@@ -76,7 +68,7 @@ A comprehensive Chinese language learning platform that specializes in ancient C
    echo "API_KEY=your_openai_api_key_here" > .env
    ```
 
-3. **Run with Docker Compose**
+3. **Run with Docker Compose** (alternatively, deploy it to [Coolify
 
    ```bash
    docker-compose up --build
@@ -123,7 +115,6 @@ Create a `.env` file in the root directory:
 
 ```env
 API_KEY=your_openai_api_key_here
-APP_ENV=development
 ```
 
 ### API Configuration
@@ -145,35 +136,6 @@ The application uses Alibaba Cloud's DashScope API (Qwen models). Configure your
 3. **Character Lookup**: Click on characters for detailed dictionary definitions
 4. **Deep Analysis**: Access comprehensive annotations and contextual information
 5. **History Review**: Track your learning progress through the history feature
-
-### Features Overview
-
-#### Add Text Component
-
-- Input Chinese text for analysis
-- Support for both modern and ancient Chinese
-
-#### Quick Answer
-
-- Instant AI responses to language questions
-- Fast turbo model for immediate feedback
-
-#### Deep Answer
-
-- Comprehensive analysis using advanced AI models
-- Detailed explanations with cultural and historical context
-
-#### Character Dictionary (ZDIC Integration)
-
-- Real-time character definitions
-- Etymology and usage examples
-- Pronunciation guides
-
-#### Passage Annotation
-
-- Interactive text highlighting
-- Contextual annotations
-- Save and review annotated passages
 
 ## Development
 
@@ -223,16 +185,14 @@ python run_dev.py
 ### API Endpoints
 
 - `GET /` - Serve frontend application
-- `POST /ai/quick` - Quick AI responses
-- `POST /ai/deep` - Deep analysis with advanced models
-- `GET /zdic/{character}` - Character dictionary lookup
-- `POST /annotate` - Text annotation functionality
+- `POST /api/query` - Quick & Deep AI responses & ZDIC lookup
+- `POST /api/search-original` - Search original context of given excerpts
 
 ## Training & AI Models
 
 The project includes training scripts for:
 
-- **Ancient Text Classification**: Automatically detect classical Chinese texts
+- **Ancient Text Classification**: Automatically detect classical Chinese texts, extracting them from Chinese textbooks.
 - **Character Frequency Analysis**: Statistical analysis of character usage
 - **Dataset Generation**: Create training data from textbooks and literature
 
@@ -244,31 +204,15 @@ python train/frequency_statistics.py  # Analyze character frequencies
 python train/dataset_generator.py     # Generate training datasets
 ```
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
 ### Development Guidelines
 
 - Follow TypeScript best practices for frontend code
 - Use Python type hints in backend code
-- Write tests for new features
 - Maintain consistent code formatting
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Support
 
-For support, questions, or feature requests:
-
-- Create an issue on GitHub
-- Contact the development team
+For support, questions, or feature requests: create an issue on GitHub, or contact the development team
 
 ## Acknowledgments
 
@@ -276,7 +220,3 @@ For support, questions, or feature requests:
 - **ZDIC** for comprehensive Chinese character dictionary
 - **Vue.js** and **FastAPI** communities for excellent frameworks
 - Contributors to the Chinese language learning community
-
----
-
-**Note**: This application requires an API key from Alibaba Cloud's DashScope service to access the Qwen AI models. Please ensure you have the necessary credentials before running the application.
