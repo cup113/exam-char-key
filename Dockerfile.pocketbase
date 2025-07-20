@@ -15,4 +15,4 @@ WORKDIR /db
 
 EXPOSE 4123
 
-CMD ["./db/pocketbase", "serve", "--http=0.0.0.0:4123"]
+CMD ["/db/pocketbase", "serve", "--http=0.0.0.0:4123"]
