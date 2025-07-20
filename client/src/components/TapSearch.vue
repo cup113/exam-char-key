@@ -41,6 +41,7 @@ const adoptText = ref("");
 
 watch(() => queryStore.activeText, () => {
     const fullText = queryStore.activeText.trim();
+    const defaultSelected = fullText.length < 25;
     paragraphs.splice(0, paragraphs.length);
     fullText.split("\n").forEach(paragraphText => {
         const result = new Array<Chunk>();
@@ -59,7 +60,7 @@ watch(() => queryStore.activeText, () => {
             const subsequentText = text.slice(i);
             let nextPunctuationRelative = subsequentText.search(PUNCTUATIONS_REGEX);
             if (nextPunctuationRelative === -1) {
-                result.push({ text: text.slice(i), start: i, nextPunctuation: '', selected: false });
+                result.push({ text: text.slice(i), start: i, nextPunctuation: '', selected: defaultSelected });
                 break;
             }
             const textEndRelative = nextPunctuationRelative;
@@ -69,7 +70,7 @@ watch(() => queryStore.activeText, () => {
             const endRelative = nextPunctuationRelative + 1;
             const chunkText = subsequentText.slice(0, textEndRelative);
             const nextPunctuation = subsequentText.slice(textEndRelative, endRelative);
-            result.push({ text: chunkText, start: i, nextPunctuation, selected: false });
+            result.push({ text: chunkText, start: i, nextPunctuation, selected: defaultSelected });
             i += endRelative;
         }
         if (result.length > 0) {
@@ -94,6 +95,8 @@ watch(paragraphs, () => {
                     addPart(paragraph.leadingPunctuation ?? "");
                 } else if (lastChunk) {
                     addPart(lastChunk.nextPunctuation);
+                } else if (queryStore.querySentence.length !== 0) {
+                    addPart(ELLIPSE); // previous paragraphs selected, but this chunk is not the first in this paragraph.
                 }
                 addPart(chunk.text);
                 lastChunk = chunk;
@@ -210,7 +213,7 @@ function adoptAnswer() {
                     <popover-content side="top" class="bg-white shadow-sm w-2xs px-2 py-2">
                         <div class="flex flex-col gap-2">
                             <label class="w-full flex px-2 gap-4 items-center">
-                                <strong>{{ queryStore.queryWord }}</strong>
+                                <strong class="w-12 text-center">{{ queryStore.queryWord }}</strong>
                                 <input type="text" class="min-w-20 flex-grow border rounded-md text-center p-1"
                                     v-model="adoptText">
                                 <popover-close as-child>
@@ -219,9 +222,9 @@ function adoptAnswer() {
                                         @click="adoptAnswer">采纳</button>
                                 </popover-close>
                             </label>
-                            <div class="flex flex-wrap gap-2 justify-around">
+                            <div class="grid grid-cols-2 justify-around">
                                 <button v-for="(suggestion, index) in aiAdoptSuggestions" :key="index"
-                                    class="bg-primary-200 hover:bg-primary-300 rounded px-2 py-1 m-1 cursor-pointer"
+                                    class="bg-primary-200 hover:bg-primary-300 p-1 border border-primary-500 cursor-pointer"
                                     @click="fillAdoptedAnswer(suggestion)">
                                     {{ suggestion }}</button>
                             </div>
