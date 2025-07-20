@@ -1,12 +1,29 @@
 import { PassageAnnotation, type ResponseChunk } from './types';
 import type { FrontendHandler } from './types';
 
+export function stress_keyword(sentence: string, keyword: string): string {
+    const indices = new Set<number>();
+    let start = 0;
+    while (true) {
+        start = sentence.indexOf(keyword, start);
+        if (start === -1) {
+            break;
+        }
+        for (let i = 0; i < keyword.length; i++) {
+            indices.add(start + i);
+        }
+        start += keyword.length;
+    }
+    return format_front(sentence, indices);
+}
+
 export function format_front(sentence: string, indices: Set<number>): string {
     const chars = Array.from(sentence);
     Array.from(indices).reverse().forEach(i => {
         chars[i] = `<strong>${chars[i]}</strong>`;
     });
-    return chars.join('');
+    const DUPLICATE_TAG_REGEX = /\<\/strong\>\<strong\>/g
+    return chars.join('').replace(DUPLICATE_TAG_REGEX, '');
 }
 
 export function update_from_query(responseChunk: ResponseChunk, frontendHandler: FrontendHandler) {

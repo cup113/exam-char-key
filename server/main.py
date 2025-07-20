@@ -4,13 +4,17 @@ from fastapi.staticfiles import StaticFiles
 from openai import AsyncOpenAI
 from openai import AsyncStream
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionChunk
-from json import load, dumps
+from json import load, loads, dumps
 from os import getenv
 from httpx import AsyncClient
 from bs4 import BeautifulSoup
 from urllib.parse import quote
 from typing import TypedDict, Literal
 from dataclasses import dataclass
+from dataclasses_json import dataclass_json
+from pocketbase import PocketBase
+from pocketbase.models.errors import PocketBaseNotFoundError
+from logging import info
 
 
 @dataclass
@@ -91,14 +95,17 @@ class CompletionService:
         model: AiModel,
         messages: list[ChatCompletionMessageParam],
         temperature: float,
-        search: Literal['no', 'optional', 'force'],
+        search: Literal["no", "optional", "force"],
     ):
-        if search == 'no':
-            extra_body = { "enable_search": False }
-        elif search == 'optional':
-            extra_body = { "enable_search": True }
-        elif search == 'force':
-            extra_body: "dict[str, bool | dict[str, bool]]" = { "enable_search": True, "search_options": { "forced_search": True } }
+        if search == "no":
+            extra_body = {"enable_search": False}
+        elif search == "optional":
+            extra_body = {"enable_search": True}
+        elif search == "force":
+            extra_body: "dict[str, bool | dict[str, bool]]" = {
+                "enable_search": True,
+                "search_options": {"forced_search": True},
+            }
         if model.thinking:
             extra_body["enable_thinking"] = True
         return await self.client.chat.completions.create(
@@ -148,7 +155,7 @@ class CompletionService:
                 {"role": "user", "content": f"请解释古文“{context}”中，“{q}”的含义。"},
             ],
             temperature=0.4,
-            search='no',
+            search="no",
         )
         async for chunk in self._process_response(
             response, "ai-instant", Config.WYW_MODEL
@@ -166,7 +173,7 @@ class CompletionService:
                 },
             ],
             temperature=0.4,
-            search='optional',
+            search="optional",
         )
         async for chunk in self._process_response(
             response, "ai-thought", Config.GENERAL_MODEL
@@ -192,7 +199,7 @@ class CompletionService:
                 },
             ],
             temperature=0,
-            search='force',
+            search="force",
         )
 
         async for chunk in self._process_response(
@@ -217,6 +224,50 @@ async def instant_query_generator(q: str, context: str):
         yield chunk
 
 
+class PocketBaseService:
+    def __init__(self):
+        self.pb = PocketBase("http://localhost:4123")
+        self.zdic_cache = self.pb.collection("zdicCache")
+
+    @classmethod
+    def sanitize(cls, word: str):
+        FORBIDDEN_CHARACTERS = {"'", '"'}
+        return "".join(c for c in word if c not in FORBIDDEN_CHARACTERS)
+
+    async def insert_cache(self, query: str, content: str):
+        size_kb = len(bytes(content, encoding="utf-8")) / 1024
+        info(f"ZDic Cache created ({query}, {size_kb:.2f} KB)")
+        return await self.zdic_cache.create(
+            params={
+                "query": query,
+                "content": content,
+            }
+        )
+
+    async def retrieve_cache(self, query: str):
+        try:
+            cache = await self.zdic_cache.get_first(
+                options={"filter": f"query='{query}'"}
+            )
+            info(f"ZDic Cache Retrieved ({query})")
+            return cache
+        except PocketBaseNotFoundError:
+            return None
+
+
+@dataclass_json
+@dataclass
+class ZDicExplanations:
+    basic: list[str]
+    detailed: list[str]
+    phrase: list[str]
+
+    @staticmethod
+    def from_dict(_d: dict[str, list[str]]) -> "ZDicExplanations": ...
+
+    def to_dict(self) -> dict[str, list[str]]: ...
+
+
 class ZDicResult(TypedDict):
     basic_explanations: list[str]
     detailed_explanations: list[str]
@@ -228,6 +279,22 @@ class ZDicService:
     def __init__(self):
         self.zdic_url = Config.ZDIC_URL
 
+    async def get_result(self, word: str) -> ZDicResult | None:
+        pocketbase = PocketBaseService()
+        cache = await pocketbase.retrieve_cache(word)
+
+        if cache is None:
+            response = await self.request_zdic(word)
+            explanations = self.parse_zdic_response(response)
+            await pocketbase.insert_cache(word, dumps(explanations.to_dict(), ensure_ascii=False))
+        else:
+            content = cache.get("content")
+            if content is None:
+                return None
+            explanations = ZDicExplanations.from_dict(loads(content))
+
+        return self.get_final_response(explanations)
+
     async def request_zdic(self, word: str):
         async with AsyncClient() as client:
             response = await client.get(self.zdic_url + quote(word), timeout=10)
@@ -235,22 +302,30 @@ class ZDicService:
                 return response.text
             return f"Error {response.status_code}: {response.text}"
 
-    def parse_zdic_result(self, zdic_result: str) -> ZDicResult:
-        soup = BeautifulSoup(zdic_result, "html.parser")
-        basic_explanations = [
+    def parse_zdic_response(self, zdic_response: str) -> ZDicExplanations:
+        soup = BeautifulSoup(zdic_response, "html.parser")
+
+        basic = [
             li.get_text()
             for li in soup.select(".zdict div.content.definitions.jnr>ol>li")  # type: ignore
         ]
-        detailed_explanations_prettified = [
-            p.prettify(formatter="html5")
-            for p in soup.select("#xxjs div.content.definitions.xnr>p")  # type: ignore
-        ]
-        detailed_explanations = [
+        detailed = [
             p.get_text() for p in soup.select("#xxjs div.content.definitions.xnr>p")  # type: ignore
         ]
-        phrase_explanations = [
+        phrase = [
             p.get_text() for p in soup.select(".nr-box div.content.definitions .jnr>p")  # type: ignore
         ]
+
+        return ZDicExplanations(
+            basic=basic,
+            detailed=detailed,
+            phrase=phrase
+        )
+
+    def get_final_response(self, explanations: ZDicExplanations) -> ZDicResult:
+        basic_explanations = explanations.basic
+        detailed_explanations = explanations.detailed
+        phrase_explanations = explanations.phrase
 
         prompt_basic = (
             (
@@ -264,24 +339,12 @@ class ZDicService:
             else ""
         )
         prompt_detailed = (
-            (
-                "【详细解释】\n"
-                + "\n".join(
-                    f"{i + 1}. {exp}" for i, exp in enumerate(detailed_explanations)
-                )
-                + "\n"
-            )
+            ("【详细解释】\n" + "\n".join(detailed_explanations) + "\n")
             if detailed_explanations
             else ""
         )
         prompt_phrase = (
-            (
-                "【词语解释】\n"
-                + "\n".join(
-                    f"{i + 1}. {exp}" for i, exp in enumerate(phrase_explanations)
-                )
-                + "\n"
-            )
+            ("【词语解释】\n" + "\n".join(phrase_explanations) + "\n")
             if phrase_explanations
             else ""
         )
@@ -295,7 +358,7 @@ class ZDicService:
 
         return {
             "basic_explanations": basic_explanations,
-            "detailed_explanations": detailed_explanations_prettified,
+            "detailed_explanations": detailed_explanations,
             "phrase_explanations": phrase_explanations,
             "zdic_prompt": zdic_prompt,
         }
@@ -306,20 +369,22 @@ zdic_service = ZDicService()
 
 async def thought_query_generator(q: str, context: str):
     try:
-        zdic_result = await zdic_service.request_zdic(q)
-        zdic_data = zdic_service.parse_zdic_result(zdic_result)
+        zdic_result = await zdic_service.get_result(q)
+
+        if zdic_result is None:
+            raise ValueError("Zdic unavailable.")
 
         yield dumps(
             {
                 "type": "zdic",
                 "result": {
-                    "basic_explanations": zdic_data["basic_explanations"],
-                    "detailed_explanations": zdic_data["detailed_explanations"],
-                    "phrase_explanations": zdic_data["phrase_explanations"],
+                    "basic_explanations": zdic_result["basic_explanations"],
+                    "detailed_explanations": zdic_result["detailed_explanations"],
+                    "phrase_explanations": zdic_result["phrase_explanations"],
                 },
             }
         ) + "\n"
-        zdic_prompt = zdic_data["zdic_prompt"]
+        zdic_prompt = zdic_result["zdic_prompt"]
     except Exception as err:
         print(err)
         zdic_prompt = ""

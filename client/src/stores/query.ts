@@ -16,6 +16,7 @@ export const useQueryStore = defineStore("query", () => {
     const queryWord = computed(() => {
         return Array.from(queryIndex.value).sort((a, b) => a - b).map(i => querySentence.value[i]).join('');
     });
+    const displayWord = ref("");
 
     const textAnnotations = ref(new Array<PassageAnnotation>());
     const aiInstantResponse = ref("");
@@ -29,6 +30,7 @@ export const useQueryStore = defineStore("query", () => {
 
     async function query() {
         currentRecorded.value = false;
+        displayWord.value = queryWord.value;
         await Promise.all([
             queryInstant(queryWord.value, querySentence.value, getFrontendHandler()),
             queryThought(queryWord.value, querySentence.value, getFrontendHandler()),
@@ -72,7 +74,7 @@ export const useQueryStore = defineStore("query", () => {
         const newRecord: HistoryRecord = {
             id: nanoid(),
             level: "A",
-            front: format_front(querySentence.value, queryIndex.value),
+            front: format_front(querySentence.value, queryIndex.value), // TODO fix stress
             back: answer,
             additions: [],
             createdAt: new Date().toLocaleString(),
@@ -86,6 +88,7 @@ export const useQueryStore = defineStore("query", () => {
         searchTarget,
         querySentence,
         queryWord,
+        displayWord,
         queryIndex,
         textAnnotations,
         aiInstantResponse,

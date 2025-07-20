@@ -1,10 +1,13 @@
 __pycache__
-Qwen-1_8B
+.vscode
+.env
+
 train/result/**/*
 train/textbooks/*.pdf
-.vscode
 train/chinese-gushiwen/**/*.jsonl
-.env
 train/textbook*.json
 train/word-frequency.json
 train/*.jsonl
+
+db/pocketbase*
+db/pb_data

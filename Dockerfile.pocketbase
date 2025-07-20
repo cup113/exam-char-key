@@ -1,0 +1,17 @@
+FROM alpine:latest
+
+RUN apk add --no-cache curl unzip
+
+WORKDIR /tmp
+
+RUN curl -L -o pocketbase.zip https://github.com/pocketbase/pocketbase/releases/download/v0.29.0/pocketbase_0.29.0_linux_amd64.zip && \
+    unzip pocketbase.zip && \
+    mv pocketbase /db/ && \
+    chmod +x /db/pocketbase && \
+    rm pocketbase.zip
+
+WORKDIR /db
+
+EXPOSE 4123
+
+CMD ["./db/pocketbase", "serve", "--http=0.0.0.0:4123"]
