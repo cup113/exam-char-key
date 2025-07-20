@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { useLocalStorage } from '@vueuse/core';
-import { computed, ref, type Ref } from 'vue';
+import { computed, reactive, ref, type Ref } from 'vue';
 import { nanoid } from 'nanoid';
 import { PassageAnnotation, SearchTarget, type HistoryRecord, type FrontendHandler } from './types';
 import { format_front, parse_ai_thought_response } from './utils';
@@ -11,12 +11,16 @@ import { useSettingsStore } from './settings';
 export const useQueryStore = defineStore("query", () => {
     const activeText = useLocalStorage("EC_activeText", "");
     const searchTarget = useLocalStorage<SearchTarget>("EC_searchTarget", SearchTarget.None);
-    const querySentence = useLocalStorage("EC_querySentence", "");
+    const querySentence = ref("");
     const queryIndex = ref(new Set<number>());
     const queryWord = computed(() => {
         return Array.from(queryIndex.value).sort((a, b) => a - b).map(i => querySentence.value[i]).join('');
     });
-    const displayWord = ref("");
+    const lastQuery = reactive({
+        sentence: '',
+        index: new Set<number>(),
+        word: '',
+    });
 
     const textAnnotations = ref(new Array<PassageAnnotation>());
     const aiInstantResponse = ref("");
@@ -30,7 +34,10 @@ export const useQueryStore = defineStore("query", () => {
 
     async function query() {
         currentRecorded.value = false;
-        displayWord.value = queryWord.value;
+        lastQuery.sentence = querySentence.value;
+        lastQuery.word = queryWord.value;
+        lastQuery.index = queryIndex.value;
+
         await Promise.all([
             queryInstant(queryWord.value, querySentence.value, getFrontendHandler()),
             queryThought(queryWord.value, querySentence.value, getFrontendHandler()),
@@ -74,7 +81,7 @@ export const useQueryStore = defineStore("query", () => {
         const newRecord: HistoryRecord = {
             id: nanoid(),
             level: "A",
-            front: format_front(querySentence.value, queryIndex.value), // TODO fix stress
+            front: format_front(lastQuery.sentence, lastQuery.index),
             back: answer,
             additions: [],
             createdAt: new Date().toLocaleString(),
@@ -88,7 +95,7 @@ export const useQueryStore = defineStore("query", () => {
         searchTarget,
         querySentence,
         queryWord,
-        displayWord,
+        lastQuery,
         queryIndex,
         textAnnotations,
         aiInstantResponse,

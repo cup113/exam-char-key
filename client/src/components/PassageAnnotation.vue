@@ -14,15 +14,15 @@ const passage = computed(() => {
 });
 
 const processedKeyword = computed(() => {
-    return stress_keyword(passage.value.get_keyword(), queryStore.displayWord);
+    return stress_keyword(passage.value.get_keyword(), queryStore.lastQuery.word);
 });
 
 const processedContext = computed(() => {
-    return stress_keyword(passage.value.context, queryStore.displayWord)
+    return stress_keyword(passage.value.context, queryStore.lastQuery.word);
 });
 
 const processedDetail = computed(() => {
-    return stress_keyword(passage.value.core_detail, queryStore.displayWord)
+    return stress_keyword(passage.value.core_detail, queryStore.lastQuery.word);
 });
 
 </script>

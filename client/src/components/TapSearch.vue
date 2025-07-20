@@ -213,7 +213,7 @@ function adoptAnswer() {
                     <popover-content side="top" class="bg-white shadow-sm w-2xs px-2 py-2">
                         <div class="flex flex-col gap-2">
                             <label class="w-full flex px-2 gap-4 items-center">
-                                <strong class="w-12 text-center">{{ queryStore.queryWord }}</strong>
+                                <strong class="w-12 text-center">{{ queryStore.lastQuery.word }}</strong>
                                 <input type="text" class="min-w-20 flex-grow border rounded-md text-center p-1"
                                     v-model="adoptText">
                                 <popover-close as-child>

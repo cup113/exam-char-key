@@ -14,7 +14,7 @@ const showHeading = computed(() => {
 })
 
 function format_basic(item: string) {
-    return stress_keyword(item.replace(/[\~～]/g, queryStore.displayWord), queryStore.displayWord)
+    return stress_keyword(item.replace(/[\~～]/g, queryStore.lastQuery.word), queryStore.lastQuery.word)
 }
 
 interface ZDicDetail {
@@ -63,8 +63,11 @@ function process_detail(lines: string[]) {
                 return;
             }
             activeDetail.senses[activeDetail.senses.length - 1].examples.push(
-                stress_keyword(line, queryStore.displayWord)
+                stress_keyword(line, queryStore.lastQuery.word)
             );
+        } else if (activeDetail?.partOfSpeech?.length === 0 && line.length <= 2) {
+            // some figure-of-speech is not wrapped with 〈〉
+            activeDetail.partOfSpeech = line;
         } else {
             if (!activeDetail) {
                 console.warn("Senses detected while activeDetail is null.");
@@ -83,13 +86,13 @@ function process_detail(lines: string[]) {
                     return;
                 }
                 activeDetail.senses[activeDetail.senses.length - 1].examples.push(
-                    stress_keyword(content, queryStore.displayWord)
+                    stress_keyword(content, queryStore.lastQuery.word)
                 );
                 return;
             }
-            content = content.replace(/^[\u4e00-\u9fa5\;“”，。]+/, s => `<strong>${s}</strong>`)
+            content = content.replace(/^[\u4e00-\u9fa5\;“”，。、]+/, s => `<strong>${s}</strong>`)
             content = content.replace(/\[[a-zA-Z\s,;]+\]/, s => `<span class="zdic-english">${s}</span>`);
-            content = content.replace(/如\:(.*)/, s => `<span class="zdic-example">${stress_keyword(s, queryStore.displayWord)}</span>`);
+            content = content.replace(/如\:(.*)/, s => `<span class="zdic-example">${stress_keyword(s, queryStore.lastQuery.word)}</span>`);
             activeDetail.senses.push({
                 content,
                 examples: [],
