@@ -22,7 +22,7 @@ const queryStore = useQueryStore();
         </div>
         <collapsible-root>
             <collapsible-trigger class="w-full p-1 bg-secondary-200 rounded-lg">
-                深度思考内容 ({{ queryStore.aiThoughtResponse.length }} 字符)
+                深度思考内容 ({{ queryStore.aiThoughtStructured.think.length }} 字符)
             </collapsible-trigger>
             <collapsible-content class="py-2">
                 <p class="text-secondary-400 text-sm indent-4" v-show="queryStore.aiThoughtStructured.think">

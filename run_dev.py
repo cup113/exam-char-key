@@ -24,9 +24,14 @@ def start_backend():
     env_path = os.path.join(os.getcwd(), ".env")
     if os.path.exists(env_path):
         load_dotenv(dotenv_path=env_path)
+    env = os.environ.copy()
+    env.update({
+        "POCKETBASE_URL": "http://localhost:4123",
+    })
     return subprocess.Popen(
         ["uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "4122"],
         shell=True,
+        env=env,
     )
 
 

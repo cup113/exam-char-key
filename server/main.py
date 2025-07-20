@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from pocketbase import PocketBase
 from pocketbase.models.errors import PocketBaseNotFoundError
-from logging import info
+from logging import info # TODO integrate login
 
 
 @dataclass
@@ -226,7 +226,10 @@ async def instant_query_generator(q: str, context: str):
 
 class PocketBaseService:
     def __init__(self):
-        self.pb = PocketBase("http://localhost:4123")
+        pocketbase_url = getenv("POCKETBASE_URL")
+        if pocketbase_url is None:
+            raise KeyError("POCKETBASE_URL not set.")
+        self.pb = PocketBase(pocketbase_url)
         self.zdic_cache = self.pb.collection("zdicCache")
 
     @classmethod
