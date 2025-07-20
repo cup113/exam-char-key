@@ -1,12 +1,12 @@
 FROM alpine:latest
 
-RUN apk add --no-cache curl unzip
+RUN apk add --no-cache curl unzip && mkdir -p /db
+COPY db/pb_migrations /db/pb_migrations
 
 WORKDIR /tmp
 
 RUN curl -L -o pocketbase.zip https://github.com/pocketbase/pocketbase/releases/download/v0.29.0/pocketbase_0.29.0_linux_amd64.zip && \
     unzip pocketbase.zip && \
-    mkdir -p /db && \
     mv pocketbase /db/ && \
     chmod +x /db/pocketbase && \
     rm pocketbase.zip
