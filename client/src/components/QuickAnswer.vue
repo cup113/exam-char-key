@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useQueryStore } from '@/stores/query';
-import AiIcon from './icons/AIIcon.vue';
+import AiIcon from './icons/AiIcon.vue';
 import FlashIcon from './icons/FlashIcon.vue';
 const queryStore = useQueryStore();
 </script>

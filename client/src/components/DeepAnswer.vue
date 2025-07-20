@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useQueryStore } from '@/stores/query';
-import AiIcon from './icons/AIIcon.vue';
+import AiIcon from './icons/AiIcon.vue';
 import BrainIcon from './icons/BrainIcon.vue';
 import { CollapsibleRoot, CollapsibleTrigger, CollapsibleContent } from 'reka-ui';
 const queryStore = useQueryStore();
