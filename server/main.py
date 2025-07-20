@@ -14,7 +14,20 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from pocketbase import PocketBase
 from pocketbase.models.errors import PocketBaseNotFoundError
-from logging import info # TODO integrate login
+from logging import getLogger, INFO, StreamHandler, FileHandler, Formatter
+
+
+logger = getLogger("main")
+logger.setLevel(INFO)
+handler1 = StreamHandler()
+handler2 = FileHandler(filename="./log.log")
+formatter = Formatter(
+    "%(levelname)s %(module)s:%(lineno)d %(message)s"
+)
+handler1.setFormatter(formatter)
+handler2.setFormatter(formatter)
+logger.addHandler(handler1)
+logger.addHandler(handler2)
 
 
 @dataclass
@@ -239,7 +252,7 @@ class PocketBaseService:
 
     async def insert_cache(self, query: str, content: str):
         size_kb = len(bytes(content, encoding="utf-8")) / 1024
-        info(f"ZDic Cache created ({query}, {size_kb:.2f} KB)")
+        logger.info(f"ZDic Cache created ({query}, {size_kb:.2f} KB)")
         return await self.zdic_cache.create(
             params={
                 "query": query,
@@ -252,7 +265,7 @@ class PocketBaseService:
             cache = await self.zdic_cache.get_first(
                 options={"filter": f"query='{query}'"}
             )
-            info(f"ZDic Cache Retrieved ({query})")
+            logger.info(f"ZDic Cache Retrieved ({query})")
             return cache
         except PocketBaseNotFoundError:
             return None
@@ -389,7 +402,7 @@ async def thought_query_generator(q: str, context: str):
         ) + "\n"
         zdic_prompt = zdic_result["zdic_prompt"]
     except Exception as err:
-        print(err)
+        logger.warning(err)
         zdic_prompt = ""
         yield dumps(
             {
