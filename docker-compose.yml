@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  web:
+  fastapi:
     build:
       context: .
       dockerfile: Dockerfile.fastapi
@@ -9,12 +9,12 @@ services:
       - "4122:4122"
     restart: always
     depends_on:
-      - db
+      - pocketbase
     environment:
       - APP_ENV=production
       - POCKETBASE_URL=http://pocketbase:4123
 
-  db:
+  pocketbase:
     build:
       context: .
       dockerfile: Dockerfile.pocketbase
