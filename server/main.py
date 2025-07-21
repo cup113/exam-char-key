@@ -259,7 +259,7 @@ async def thought_query_generator(q: str, context: str):
 
 @app.get("/api/query")
 async def query(
-    q: str = Query(..., description="The query word", max_length=100),
+    q: str = Query(..., description="The query word", min_length=1, max_length=100),
     context: str = Query(..., description="The context sentence", max_length=1000),
     instant: bool = Query(True, description="Whether to use instant mode"),
 ):

@@ -197,8 +197,8 @@ function adoptAnswer() {
             </div>
         </section>
         <section class="flex justify-center gap-4">
-            <button @click="queryStore.query"
-                class="rounded-lg text-lg cursor-pointer flex items-center gap-2 bg-warning-600 text-white px-4 py-2 hover:bg-warning-700">
+            <button @click="queryStore.query" :disabled="!queryStore.queryWord"
+                class="rounded-lg text-lg cursor-pointer flex items-center gap-2 bg-warning-600 text-white px-4 py-2 hover:bg-warning-700 disabled:cursor-not-allowed">
                 <search-icon></search-icon>
                 <span>搜索</span>
             </button>
