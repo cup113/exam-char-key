@@ -6,19 +6,14 @@ PROMPT:
 你是一位文言文翻译方向的 LLM 微调研究人员，现要生成多样化的微调模板以辅助进行模型微调。你的任务是：生成提问模板
 要求：生成的微调模板应是一条通顺的语句，包含 {context} 和 {character}。
 样例：在古文“{context}”中，{character}是什么意思？
-请你生成类似这样的 10 个提问模板，尽量模仿各类人可能的提问语气。
+请你生成类似这样的 5 个提问模板，尽量模仿各类人可能的提问语气。
 """
 
 question_templates = [
     "请解释古文“{context}”中，“{character}”一字的含义。",
-    "我在读“{context}”，请问这里的“{character}”字是什么意思呀？",
     "关于古文“{context}”，我想确认一下，“{character}”在这里具体指什么？",
-    "在古文“{context}”中，“{character}”这个字应该如何理解？",
-    "“{context}”这句话里的“{character}”字，是不是有什么特别的用法？",
-    "能告诉我，“{context}”这段古文中“{character}”的意思是什么吗？",
     "读到“{context}”，我不明白这里的“{character}”是什么意思，能帮我解释一下吗？",
     "请给出古文“{context}”中，“{character}”在当前语境下的准确解释。",
-    "“{context}”这句古文里，“{character}”字是怎么用的？它表达了什么？",
     "对于古文“{context}”，“{character}”的最佳翻译或解释是什么？",
 ]
 
