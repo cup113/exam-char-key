@@ -16,7 +16,6 @@ with open("train/result/guwen-notes.jsonl", "w", encoding="utf-8") as f_out:
                 if "remark" not in raw_passage:
                     continue
                 passages.append(ChineseGswPassage.from_dict(loads(line)))
-            # TODO filter out textbook passages
             for passage in passages:
                 notes = passage.extract_notes()
                 for note in notes:
