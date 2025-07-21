@@ -17,17 +17,24 @@ from pocketbase.models.errors import PocketBaseNotFoundError
 from logging import getLogger, INFO, StreamHandler, FileHandler, Formatter
 
 
-logger = getLogger("main")
-logger.setLevel(INFO)
-handler1 = StreamHandler()
-handler2 = FileHandler(filename="./log.log")
-formatter = Formatter(
-    "%(levelname)s %(module)s:%(lineno)d %(message)s"
-)
-handler1.setFormatter(formatter)
-handler2.setFormatter(formatter)
-logger.addHandler(handler1)
-logger.addHandler(handler2)
+# TODO: Add token restrictions
+
+
+def get_main_logger():
+    logger = getLogger("main")
+    logger.setLevel(INFO)
+    handler1 = StreamHandler()
+    handler2 = FileHandler(filename="./log.log")
+    formatter = Formatter(
+        "%(levelname)s %(module)s:%(lineno)d %(message)s"
+    )
+    handler1.setFormatter(formatter)
+    handler2.setFormatter(formatter)
+    logger.addHandler(handler1)
+    logger.addHandler(handler2)
+    return logger
+
+main_logger = get_main_logger()
 
 
 @dataclass
@@ -252,7 +259,7 @@ class PocketBaseService:
 
     async def insert_cache(self, query: str, content: str):
         size_kb = len(bytes(content, encoding="utf-8")) / 1024
-        logger.info(f"ZDic Cache created ({query}, {size_kb:.2f} KB)")
+        main_logger.info(f"ZDic Cache created ({query}, {size_kb:.2f} KB)")
         return await self.zdic_cache.create(
             params={
                 "query": query,
@@ -263,9 +270,9 @@ class PocketBaseService:
     async def retrieve_cache(self, query: str):
         try:
             cache = await self.zdic_cache.get_first(
-                options={"filter": f"query='{query}'"}
+                options={"filter": f"query='{self.sanitize(query)}'"}
             )
-            logger.info(f"ZDic Cache Retrieved ({query})")
+            main_logger.info(f"ZDic Cache Retrieved ({query})")
             return cache
         except PocketBaseNotFoundError:
             return None
@@ -402,7 +409,7 @@ async def thought_query_generator(q: str, context: str):
         ) + "\n"
         zdic_prompt = zdic_result["zdic_prompt"]
     except Exception as err:
-        logger.warning(err)
+        main_logger.warning(err)
         zdic_prompt = ""
         yield dumps(
             {
@@ -427,6 +434,7 @@ async def query(
     context: str = Query(..., description="The context sentence", max_length=1000),
     instant: bool = Query(True, description="Whether to use instant mode"),
 ):
+    # TODO separate API
     generator = instant_query_generator if instant else thought_query_generator
     return StreamingResponse(generator(q, context), media_type="application/json")
 
