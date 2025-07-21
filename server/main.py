@@ -1,40 +1,15 @@
-from fastapi import FastAPI, Query
-from fastapi.responses import RedirectResponse, StreamingResponse
+from fastapi import FastAPI, Query, HTTPException
+from fastapi.responses import RedirectResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from openai import AsyncOpenAI
 from openai import AsyncStream
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionChunk
-from json import load, loads, dumps
+from json import load, dumps
 from os import getenv
-from httpx import AsyncClient
-from bs4 import BeautifulSoup
-from urllib.parse import quote
-from typing import TypedDict, Literal
+from typing import Literal
 from dataclasses import dataclass
-from dataclasses_json import dataclass_json
-from pocketbase import PocketBase
-from pocketbase.models.errors import PocketBaseNotFoundError
-from logging import getLogger, INFO, StreamHandler, FileHandler, Formatter
-
-
-# TODO: Add token restrictions
-
-
-def get_main_logger():
-    logger = getLogger("main")
-    logger.setLevel(INFO)
-    handler1 = StreamHandler()
-    handler2 = FileHandler(filename="./log.log")
-    formatter = Formatter(
-        "%(levelname)s %(module)s:%(lineno)d %(message)s"
-    )
-    handler1.setFormatter(formatter)
-    handler2.setFormatter(formatter)
-    logger.addHandler(handler1)
-    logger.addHandler(handler2)
-    return logger
-
-main_logger = get_main_logger()
+from .services.zdic_service import ZDicService
+from .services.logging_service import main_logger
 
 
 @dataclass
@@ -56,7 +31,6 @@ class Config:
     MODEL_INPUT_PRICE = 8  # 1e-7 yuan/token
     MODEL_OUTPUT_PRICE = 20  # 1e-7 yuan/token
     AI_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    ZDIC_URL = "https://www.zdic.net/hans/"
     TEXTBOOK_PATH = "server/textbook.json"
 
 
@@ -229,6 +203,7 @@ class CompletionService:
 
 
 completion_service = CompletionService(client)
+zdic_service = ZDicService()
 
 
 async def instant_query_generator(q: str, context: str):
@@ -244,152 +219,6 @@ async def instant_query_generator(q: str, context: str):
         yield chunk
 
 
-class PocketBaseService:
-    def __init__(self):
-        pocketbase_url = getenv("POCKETBASE_URL")
-        if pocketbase_url is None:
-            raise KeyError("POCKETBASE_URL not set.")
-        self.pb = PocketBase(pocketbase_url)
-        self.zdic_cache = self.pb.collection("zdicCache")
-
-    @classmethod
-    def sanitize(cls, word: str):
-        FORBIDDEN_CHARACTERS = {"'", '"'}
-        return "".join(c for c in word if c not in FORBIDDEN_CHARACTERS)
-
-    async def insert_cache(self, query: str, content: str):
-        size_kb = len(bytes(content, encoding="utf-8")) / 1024
-        main_logger.info(f"ZDic Cache created ({query}, {size_kb:.2f} KB)")
-        return await self.zdic_cache.create(
-            params={
-                "query": query,
-                "content": content,
-            }
-        )
-
-    async def retrieve_cache(self, query: str):
-        try:
-            cache = await self.zdic_cache.get_first(
-                options={"filter": f"query='{self.sanitize(query)}'"}
-            )
-            main_logger.info(f"ZDic Cache Retrieved ({query})")
-            return cache
-        except PocketBaseNotFoundError:
-            return None
-
-
-@dataclass_json
-@dataclass
-class ZDicExplanations:
-    basic: list[str]
-    detailed: list[str]
-    phrase: list[str]
-
-    @staticmethod
-    def from_dict(_d: dict[str, list[str]]) -> "ZDicExplanations": ...
-
-    def to_dict(self) -> dict[str, list[str]]: ...
-
-
-class ZDicResult(TypedDict):
-    basic_explanations: list[str]
-    detailed_explanations: list[str]
-    phrase_explanations: list[str]
-    zdic_prompt: str
-
-
-class ZDicService:
-    def __init__(self):
-        self.zdic_url = Config.ZDIC_URL
-
-    async def get_result(self, word: str) -> ZDicResult | None:
-        pocketbase = PocketBaseService()
-        cache = await pocketbase.retrieve_cache(word)
-
-        if cache is None:
-            response = await self.request_zdic(word)
-            explanations = self.parse_zdic_response(response)
-            await pocketbase.insert_cache(word, dumps(explanations.to_dict(), ensure_ascii=False))
-        else:
-            content = cache.get("content")
-            if content is None:
-                return None
-            explanations = ZDicExplanations.from_dict(loads(content))
-
-        return self.get_final_response(explanations)
-
-    async def request_zdic(self, word: str):
-        async with AsyncClient() as client:
-            response = await client.get(self.zdic_url + quote(word), timeout=10)
-            if response.status_code == 200:
-                return response.text
-            return f"Error {response.status_code}: {response.text}"
-
-    def parse_zdic_response(self, zdic_response: str) -> ZDicExplanations:
-        soup = BeautifulSoup(zdic_response, "html.parser")
-
-        basic = [
-            li.get_text()
-            for li in soup.select(".zdict div.content.definitions.jnr>ol>li")  # type: ignore
-        ]
-        detailed = [
-            p.get_text() for p in soup.select("#xxjs div.content.definitions.xnr>p")  # type: ignore
-        ]
-        phrase = [
-            p.get_text() for p in soup.select(".nr-box div.content.definitions .jnr>p")  # type: ignore
-        ]
-
-        return ZDicExplanations(
-            basic=basic,
-            detailed=detailed,
-            phrase=phrase
-        )
-
-    def get_final_response(self, explanations: ZDicExplanations) -> ZDicResult:
-        basic_explanations = explanations.basic
-        detailed_explanations = explanations.detailed
-        phrase_explanations = explanations.phrase
-
-        prompt_basic = (
-            (
-                "【基本解释】\n"
-                + "\n".join(
-                    f"{i + 1}. {exp}" for i, exp in enumerate(basic_explanations)
-                )
-                + "\n"
-            )
-            if basic_explanations
-            else ""
-        )
-        prompt_detailed = (
-            ("【详细解释】\n" + "\n".join(detailed_explanations) + "\n")
-            if detailed_explanations
-            else ""
-        )
-        prompt_phrase = (
-            ("【词语解释】\n" + "\n".join(phrase_explanations) + "\n")
-            if phrase_explanations
-            else ""
-        )
-
-        zdic_prompt = prompt_basic + prompt_detailed + prompt_phrase
-        zdic_prompt = (
-            f"\n汉典给出的解释有：\n{zdic_prompt}"
-            if zdic_prompt.strip()
-            else "汉典未给出解释"
-        )
-
-        return {
-            "basic_explanations": basic_explanations,
-            "detailed_explanations": detailed_explanations,
-            "phrase_explanations": phrase_explanations,
-            "zdic_prompt": zdic_prompt,
-        }
-
-
-zdic_service = ZDicService()
-
-
 async def thought_query_generator(q: str, context: str):
     try:
         zdic_result = await zdic_service.get_result(q)
@@ -401,13 +230,13 @@ async def thought_query_generator(q: str, context: str):
             {
                 "type": "zdic",
                 "result": {
-                    "basic_explanations": zdic_result["basic_explanations"],
-                    "detailed_explanations": zdic_result["detailed_explanations"],
-                    "phrase_explanations": zdic_result["phrase_explanations"],
+                    "basic_explanations": zdic_result.basic_explanations,
+                    "detailed_explanations": zdic_result.detailed_explanations,
+                    "phrase_explanations": zdic_result.phrase_explanations,
                 },
             }
         ) + "\n"
-        zdic_prompt = zdic_result["zdic_prompt"]
+        zdic_prompt = zdic_result.zdic_prompt
     except Exception as err:
         main_logger.warning(err)
         zdic_prompt = ""
@@ -450,6 +279,14 @@ async def search_original(
         completion_service.search_original_text(excerpt, target),
         media_type="application/json",
     )
+
+
+@app.get("/api/zdic")
+async def get_zdic_only(q: str = Query(..., description="The query word", max_length=100)):
+    result = await zdic_service.get_result(q)
+    if result is None:
+        raise HTTPException(404, "Empty Response from zdic")
+    return JSONResponse(result.to_dict())
 
 
 @app.get("/")
