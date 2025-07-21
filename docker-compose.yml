@@ -22,5 +22,5 @@ services:
     ports:
       - "4123:4123"
     volumes:
-      - pocketbase_data:/pb_data
+      - pocketbase_data:/db/pb_data
     restart: always
