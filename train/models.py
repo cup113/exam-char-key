@@ -126,7 +126,9 @@ class Passage:
                         break
 
                 index_range_original = (start_index, end_index)
-                context, index_range = Passage.get_context(self.content, index_range_original)
+                context, index_range = Passage.get_context(
+                    self.content, index_range_original
+                )
             elif end_index == 0:
                 # Note right after title
                 context = self.title
@@ -171,7 +173,9 @@ class Passage:
         if content[left] in PUNCTUATIONS:
             left += 1
 
-        while right < len(content) and content[right] != "\n" and punctuations_right > 0:
+        while (
+            right < len(content) and content[right] != "\n" and punctuations_right > 0
+        ):
             right += 1
             if content[right - 1] in PUNCTUATIONS:
                 punctuations_right -= 1
@@ -221,12 +225,20 @@ class ChineseGswPassage:
     writer: str
 
     def extract_notes(self) -> list[Note]:
+        UNICODE_NUMBERING_SET = set(
+            "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇" \
+            "⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛➀➁➂➃➄➅➆➇➈➉❶❷❸❹❺❻❼❽❾❿"
+        )
+
         # 1. Data Cleaning
         self.content = self.unify_punctuation(self.content)
+        self.remark = "".join(ch for ch in self.remark if ch not in UNICODE_NUMBERING_SET) # remove numbering
         self.remark = self.unify_punctuation(self.remark)
         # remove patterns like （不足贵 一作：何足贵；不复醒 一作：不愿醒/不用醒） and pinyin in notes
         REGEX_PARENTHESES = r"（.*?）"
+        REGEX_NUMBERING = r"(\d+)、|【(\d+)】|(\d+)。|(\d+)\."
         self.content = sub(REGEX_PARENTHESES, "", self.content)
+        self.content = sub(REGEX_NUMBERING, "", self.content)
         self.remark = sub(REGEX_PARENTHESES, "", self.remark)
         # 2. extract notes
         # Pattern like 唐张籍《吴楚词》（说/诗/诗云）：“今朝社日停针线。” where "：" marks content in other books, which should be excluded.
@@ -255,12 +267,18 @@ class ChineseGswPassage:
         for remark_start, colon_index in remark_list:
             original_text = self.remark[remark_start:colon_index].strip()
             text_start = self.content.find(original_text, 0, context_cursor)
-            detail = self.remark[(colon_index + 1):remark_end].strip()
+            detail = self.remark[(colon_index + 1) : remark_end].strip()
 
             if text_start == -1:
                 if original_text in self.title:
                     index_start = self.title.find(original_text)
-                    note = Note(name_passage=self.title, context=self.title, index_range=(index_start, index_start + len(original_text)), detail=detail, core_detail=detail)
+                    note = Note(
+                        name_passage=self.title,
+                        context=self.title,
+                        index_range=(index_start, index_start + len(original_text)),
+                        detail=detail,
+                        core_detail=detail,
+                    )
                     notes.append(note)
                     notes.extend(note.extract_sub_notes())
                     remark_end = remark_start
@@ -271,16 +289,22 @@ class ChineseGswPassage:
                     if "句" in original_text:
                         # pattern like “但歌”二句, which cannot be found in the content
                         continue
-                    warn(f"{self.title} {original_text} not found")
+                    warn(f"[{self.title}]“{original_text}”not found")
                     continue
                 else:
                     warn(
-                        f"{self.title} {original_text} not found, but found after {text_start}"
+                        f"[{self.title}]“{original_text}”not found, but found after“{text_start}”"
                     )
             index_range = (text_start, text_start + len(original_text))
             context, new_index_range = Passage.get_context(self.content, index_range)
 
-            note = Note(name_passage=self.title, context=context, index_range=new_index_range, detail=detail, core_detail=detail)
+            note = Note(
+                name_passage=self.title,
+                context=context,
+                index_range=new_index_range,
+                detail=detail,
+                core_detail=detail,
+            )
             notes.append(note)
             notes.extend(note.extract_sub_notes())
             remark_end = remark_start
