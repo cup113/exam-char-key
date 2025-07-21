@@ -21,4 +21,6 @@ services:
     container_name: pocketbase
     ports:
       - "4123:4123"
+    volumes:
+      - pocketbase_data:/pb_data
     restart: always
