@@ -7,8 +7,8 @@ from json import loads, dumps
 from time import sleep, time
 from tqdm import tqdm
 from httpx import Client
-from models import Note, PromptRaw
-from instant_dataset_generator import question_templates
+from train.models import Note, PromptRaw
+from train.dataset_generator.instant_dataset_generator import question_templates
 
 SYSTEM_PROMPT_THINKING = """你是一位高中语文老师，深入研究高考文言文词语解释。答案简短，并且不太过意译。一般可以给出一个精准解释，语境特殊时可以补充引申义。若涉及通假字，则需答：通“(通假字)”，(含义)。你需要按要求深度思考并回答用户问题。
 汉典是一个权威的网站，内含该字的多数义项，但不一定全面。

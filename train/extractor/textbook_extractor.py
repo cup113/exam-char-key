@@ -4,10 +4,10 @@ from fitz import Page  # type: ignore
 from warnings import warn
 from enum import Enum
 from json import dumps, loads
-from fitz_types import Span, Block
 from dataclasses import dataclass
 
-from models import Note, Passage
+from train.extractor.fitz_types import Span, Block
+from train.models import Note, Passage
 
 
 NOTE_LINES = [(60, 204), (67, 211)]

@@ -4,7 +4,7 @@ from openai import OpenAI
 from json import loads, dumps
 from typing import TypedDict
 from tqdm import tqdm
-from models import Passage
+from train.models import Passage
 
 load_dotenv(".env")
 

@@ -1,4 +1,4 @@
-from models import BatchRequest, Note, PromptRaw
+from train.models import BatchRequest, Note, PromptRaw
 from json import loads, dumps
 from re import match
 from warnings import warn

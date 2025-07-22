@@ -1,5 +1,5 @@
 from json import dumps, loads
-from models import BatchRequest, PromptRaw
+from train.models import BatchRequest, PromptRaw
 from random import shuffle
 
 
@@ -23,7 +23,7 @@ batch_requests_2: list[BatchRequest] = []
 with open("./train/result/dataset-thinking-raw.jsonl", "r", encoding="utf-8") as fr:
     for i, line in enumerate(fr):
         prompt_raw = loads(line)
-        batch_requests_1.append(convert(prompt_raw, i + 1, "qwen-plus"))
+        batch_requests_1.append(convert(prompt_raw, i + 1, "qwen-max-latest"))
         batch_requests_2.append(convert(prompt_raw, i + 5001, "deepseek-v3"))
 
 shuffle(batch_requests_1)

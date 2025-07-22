@@ -1,5 +1,5 @@
 from json import loads, dumps
-from models import Note
+from train.models import Note
 
 """
 PROMPT:

@@ -198,10 +198,21 @@ The project includes training scripts for:
 
 ### Training Scripts
 
+If you'd like to train on your own, you're supposed to execute the scripts in the following order:
+
 ```bash
-python train/ancient_classifier.py    # Train ancient text classifier
-python train/frequency_statistics.py  # Analyze character frequencies
-python train/dataset_generator.py     # Generate training datasets
+python -m train.extractor.textbook_extractor
+python -m train.extractor.ancient_classifier
+python -m train.extractor.guwen_extractor
+python -m train.extractor.textbook_extractor # This should be run again, at this time non-ancient works will be sorted out.
+
+python -m train.dataset_generator.instant_dataset_generator
+python -m train.dataset_generator.thinking_prompt_generator
+python -m train.dataset_generator.thinking_batch_converter
+### !Batch reasoning and place result in train/result/dataset-thinking-batch-completion-{1,2}.json
+python -m train.dataset_generator.evaluate_prompt_generator
+### !Batch reasoning and place result in train/result/dataset-thinking-evaluation-completion-{1,2}.json
+python -m train.dataset_generator.thinking_dataset_generator
 ```
 
 ### Development Guidelines

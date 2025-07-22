@@ -1,4 +1,4 @@
-from models import ChineseGswPassage
+from train.models import ChineseGswPassage
 from json import loads, dumps
 from tqdm import tqdm
 
