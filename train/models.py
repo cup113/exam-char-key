@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from warnings import warn
 from re import sub
+from typing import TypedDict, Literal
 
 NOTE_PAIR = ({"〔", "﹝"}, "〕")
 PUNCTUATIONS = set("，。；？！")
@@ -334,3 +335,27 @@ class ChineseGswPassage:
 
     @staticmethod
     def from_dict(d: dict[str, str]) -> "ChineseGswPassage": ...
+
+class BatchRequestMessage(TypedDict):
+    role: Literal["user", "system", "assistant"]
+    content: str
+
+
+class BatchRequestBody(TypedDict):
+    model: str
+    messages: list[BatchRequestMessage]
+    temperature: float
+    top_p: float
+
+
+class BatchRequest(TypedDict):
+    custom_id: str
+    method: Literal["POST"]
+    url: Literal["/v1/chat/completions"]
+    body: BatchRequestBody
+
+
+class PromptRaw(TypedDict):
+    messages: list[BatchRequestMessage]
+    note: dict[str, str | list[int]]
+

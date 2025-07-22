@@ -7,7 +7,7 @@ from json import loads, dumps
 from time import sleep, time
 from tqdm import tqdm
 from httpx import Client
-from models import Note
+from models import Note, PromptRaw
 from instant_dataset_generator import question_templates
 
 SYSTEM_PROMPT_THINKING = """你是一位高中语文老师，深入研究高考文言文词语解释。答案简短，并且不太过意译。一般可以给出一个精准解释，语境特殊时可以补充引申义。若涉及通假字，则需答：通“(通假字)”，(含义)。你需要按要求深度思考并回答用户问题。
@@ -51,12 +51,12 @@ def get_completion(note: Note, i: int):
     user_prompt = (
         template.format(context=note.context, character=original_text) + zdic_prompt
     )
-    completion = {
+    completion: PromptRaw = {
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT_THINKING},
             {"role": "user", "content": user_prompt},
-            {"role": "assistant", "content": note.detail},
-        ]
+        ],
+        "note": note.to_dict(),
     }
     return completion, cached
 

@@ -1,29 +1,6 @@
 from json import dumps, loads
-from typing import TypedDict, Literal
+from models import BatchRequest, PromptRaw
 from random import shuffle
-
-
-class BatchRequestMessage(TypedDict):
-    role: Literal["user", "system"]
-    content: str
-
-
-class BatchRequestBody(TypedDict):
-    model: str
-    messages: list[BatchRequestMessage]
-    temperature: float
-    top_p: float
-
-
-class BatchRequest(TypedDict):
-    custom_id: str
-    method: Literal["POST"]
-    url: Literal["/v1/chat/completions"]
-    body: BatchRequestBody
-
-
-class PromptRaw(TypedDict):
-    messages: list[BatchRequestMessage]
 
 
 def convert(prompt_raw: PromptRaw, i: int, model: str) -> BatchRequest:
