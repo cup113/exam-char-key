@@ -1,4 +1,4 @@
-from train.models import BatchRequest, Note, PromptRaw
+from train.models import BatchRequest, Note, PromptRaw, CompletionApiResponse
 from train.utils import SYSTEM_PROMPTS, JsonlReader, JsonlWriter, IntermediateFiles
 from typing import TypedDict
 from re import match, DOTALL
@@ -68,17 +68,18 @@ for out_no, evaluation_file in enumerate(EVALUATION_FILES):
         for filename in BATCH_FILENAMES:
             with JsonlReader(filename) as fr:
                 for i, line in enumerate(fr):
-                    raw_answer = line["response"]["body"]["choices"][0]["message"][
+                    completion: CompletionApiResponse = line
+                    raw_answer = completion["response"]["body"]["choices"][0]["message"][
                         "content"
                     ]
                     raw_match = match(
                         r"(.*?)\<answers\>(.*?)\<\/answers\>(.*?)", raw_answer, DOTALL
                     )
-                    note = raw_data[line["custom_id"]]
+                    note = raw_data[completion["custom_id"]]
 
                     if raw_match is None:
                         if "<answers>" in raw_answer:
-                            print(f"{line['custom_id']} lack end tag </answers>")
+                            print(f"{completion['custom_id']} lack end tag </answers>")
                         else:
                             warn(f"Answer to {note.to_dict()} unmatched: {raw_answer}")
                         continue
@@ -88,7 +89,7 @@ for out_no, evaluation_file in enumerate(EVALUATION_FILES):
                         get_evaluation_prompt(
                             answer,
                             note,
-                            line["custom_id"],
+                            completion["custom_id"],
                             out_no,
                             evaluation_file["model"],
                         )

@@ -206,7 +206,7 @@ python -m train.extractor.ancient_classifier
 python -m train.extractor.guwen_extractor
 python -m train.extractor.textbook_extractor # This should be run again, at this time non-ancient works will be sorted out.
 
-python -m train.dataset_generator.instant_dataset_generator
+python -m train.dataset_generator.flash_dataset_generator
 python -m train.dataset_generator.thinking_prompt_generator
 python -m train.dataset_generator.thinking_batch_converter
 ### !Batch reasoning and place result in train/result/dataset-thinking-batch-completion-{1,2}.json

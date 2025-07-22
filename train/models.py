@@ -234,13 +234,15 @@ class ChineseGswPassage:
 
     def extract_notes(self) -> list[Note]:
         UNICODE_NUMBERING_SET = set(
-            "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇" \
+            "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇"
             "⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛➀➁➂➃➄➅➆➇➈➉❶❷❸❹❺❻❼❽❾❿"
         )
 
         # 1. Data Cleaning
         self.content = self.unify_punctuation(self.content)
-        self.remark = "".join(ch for ch in self.remark if ch not in UNICODE_NUMBERING_SET) # remove numbering
+        self.remark = "".join(
+            ch for ch in self.remark if ch not in UNICODE_NUMBERING_SET
+        )  # remove numbering
         self.remark = self.unify_punctuation(self.remark)
         # remove patterns like （不足贵 一作：何足贵；不复醒 一作：不愿醒/不用醒） and pinyin in notes
         REGEX_PARENTHESES = r"（.*?）"
@@ -343,6 +345,7 @@ class ChineseGswPassage:
     @staticmethod
     def from_dict(d: dict[str, str]) -> "ChineseGswPassage": ...
 
+
 class BatchRequestMessage(TypedDict):
     role: Literal["user", "system", "assistant"]
     content: str
@@ -366,3 +369,40 @@ class PromptRaw(TypedDict):
     messages: list[BatchRequestMessage]
     note: dict[str, str | list[int]]
 
+
+class CompletionChoice(TypedDict):
+    finish_reason: str
+    index: int
+    message: "CompletionMessage"
+
+
+class CompletionMessage(TypedDict):
+    role: str
+    content: str
+
+
+class CompletionUsage(TypedDict):
+    completion_tokens: int
+    prompt_tokens: int
+    total_tokens: int
+
+
+class CompletionResponseBody(TypedDict):
+    created: int
+    usage: CompletionUsage
+    model: str
+    id: str
+    choices: list[CompletionChoice]
+
+
+class CompletionResponse(TypedDict):
+    status_code: int
+    request_id: str
+    body: CompletionResponseBody
+
+
+class CompletionApiResponse(TypedDict):
+    id: str
+    custom_id: str
+    response: CompletionResponse
+    error: str | None

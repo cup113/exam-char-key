@@ -16,7 +16,7 @@ def sample_question_template(index: int):
 
 
 class SYSTEM_PROMPTS:
-    FLASH = "你是一位高中语文老师，深入研究高考文言文词语解释。答案简短，并且不太过意译。一般可以给出一个精准解释，语境特殊时可以补充引申义。若涉及通假字，则需答：通“(通假字)”，(含义)。你需要简洁地回答用户的问题，除答案外不输出任何内容。"
+    FLASH = "你是一位高中语文老师，深入研究高考文言文词语解释。答案简短，以准确为主，不太过意译。一般可以给出一个精准解释，语境特殊时可以补充引申义。简洁地回答用户的问题，除答案外不输出任何内容。"
 
     THINKING = """你是一位高中语文老师，深入研究高考文言文词语解释。答案简短，并且不太过意译。一般可以给出一个精准解释，语境特殊时可以补充引申义。若涉及通假字，则需答：通“(通假字)”，(含义)。你需要按要求深度思考并回答用户问题。
 汉典是一个权威的网站，内含该字的多数义项，但不一定全面。
@@ -81,8 +81,18 @@ class IntermediateFiles:
     PromptEvaluationThinkingDataset2 = (
         "./train/result/dataset-thinking-evaluation-prompt-2.jsonl"
     )
-    CompletionBatchThinking1 = "./train/result/dataset-thinking-batch-completion-1.jsonl"
-    CompletionBatchThinking2 = "./train/result/dataset-thinking-batch-completion-2.jsonl"
+    CompletionBatchThinking1 = (
+        "./train/result/dataset-thinking-batch-completion-1.jsonl"
+    )
+    CompletionBatchThinking2 = (
+        "./train/result/dataset-thinking-batch-completion-2.jsonl"
+    )
+    CompletionBatchEvaluationThinking1 = (
+        "./train/result/dataset-evaluation-thinking-batch-completion-1.jsonl"
+    )
+    CompletionBatchEvaluationThinking2 = (
+        "./train/result/dataset-evaluation-thinking-batch-completion-2.jsonl"
+    )
 
 
 class JsonlReader:
