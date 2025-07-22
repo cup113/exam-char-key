@@ -3,11 +3,11 @@ from fitz import open as fitz_open  # type: ignore
 from fitz import Page  # type: ignore
 from warnings import warn
 from enum import Enum
-from json import dumps, loads
 from dataclasses import dataclass
 
 from train.extractor.fitz_types import Span, Block
-from train.models import Note, Passage
+from train.models import Passage
+from train.utils import IntermediateFiles, JsonlWriter, JsonlReader
 
 
 NOTE_LINES = [(60, 204), (67, 211)]
@@ -304,17 +304,6 @@ def draw_feature(pdf_path: str, is_first: bool):
     return passages
 
 
-def export_notes(passages: list[Passage]):
-    passage_notes: list[Note] = []
-    for passage in passages:
-        primary_notes = passage.extract_primary_notes()
-        passage_notes.extend(primary_notes)
-
-    with open(f"train/result/textbook.jsonl", "w", encoding="utf-8") as f:
-        for note in passage_notes:
-            f.write(dumps(note.to_dict(), ensure_ascii=False) + "\n")
-
-
 PATHS_TEXTBOOK = [
     "train/textbooks/统编版-高中语文必修上册.pdf",
     "train/textbooks/统编版-高中语文必修下册.pdf",
@@ -327,10 +316,8 @@ RAW_DATA = False
 
 if __name__ == "__main__":
     try:
-        with open(
-            "./train/result/textbook-is-ancient.jsonl", "r", encoding="utf-8"
-        ) as f:
-            is_ancient_arr = [loads(line) for line in f]
+        with JsonlReader(IntermediateFiles.IsAncientTextbook) as f:
+            is_ancient_arr = [line for line in f]
     except:
         is_ancient_arr = []
     is_ancient_dict = {item["title"]: item["is_ancient"] for item in is_ancient_arr}
@@ -350,11 +337,10 @@ if __name__ == "__main__":
         for passage in passages:
             if is_ancient_dict.get(passage.title, default_is_target):
                 target_passages.append(passage)
-    export_notes(target_passages)
-    with open("train/result/textbook-notes.jsonl", "w", encoding="utf-8") as f:
+    with JsonlWriter(IntermediateFiles.NotesTextbook) as f:
         for passage in target_passages:
             for note in passage.extract_primary_notes():
-                f.write(dumps(note.to_dict(), ensure_ascii=False) + "\n")
-    with open("train/result/textbook-passages.jsonl", "w", encoding="utf-8") as f:
+                f.write_line(note.to_dict())
+    with JsonlWriter(IntermediateFiles.PassagesTextbook) as f:
         for passage in target_passages:
-            f.write(dumps(passage.to_dict(), ensure_ascii=False) + "\n")
+            f.write_line(passage.to_dict())

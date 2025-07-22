@@ -3,19 +3,12 @@
 Should take ~4h unless cached
 """
 
-from json import loads, dumps
+from json import loads
 from time import sleep, time
 from tqdm import tqdm
 from httpx import Client
 from train.models import Note, PromptRaw
-from train.dataset_generator.instant_dataset_generator import question_templates
-
-SYSTEM_PROMPT_THINKING = """你是一位高中语文老师，深入研究高考文言文词语解释。答案简短，并且不太过意译。一般可以给出一个精准解释，语境特殊时可以补充引申义。若涉及通假字，则需答：通“(通假字)”，(含义)。你需要按要求深度思考并回答用户问题。
-汉典是一个权威的网站，内含该字的多数义项，但不一定全面。
-回答步骤如下：
-1. 思考句义，敢于多次尝试并依照汉典义项（若有）代入阐释。用<think></think>标签包裹。换行。
-2. 给出用你思考结果代入的句子解释。用<explain></explain>标签包裹。换行。
-3. 输出 1~3 个最终的解释，用<answers></answers>包裹，每个义项之间用分号“；”分隔。"""
+from train.utils import sample_question_template, SYSTEM_PROMPTS, IntermediateFiles, JsonlReader, JsonlWriter
 
 TEXT_SAMPLE_INTERVAL = 5
 GUWEN_SAMPLE_INTERVAL = 25
@@ -45,43 +38,34 @@ def get_completion(note: Note, i: int):
         zdic_prompt = ""
         cached = True
 
-    template = (
-        question_templates[i % len(question_templates)] + "请按要求仔细思考后回答。"
-    )
+    template = sample_question_template(i) + "请按要求仔细思考后回答。"
     user_prompt = (
         template.format(context=note.context, character=original_text) + zdic_prompt
     )
     completion: PromptRaw = {
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT_THINKING},
+            {"role": "system", "content": SYSTEM_PROMPTS.THINKING},
             {"role": "user", "content": user_prompt},
         ],
         "note": note.to_dict(),
     }
     return completion, cached
 
-
-def is_short_note(note: Note) -> bool:
-    """If a note is too long, then it's probably not a 'character explanation' task."""
-    MAX_CHARACTERS_ALLOWED = 4
-    return len(note.get_original_text()) <= MAX_CHARACTERS_ALLOWED
-
-
-with open("./train/result/textbook-notes.jsonl", "r", encoding="utf-8") as f:
+with JsonlReader(IntermediateFiles.NotesTextbook) as f:
     for i, line in enumerate(f):
         if i % TEXT_SAMPLE_INTERVAL == SAMPLE_START:
             note = Note.from_dict(loads(line))
-            if is_short_note(note):
+            if note.is_short_note():
                 notes.append(note)
 
-with open("./train/result/guwen-notes.jsonl", "r", encoding="utf-8") as f:
+with JsonlReader(IntermediateFiles.NotesGuwen) as f:
     for i, line in enumerate(f):
         if i % GUWEN_SAMPLE_INTERVAL == SAMPLE_START:
             note = Note.from_dict(loads(line))
-            if is_short_note(note):
+            if note.is_short_note():
                 notes.append(note)
 
-with open("./train/result/dataset-thinking-raw.jsonl", "w", encoding="utf-8") as f:
+with JsonlWriter(IntermediateFiles.DatasetThinkingRaw) as f:
     for i, note in enumerate(tqdm(notes, unit="note")):
         start_time = time()
         completion, cached = get_completion(note, i)
@@ -89,8 +73,7 @@ with open("./train/result/dataset-thinking-raw.jsonl", "w", encoding="utf-8") as
         if completion is None:
             continue
 
-        f.write(dumps(completion, ensure_ascii=False) + "\n")
-        f.flush()
+        f.write_line(completion)
 
         if not cached:
             sleep(max(start_time + CRAWL_INTERVAL - time(), CRAWL_MIN_INTERVAL))

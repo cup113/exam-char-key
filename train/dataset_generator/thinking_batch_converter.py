@@ -1,5 +1,5 @@
-from json import dumps, loads
 from train.models import BatchRequest, PromptRaw
+from train.utils import JsonlReader, JsonlWriter, IntermediateFiles
 from random import shuffle
 
 
@@ -18,24 +18,17 @@ def convert(prompt_raw: PromptRaw, i: int, model: str) -> BatchRequest:
 
 batch_requests_1: list[BatchRequest] = []
 batch_requests_2: list[BatchRequest] = []
-
-
-with open("./train/result/dataset-thinking-raw.jsonl", "r", encoding="utf-8") as fr:
-    for i, line in enumerate(fr):
-        prompt_raw = loads(line)
+with JsonlReader(IntermediateFiles.DatasetThinkingRaw) as fr:
+    for i, prompt_raw in enumerate(fr):
         batch_requests_1.append(convert(prompt_raw, i + 1, "qwen-max-latest"))
         batch_requests_2.append(convert(prompt_raw, i + 5001, "deepseek-v3"))
 
 shuffle(batch_requests_1)
 
-with open(
-    "./train/result/dataset-thinking-prompt-1.jsonl", "w", encoding="utf-8"
-) as fw:
+with JsonlWriter(IntermediateFiles.PromptDatasetThinking1) as fw:
     for batch_request in batch_requests_1:
-        fw.write(dumps(batch_request, ensure_ascii=False) + "\n")
+        fw.write_line(batch_request)
 
-with open(
-    "./train/result/dataset-thinking-prompt-2.jsonl", "w", encoding="utf-8"
-) as fw:
+with JsonlWriter(IntermediateFiles.PromptDatasetThinking2) as fw:
     for batch_request in batch_requests_2:
-        fw.write(dumps(batch_request, ensure_ascii=False) + "\n")
+        fw.write_line(batch_request)

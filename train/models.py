@@ -74,6 +74,13 @@ class Note:
 
         return sub_notes
 
+    def is_short_note(self) -> bool:
+        SHORT_NOTE_THRESHOLD = 4
+        return len(self.detail) <= SHORT_NOTE_THRESHOLD
+
+    def is_title_note(self) -> bool:
+        return self.get_original_text() == self.name_passage
+
     def to_dict(self) -> dict[str, str | list[int]]: ...
 
     @staticmethod
