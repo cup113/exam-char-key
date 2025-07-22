@@ -72,6 +72,7 @@ class IntermediateFiles:
     NotesGuwen = "./train/result/guwen-notes.jsonl"
     StatFrequency = "./train/result/word-frequency.jsonl"
     DatasetFlash = "./train/result/dataset-flash.jsonl"
+    DatasetThinking = "./train/result/dataset-thinking.jsonl"
     DatasetThinkingRaw = "./train/result/dataset-thinking-raw.jsonl"
     PromptDatasetThinking1 = "./train/result/dataset-thinking-prompt-1.jsonl"
     PromptDatasetThinking2 = "./train/result/dataset-thinking-prompt-2.jsonl"
