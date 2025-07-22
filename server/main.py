@@ -26,7 +26,7 @@ class Config:
     GENERAL_MODEL = AiModel("qwen-plus", 8, 20, False)
     GENERAL_MODEL_THINKING = AiModel("qwen-plus", 8, 80, True)
     TURBO_MODEL = AiModel("qwen-turbo", 3, 6, False)
-    WYW_MODEL = AiModel("qwen3-14b-ft-202506272014-8e62", 10, 40, False)
+    WYW_MODEL = AiModel("qwen3-14b-ft-202507221614-8d95", 10, 40, False)
 
     MODEL_INPUT_PRICE = 8  # 1e-7 yuan/token
     MODEL_OUTPUT_PRICE = 20  # 1e-7 yuan/token
