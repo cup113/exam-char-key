@@ -25,8 +25,8 @@ class Config:
     API_KEY = getenv("API_KEY")
     GENERAL_MODEL = AiModel("qwen-plus", 8, 20, False)
     GENERAL_MODEL_THINKING = AiModel("qwen-plus", 8, 80, True)
-    TURBO_MODEL = AiModel("qwen-turbo", 3, 6, False)
-    WYW_MODEL = AiModel("qwen3-14b-ft-202507221614-8d95", 10, 40, False)
+    WYW_FLASH_MODEL = AiModel("qwen3-14b-ft-202507221614-8d95", 10, 40, False)
+    WYW_THINKING_MODEL = AiModel("qwen3-8b-ft-202507231002-7aeb", 5, 20, False)
 
     MODEL_INPUT_PRICE = 8  # 1e-7 yuan/token
     MODEL_OUTPUT_PRICE = 20  # 1e-7 yuan/token
@@ -143,16 +143,16 @@ class CompletionService:
 
     async def generate_instant_response(self, context: str, q: str):
         response = await self._send_request(
-            model=Config.WYW_MODEL,
+            model=Config.WYW_FLASH_MODEL,
             messages=[
                 {"role": "system", "content": PROMPT_AI_INSTANT},
                 {"role": "user", "content": f"请解释古文“{context}”中，“{q}”的含义。"},
             ],
-            temperature=0.4,
+            temperature=0.3,
             search="no",
         )
         async for chunk in self._process_response(
-            response, "ai-instant", Config.WYW_MODEL
+            response, "ai-instant", Config.WYW_FLASH_MODEL
         ):
             yield chunk
 
@@ -166,11 +166,11 @@ class CompletionService:
                     "content": f"语境: {context}\n需要解释的字: {q}{zdic_prompt}",
                 },
             ],
-            temperature=0.4,
+            temperature=0.5,
             search="optional",
         )
         async for chunk in self._process_response(
-            response, "ai-thought", Config.GENERAL_MODEL
+            response, "ai-thought", Config.WYW_THINKING_MODEL
         ):
             yield chunk
 
