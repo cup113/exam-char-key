@@ -75,7 +75,7 @@ class Note:
         return sub_notes
 
     def is_short_note(self) -> bool:
-        SHORT_NOTE_THRESHOLD = 4
+        SHORT_NOTE_THRESHOLD = 3
         return len(self.detail) <= SHORT_NOTE_THRESHOLD
 
     def is_title_note(self) -> bool:

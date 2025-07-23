@@ -1,4 +1,4 @@
-from models import Note
+from train.models import Note
 from json import loads, dumps
 from dataclasses import dataclass
 from dataclasses_json import dataclass_json
