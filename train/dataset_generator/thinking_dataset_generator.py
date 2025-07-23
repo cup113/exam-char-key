@@ -134,7 +134,7 @@ with JsonlWriter(IntermediateFiles.DatasetThinking) as writer, open(
     "./train/result/dataset-thinking-evaluation-scores.txt", "w", encoding="utf-8"
 ) as score_file:
     for note_id, note in data.items():
-        ACCEPT_THRESHOLD = 6.5
+        ACCEPT_THRESHOLD = 2.5
 
         score_file.write(f"{note.base.get_original_text()}\t")
         responses = list(note.responses.items())
@@ -156,7 +156,7 @@ with JsonlWriter(IntermediateFiles.DatasetThinking) as writer, open(
             score_file.write(f"0\n")
             continue
 
-        new_threshold = max(ACCEPT_THRESHOLD, max_score - 1.5)
+        new_threshold = max(ACCEPT_THRESHOLD, max_score - 0.5)
 
         def accept_response(response: ScoredResponse) -> bool:
             avg = response.get_average()
