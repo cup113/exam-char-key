@@ -6,8 +6,8 @@ const queryStore = useQueryStore();
 </script>
 
 <template>
-    <div class="relative w-xs lg:w-md min-h-12 px-4 py-2 mt-10 flex flex-col gap-2 bg-primary-200 rounded-b-lg">
-        <div class="flex items-center absolute p-1 left-0 right-0 -top-10 bg-primary-500 rounded-t-lg">
+    <div class="ec-standard-card">
+        <div>
             <ai-icon></ai-icon>
             <flash-icon></flash-icon>
         </div>

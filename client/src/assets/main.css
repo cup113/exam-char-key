@@ -45,3 +45,13 @@
     --color-secondary-800: #141F29;
     --color-secondary-900: #0D141C;
 }
+
+@layer utilities {
+    .ec-standard-card {
+        @apply relative w-xs lg:w-md min-h-12 px-4 py-2 mt-12 flex flex-col gap-4 bg-primary-200 rounded-b-lg;
+    }
+
+    .ec-standard-card > div:first-child {
+        @apply absolute flex items-center bg-primary-500 left-0 right-0 -top-10 p-1 rounded-t-lg font-bold h-10;
+    }
+}

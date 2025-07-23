@@ -108,10 +108,10 @@ const details = computed(() => process_detail(queryStore.zdicResponse.detailed_e
 </script>
 
 <template>
-    <div class="relative w-xs lg:w-md min-h-24 px-4 py-2 flex flex-col gap-2 rounded-b-lg bg-primary-200 mt-10">
-        <div class="absolute flex gap-1 items-center font-bold -top-10 h-10 right-0 -left-0 p-1 rounded-t-lg bg-primary-500">
+    <div class="ec-standard-card">
+        <div>
             <dictionary-icon></dictionary-icon>
-            汉典
+            <strong class="ml-2">汉典解释</strong>
         </div>
         <h3 class="text-lg font-bold text-center" v-if="showHeading.basic">基本解释</h3>
         <ol class="indent-4">
