@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 @dataclass
 class ScoredResponse:
-    base: CompletionApiResponse
+    answer: str
     model: str
     scores: list[int]
 
@@ -44,7 +44,7 @@ def check_integrity(message: str) -> bool:
     """
 
     pattern = r"\<think\>(.*?)\<\/think\>(.*?)\<explain\>(.*?)\<\/explain\>(.*?)\<answers\>(.*?)\<\/answers\>"
-    return bool(match(pattern, message.strip()))
+    return bool(match(pattern, message.strip(), DOTALL))
 
 
 data: dict[int, ScoredNote] = {}
@@ -55,9 +55,36 @@ def add_data(api_response: CompletionApiResponse) -> None:
         warn(f"Error in response: {api_response['error']}")
         return
     content = api_response["response"]["body"]["choices"][0]["message"]["content"]
+    id_match = match(r"request-tb-(\d{4})", api_response["custom_id"])
+    if not id_match:
+        return
+    note_id = int(id_match.group(1).lstrip("0"))
+    model = "qm"
+    if note_id > 5000:
+        note_id -= 5000
+        model = "ds"
+
+    if not check_integrity(content):
+        single_line_content = content.replace("\n", "")
+        if "<answers>" in single_line_content and not "</answers>" in single_line_content:
+            print(f"Response {model} {note_id:04d} incomplete, lacking </answers>")
+        else:
+            warn(f"Response is not complete: {single_line_content}")
+        return
+    if model not in data[note_id].responses:
+        data[note_id].responses[model] = ScoredResponse(content, model, [])
+
+
+
+def add_score(api_response: CompletionApiResponse) -> None:
+    if api_response["error"] is not None:
+        warn(f"Error in response: {api_response['error']}")
+        return
+    content = api_response["response"]["body"]["choices"][0]["message"]["content"]
     score = parse_score(content)
     if score is None:
-        warn(f"No score found in response: {content}")
+        single_line_content = content.replace("\n", "")
+        warn(f"No score found in response: {single_line_content}")
         return
     id_match = match(r"request-tb-(\d{4})-ev-(.*)", api_response["custom_id"])
     if not id_match:
@@ -73,7 +100,8 @@ def add_data(api_response: CompletionApiResponse) -> None:
         return
 
     if model not in data[note_id].responses:
-        data[note_id].responses[model] = ScoredResponse(api_response, model, [])
+        warn(f"Model {model} not found in note {note_id}")
+        return
     data[note_id].responses[model].scores.append(score)
 
 
@@ -84,13 +112,22 @@ with JsonlReader(IntermediateFiles.DatasetThinkingRaw) as reader:
         data[i + 1] = ScoredNote(Note.from_dict(prompt_raw["note"]), user_prompt, {})
 
 
-with JsonlReader(IntermediateFiles.CompletionBatchEvaluationThinking1) as reader:
+with JsonlReader(IntermediateFiles.CompletionBatchThinking1) as reader:
     for line in reader:
         add_data(line)
 
-with JsonlReader(IntermediateFiles.CompletionBatchEvaluationThinking2) as reader:
+with JsonlReader(IntermediateFiles.CompletionBatchThinking2) as reader:
     for line in reader:
         add_data(line)
+
+
+with JsonlReader(IntermediateFiles.CompletionBatchEvaluationThinking1) as reader:
+    for line in reader:
+        add_score(line)
+
+with JsonlReader(IntermediateFiles.CompletionBatchEvaluationThinking2) as reader:
+    for line in reader:
+        add_score(line)
 
 
 with JsonlWriter(IntermediateFiles.DatasetThinking) as writer, open(
@@ -134,6 +171,7 @@ with JsonlWriter(IntermediateFiles.DatasetThinking) as writer, open(
                 "messages": [
                     {"role": "system", "content": SYSTEM_PROMPTS.THINKING},
                     {"role": "user", "content": note.prompt},
+                    {"role": "assistant", "content": note.responses[model].answer }
                 ]
             }
             writer.write_line(completion)

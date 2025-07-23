@@ -215,6 +215,8 @@ python -m train.dataset_generator.evaluate_prompt_generator
 python -m train.dataset_generator.thinking_dataset_generator
 ```
 
+**Fine Tune**: Using SFT algorithm, dataset `train/result/dataset-flash.jsonl` and `train/result/dataset-thinking.jsonl` to fine-tune the Qwen3-14b and Qwen3-8b model, respectively.
+
 ### Development Guidelines
 
 - Follow TypeScript best practices for frontend code
