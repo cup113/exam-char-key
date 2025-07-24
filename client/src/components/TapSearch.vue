@@ -174,6 +174,7 @@ function adoptAnswer() {
         <section class="flex flex-col items-center">
             <h2 class="text-xl font-bold mb-2">原文内容</h2>
             <div v-for="(para, paraIndex) in paragraphs" :key="paraIndex">
+                <div class="inline-block font-mono mr-2">({{ paraIndex + 1 }})</div>
                 <div class="inline-block">{{ para.leadingPunctuation }}</div>
                 <div v-for="(chunk, index) in para.chunks" :key="index" class="inline-block">
                     <span class="cursor-pointer"
