@@ -76,7 +76,8 @@ class Note:
 
     def is_short_note(self) -> bool:
         SHORT_NOTE_THRESHOLD = 3
-        return len(self.detail) <= SHORT_NOTE_THRESHOLD
+        original_text = self.get_original_text()
+        return len(original_text) <= SHORT_NOTE_THRESHOLD and len(original_text) > 0
 
     def is_title_note(self) -> bool:
         return self.get_original_text() == self.name_passage
