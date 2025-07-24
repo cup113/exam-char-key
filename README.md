@@ -12,6 +12,7 @@ A comprehensive Chinese language learning platform that specializes in **ancient
 - **Deep Text Analysis**: Comprehensive analysis of ancient Chinese texts with detailed annotations
 - **Character Dictionary Integration**: Real-time character explanations and definitions from ZDIC
 - **Textbook Integration**: Verbatim related character definitions in textbook
+- **Frequency Analysis**: Statistical analysis of character usage across different contexts
 
 ### 🤖 AI Capabilities
 
@@ -41,6 +42,7 @@ A comprehensive Chinese language learning platform that specializes in **ancient
 - **FastAPI** for high-performance API
 - **Python 3.9+**
 - **OpenAI API** integration (Qwen models)
+- **PocketBase** for local database and caching
 - **Docker** & **Docker Compose** for containerization
 
 ## Installation
@@ -68,7 +70,7 @@ A comprehensive Chinese language learning platform that specializes in **ancient
    echo "API_KEY=your_openai_api_key_here" > .env
    ```
 
-3. **Run with Docker Compose** (alternatively, deploy it to [Coolify
+3. **Run with Docker Compose** (alternatively, deploy it to [Coolify](https://coolify.io/))
 
    ```bash
    docker-compose up --build
@@ -188,6 +190,7 @@ python run_dev.py
 - `GET /` - Serve frontend application
 - `POST /api/query` - Quick & Deep AI responses & ZDIC lookup
 - `POST /api/search-original` - Search original context of given excerpts
+- `GET /api/zdic` - Direct ZDIC dictionary lookups
 
 ## Training & AI Models
 
