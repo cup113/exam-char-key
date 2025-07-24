@@ -29,22 +29,22 @@ export function format_front(sentence: string, indices: Set<number>): string {
 export function update_from_query(responseChunk: ResponseChunk, frontendHandler: FrontendHandler) {
     switch (responseChunk.type) {
         case "freq":
-            frontendHandler.updateFreqInfo(new FreqResult(responseChunk.result));
+            frontendHandler.updateFreqInfo(new FreqResult(responseChunk.data));
             break;
-        case "ai-instant":
-            frontendHandler.updateInstant(responseChunk.result.content);
+        case "ai-flash":
+            frontendHandler.updateFlash(responseChunk.data);
             break;
-        case "ai-thought":
-            frontendHandler.updateThought(responseChunk.result.content);
+        case "ai-thinking":
+            frontendHandler.updateThinking(responseChunk.data.content);
             break;
         case 'ai-usage':
-            frontendHandler.updateUsage(responseChunk.result);
+            frontendHandler.updateUsage(responseChunk.data);
             break;
         case "zdic":
-            frontendHandler.updateZdic(responseChunk.result);
+            frontendHandler.updateZdic(responseChunk.data);
             break;
         case "search-original":
-            frontendHandler.updateSearchOriginal(responseChunk.result.content);
+            frontendHandler.updateSearchOriginal(responseChunk.data.content);
             break;
         default:
             console.error(`Unknown type: ${JSON.stringify(responseChunk)}`);

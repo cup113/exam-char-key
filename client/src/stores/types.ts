@@ -37,6 +37,16 @@ export class FreqResult {
         this.notes = raw.notes.map(note => new Note(note));
     }
 
+    public static empty() {
+        return new FreqResult({
+            word: "",
+            textbook_freq: 0,
+            guwen_freq: 0,
+            query_freq: 0,
+            notes: []
+        });
+    }
+
     public get_freq() {
         return this.textbook_freq * 6 + this.guwen_freq + this.query_freq * 3;
     }
@@ -69,12 +79,12 @@ export interface ZdicResult {
     phrase_explanations: string[];
 }
 
-export type ResponseChunk = { type: "freq", result: JsonType<FreqResult> } | { type: "ai-instant", result: AiResult } | { type: "ai-thought", result: AiResult } | { type: "ai-usage", result: AiUsageResult } | { type: "zdic", result: ZdicResult } | { type: "search-original", result: AiResult };
+export type ResponseChunk = { type: "freq", data: JsonType<FreqResult> } | { type: "ai-flash", data: string } | { type: "ai-thinking", data: AiResult } | { type: "ai-usage", data: AiUsageResult } | { type: "zdic", data: ZdicResult } | { type: "search-original", data: AiResult };
 
 export interface FrontendHandler {
     updateFreqInfo: (freqResult: FreqResult) => void;
-    updateInstant: (contentChunk: string) => void;
-    updateThought: (contentChunk: string) => void;
+    updateFlash: (contentChunk: string) => void;
+    updateThinking: (contentChunk: string) => void;
     updateUsage: (usageResult: AiUsageResult) => void;
     updateZdic: (zdicResult: ZdicResult) => void;
     updateSearchOriginal: (contentChunk: string) => void;

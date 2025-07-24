@@ -41,25 +41,25 @@ async function guardResponse(fetched: Promise<Response>) {
     return { reader, decoder, response };
 }
 
-export async function queryInstant(
+export async function queryFlash(
     queryWord: string,
     querySentence: string,
     frontendHandler: FrontendHandler,
 ) {
     const { reader, decoder } = await guardResponse(
-        fetch(`/api/query?q=${encodeURIComponent(queryWord)}&context=${encodeURIComponent(querySentence)}&instant=1`)
+        fetch(`/api/query/flash?q=${encodeURIComponent(queryWord)}&context=${encodeURIComponent(querySentence)}`)
     );
 
     await readStream(reader, decoder, frontendHandler);
 }
 
-export async function queryThought(
+export async function queryThinking(
     queryWord: string,
     querySentence: string,
     frontendHandler: FrontendHandler,
 ) {
     const { reader, decoder } = await guardResponse(
-        fetch(`/api/query?q=${encodeURIComponent(queryWord)}&context=${encodeURIComponent(querySentence)}&instant=0`)
+        fetch(`/api/query/thinking?q=${encodeURIComponent(queryWord)}&context=${encodeURIComponent(querySentence)}`)
     );
 
     await readStream(reader, decoder, frontendHandler);
