@@ -7,16 +7,6 @@ import { FreqResult } from '@/stores/types';
 import FrequencyIcon from './icons/FrequencyIcon.vue';
 
 const queryStore = useQueryStore();
-
-const freqInfo = computed(() => {
-    return queryStore.freqInfo ?? new FreqResult({
-        "word": "",
-        "textbook_freq": 0,
-        "guwen_freq": 0,
-        "query_freq": 0,
-        "notes": [],
-    });
-});
 </script>
 
 <template>
@@ -25,13 +15,13 @@ const freqInfo = computed(() => {
             <FrequencyIcon />
             <strong class="ml-2">词频分析</strong>
         </div>
-        <div v-if="freqInfo.word">
+        <div>
             <div>
-                <p>总频率指标：<strong class="text-warning-600">{{ freqInfo.get_freq() }}</strong></p>
-                <p>其中教科书：{{ freqInfo.textbook_freq }}，古文语料库：{{ freqInfo.guwen_freq }}，用户查询：{{ freqInfo.query_freq }}</p>
+                <p>总频率指标：<strong class="text-warning-600">{{ queryStore.freqInfo.get_freq() }}</strong></p>
+                <p>其中教科书：{{ queryStore.freqInfo.textbook_freq }}，古文语料库：{{ queryStore.freqInfo.guwen_freq }}，用户查询：{{ queryStore.freqInfo.query_freq }}</p>
             </div>
             <div>
-                <div v-for="note in freqInfo.notes.slice(0, 20)">
+                <div v-for="note in queryStore.freqInfo.notes.slice(0, 20)">
                     <div class="flex flex-col text-center items-center bg-primary-100 shadow-md py-2 my-2 px-2">
                         <p v-html="stress_keyword(note.context.trim(), note.get_keyword())"
                                 class="text-secondary-700">

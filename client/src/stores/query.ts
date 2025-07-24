@@ -4,7 +4,7 @@ import { computed, reactive, ref, type Ref } from 'vue';
 import { nanoid } from 'nanoid';
 import { SearchTarget, type HistoryRecord, type FrontendHandler, FreqResult } from './types';
 import { format_front, parse_ai_thought_response } from './utils';
-import { queryInstant, queryThought, searchOriginalText } from './api';
+import { queryFlash, queryThinking, searchOriginalText } from './api';
 import { useHistoryStore } from './history';
 import { useSettingsStore } from './settings';
 
@@ -22,7 +22,7 @@ export const useQueryStore = defineStore("query", () => {
         word: '',
     });
 
-    const freqInfo = ref<FreqResult | null>(null);
+    const freqInfo = ref<FreqResult>(FreqResult.empty());
     const aiInstantResponse = ref("");
     const aiThoughtResponse = ref("");
     const currentRecorded = ref(true);
@@ -39,8 +39,8 @@ export const useQueryStore = defineStore("query", () => {
         lastQuery.index = queryIndex.value;
 
         await Promise.all([
-            queryInstant(queryWord.value, querySentence.value, getFrontendHandler()),
-            queryThought(queryWord.value, querySentence.value, getFrontendHandler()),
+            queryFlash(queryWord.value, querySentence.value, getFrontendHandler()),
+            queryThinking(queryWord.value, querySentence.value, getFrontendHandler()),
         ]);
         console.log("Request Ended");
     }
@@ -50,8 +50,6 @@ export const useQueryStore = defineStore("query", () => {
     }
 
     function getFrontendHandler(): FrontendHandler {
-        freqInfo.value = null;
-
         function getLazyEmptyUpdater(reference: Ref<string>) {
             let isFirst = true;
             return (contentChunk: string) => {
@@ -68,8 +66,8 @@ export const useQueryStore = defineStore("query", () => {
             updateFreqInfo: (freqResult: FreqResult) => {
                 freqInfo.value = freqResult;
             },
-            updateInstant: getLazyEmptyUpdater(aiInstantResponse),
-            updateThought: getLazyEmptyUpdater(aiThoughtResponse),
+            updateFlash: getLazyEmptyUpdater(aiInstantResponse),
+            updateThinking: getLazyEmptyUpdater(aiThoughtResponse),
             updateUsage: useSettingsStore().updateUsage,
             updateZdic: (zdicResult) => {
                 zdicResponse.value = zdicResult;
