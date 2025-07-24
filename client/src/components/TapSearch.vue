@@ -35,7 +35,7 @@ const queryStore = useQueryStore();
 const paragraphs = reactive(new Array<Paragraph>());
 const chars = reactive(new Array<Character>);
 const aiAdoptSuggestions = computed(() => {
-    return [...queryStore.aiThoughtStructured.answers, queryStore.aiInstantResponse];
+    return [queryStore.aiInstantResponse, ...queryStore.aiThoughtStructured.answers].map(answer => answer.replace("。", ""));
 });
 const adoptText = ref("");
 
