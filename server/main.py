@@ -4,10 +4,12 @@ from fastapi.staticfiles import StaticFiles
 from openai import AsyncOpenAI
 from openai import AsyncStream
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionChunk
-from json import load, dumps
+from json import loads, dumps
 from os import getenv
 from typing import Literal
 from dataclasses import dataclass
+from dataclasses_json import dataclass_json
+from httpx import ConnectTimeout
 from .services.zdic_service import ZDicService
 from .services.logging_service import main_logger
 
@@ -25,13 +27,13 @@ class Config:
     API_KEY = getenv("API_KEY")
     GENERAL_MODEL = AiModel("qwen-plus", 8, 20, False)
     GENERAL_MODEL_THINKING = AiModel("qwen-plus", 8, 80, True)
-    WYW_FLASH_MODEL = AiModel("qwen3-14b-ft-202507221614-8d95", 10, 40, False)
+    WYW_FLASH_MODEL = AiModel("qwen3-8b-ft-202507232312-96a6", 10, 40, False)
     WYW_THINKING_MODEL = AiModel("qwen3-8b-ft-202507231002-7aeb", 5, 20, False)
 
     MODEL_INPUT_PRICE = 8  # 1e-7 yuan/token
     MODEL_OUTPUT_PRICE = 20  # 1e-7 yuan/token
     AI_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    TEXTBOOK_PATH = "server/textbook.json"
+    FREQUENCY_PATH = "server/word-frequency.jsonl"
 
 
 def init_ai_client():
@@ -43,25 +45,60 @@ def init_ai_client():
     )
 
 
-# 加载教材数据
-def load_textbook_data():
-    with open(Config.TEXTBOOK_PATH, "r", encoding="utf-8") as f:
-        textbook_data = load(f)
-        tender_dict: dict[str, set[int]] = {}
-        for i, record in enumerate(textbook_data):
-            word = record["context"][
-                record["index_range"][0] : record["index_range"][1]
-            ]
-            for ch in word:
-                if ch not in tender_dict:
-                    tender_dict[ch] = set()
-                tender_dict[ch].add(i)
-        return textbook_data, tender_dict
+@dataclass_json
+@dataclass
+class Note:
+    name_passage: str
+    context: str
+    index_range: tuple[int, int]
+    detail: str
+    core_detail: str
+
+    def get_original_text(self):
+        return self.context[self.index_range[0] : self.index_range[1]]
+
+    def to_dict(self) -> dict[str, str | list[int]]: ...
+
+    @staticmethod
+    def from_dict(d: dict[str, str | list[int]]) -> "Note": ...
+
+
+@dataclass_json
+@dataclass
+class FreqInfo:
+    word: str
+    textbook_freq: int
+    guwen_freq: int
+    query_freq: int
+    notes: list[Note]
+
+    def get_total_freq(self) -> int:
+        return self.textbook_freq * 6 + self.guwen_freq + self.query_freq * 3
+
+    @classmethod
+    def create(cls, word: str) -> "FreqInfo":
+        return FreqInfo(
+            word=word, textbook_freq=0, guwen_freq=0, query_freq=0, notes=[]
+        )
+
+    @staticmethod
+    def from_dict(d: dict[str, str | int | list[Note]]) -> "FreqInfo": ...
+
+    def to_dict(self): ...
+
+
+def load_frequency_data():
+    with open(Config.FREQUENCY_PATH, "r", encoding="utf-8") as f:
+        data: dict[str, FreqInfo] = {}
+        for line in f:
+            record = FreqInfo.from_dict(loads(line))
+            data[record.word] = record
+        return data
 
 
 app = FastAPI()
 client = init_ai_client()
-textbook_data, tender_dict = load_textbook_data()
+frequency_data = load_frequency_data()
 
 
 PROMPT_AI_INSTANT = """你是一位高中语文老师，深入研究高考文言文词语解释。答案简短，并且不太过意译。一般可以给出一个精准解释，语境特殊时可以补充引申义。若涉及通假字，则需答：通“(通假字)”，(含义)。你需要简洁地回答用户的问题，除答案外不输出任何内容。"""
@@ -209,11 +246,9 @@ zdic_service = ZDicService()
 async def instant_query_generator(q: str, context: str):
     if not q:
         return
-    possible_set = tender_dict.get(q[0]) or set()
-    for ch in q[1:]:
-        possible_set = possible_set & (tender_dict.get(ch) or set())
-    result = [textbook_data[i] for i in possible_set]
-    yield dumps({"type": "text", "result": result}) + "\n"
+
+    if q in frequency_data:
+        yield dumps({"type": "freq", "result": frequency_data[q].to_dict()}) + "\n"
 
     async for chunk in completion_service.generate_instant_response(context, q):
         yield chunk
@@ -282,8 +317,13 @@ async def search_original(
 
 
 @app.get("/api/zdic")
-async def get_zdic_only(q: str = Query(..., description="The query word", max_length=100)):
-    result = await zdic_service.get_result(q)
+async def get_zdic_only(
+    q: str = Query(..., description="The query word", max_length=100)
+):
+    try:
+        result = await zdic_service.get_result(q)
+    except ConnectTimeout:
+        raise HTTPException(503, "Connection Timeout from zdic")
     if result is None:
         raise HTTPException(404, "Empty Response from zdic")
     return JSONResponse(result.to_dict())

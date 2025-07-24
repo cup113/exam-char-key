@@ -19,6 +19,9 @@ class FreqInfo:
     def create(cls, word: str) -> "FreqInfo":
         return FreqInfo(word=word, textbook_freq=0, guwen_freq=0, query_freq=0, notes=[])
 
+    @staticmethod
+    def from_dict(d: dict[str, str | int | list[Note]]) -> "FreqInfo": ...
+
     def to_dict(self): ...
 
 

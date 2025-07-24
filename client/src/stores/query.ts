@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { useLocalStorage } from '@vueuse/core';
 import { computed, reactive, ref, type Ref } from 'vue';
 import { nanoid } from 'nanoid';
-import { PassageAnnotation, SearchTarget, type HistoryRecord, type FrontendHandler } from './types';
+import { SearchTarget, type HistoryRecord, type FrontendHandler, FreqResult } from './types';
 import { format_front, parse_ai_thought_response } from './utils';
 import { queryInstant, queryThought, searchOriginalText } from './api';
 import { useHistoryStore } from './history';
@@ -22,7 +22,7 @@ export const useQueryStore = defineStore("query", () => {
         word: '',
     });
 
-    const textAnnotations = ref(new Array<PassageAnnotation>());
+    const freqInfo = ref<FreqResult | null>(null);
     const aiInstantResponse = ref("");
     const aiThoughtResponse = ref("");
     const currentRecorded = ref(true);
@@ -50,6 +50,8 @@ export const useQueryStore = defineStore("query", () => {
     }
 
     function getFrontendHandler(): FrontendHandler {
+        freqInfo.value = null;
+
         function getLazyEmptyUpdater(reference: Ref<string>) {
             let isFirst = true;
             return (contentChunk: string) => {
@@ -63,8 +65,8 @@ export const useQueryStore = defineStore("query", () => {
         }
 
         return {
-            updateTextAnnotations: (annotations: PassageAnnotation[]) => {
-                textAnnotations.value = annotations;
+            updateFreqInfo: (freqResult: FreqResult) => {
+                freqInfo.value = freqResult;
             },
             updateInstant: getLazyEmptyUpdater(aiInstantResponse),
             updateThought: getLazyEmptyUpdater(aiThoughtResponse),
@@ -97,7 +99,7 @@ export const useQueryStore = defineStore("query", () => {
         queryWord,
         lastQuery,
         queryIndex,
-        textAnnotations,
+        freqInfo,
         aiInstantResponse,
         aiThoughtResponse,
         aiThoughtStructured,

@@ -1,4 +1,4 @@
-import { PassageAnnotation, type ResponseChunk } from './types';
+import { FreqResult, type ResponseChunk } from './types';
 import type { FrontendHandler } from './types';
 
 export function stress_keyword(sentence: string, keyword: string): string {
@@ -28,8 +28,8 @@ export function format_front(sentence: string, indices: Set<number>): string {
 
 export function update_from_query(responseChunk: ResponseChunk, frontendHandler: FrontendHandler) {
     switch (responseChunk.type) {
-        case "text":
-            frontendHandler.updateTextAnnotations(responseChunk.result.map((raw) => new PassageAnnotation(raw)));
+        case "freq":
+            frontendHandler.updateFreqInfo(new FreqResult(responseChunk.result));
             break;
         case "ai-instant":
             frontendHandler.updateInstant(responseChunk.result.content);

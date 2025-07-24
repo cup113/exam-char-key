@@ -2,7 +2,7 @@
 import QuickAnswer from '@/components/QuickAnswer.vue';
 import ZdicExplanation from '@/components/ZdicExplanation.vue';
 import DeepAnswer from '@/components/DeepAnswer.vue';
-import PassageAnnotation from '@/components/PassageAnnotation.vue';
+import FreqDisplay from '@/components/FreqDisplay.vue';
 import AddText from '@/components/AddText.vue';
 import TapSearch from '@/components/TapSearch.vue';
 import { useQueryStore } from '@/stores/query';
@@ -18,11 +18,7 @@ const queryStore = useQueryStore();
       <div class="flex flex-col gap-2">
         <QuickAnswer></QuickAnswer>
         <DeepAnswer></DeepAnswer>
-        <div class="w-xs lg:w-md">
-          <PassageAnnotation v-for="(annotation, index) in queryStore.textAnnotations" :annotation="annotation"
-            :key="index" :index="index">
-          </PassageAnnotation>
-        </div>
+        <FreqDisplay></FreqDisplay>
       </div>
       <ZdicExplanation></ZdicExplanation>
     </section>
