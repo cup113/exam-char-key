@@ -2,7 +2,7 @@
 import { DialogRoot, DialogClose, DialogContent, DialogOverlay, DialogPortal, DialogTitle, DialogTrigger } from 'reka-ui';
 import DocumentAddIcon from './icons/DocumentAddIcon.vue';
 import { useQueryStore } from '@/stores/query';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 const queryStore = useQueryStore();
 
@@ -17,6 +17,10 @@ function handleAddText() {
         }
     }
 }
+
+watch(() => queryStore.activeText, () => {
+    inputText.value = queryStore.activeText;
+})
 </script>
 
 <template>
