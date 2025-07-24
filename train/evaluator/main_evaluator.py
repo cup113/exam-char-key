@@ -179,7 +179,7 @@ class AiEvaluator:
             return None
 
         score = match_content.group(2)
-        return int(score)
+        return min(int(score), 3)
 
 
 class EckFlashSubject(AiSubject):
@@ -290,7 +290,7 @@ subjects: list[AiSubject] = [
     QwenMaxSubject(),
     DeepSeekV3Subject(),
     Qwen8BSubject(),
-    Qwen14BFlashSubject(),
+    Qwen8BFlashSubject(),
 ]
 
 evaluators: list[AiEvaluator] = [QwenLongEvaluator(), QwenPlusEvaluator()]
