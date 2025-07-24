@@ -30,7 +30,7 @@ def parse_score(message: str) -> int | None:
     <think>...</think><score>9</score>
     """
 
-    score_match = match(r"(.*?)\<score\>([0-9]|10)\<\/score\>", message.strip(), DOTALL)
+    score_match = match(r"(.*?)\<score\>([0-3])\<\/score\>", message.strip(), DOTALL)
 
     if score_match:
         return int(score_match.group(2))
@@ -55,14 +55,11 @@ def add_data(api_response: CompletionApiResponse) -> None:
         warn(f"Error in response: {api_response['error']}")
         return
     content = api_response["response"]["body"]["choices"][0]["message"]["content"]
-    id_match = match(r"request-tb-(\d{4})", api_response["custom_id"])
+    id_match = match(r"request-tb-(\d{4})-([a-zA-Z]+)", api_response["custom_id"])
     if not id_match:
         return
     note_id = int(id_match.group(1).lstrip("0"))
-    model = "qm"
-    if note_id > 5000:
-        note_id -= 5000
-        model = "ds"
+    model = id_match.group(2)
 
     if not check_integrity(content):
         single_line_content = content.replace("\n", "")
@@ -86,15 +83,12 @@ def add_score(api_response: CompletionApiResponse) -> None:
         single_line_content = content.replace("\n", "")
         warn(f"No score found in response: {single_line_content}")
         return
-    id_match = match(r"request-tb-(\d{4})-ev-(.*)", api_response["custom_id"])
+    id_match = match(r"request-tb-(\d{4})-([a-zA-Z]+)-ev-(.*)", api_response["custom_id"])
     if not id_match:
         return
 
     note_id = int(id_match.group(1).lstrip("0"))
-    model = "qm"
-    if note_id > 5000:
-        note_id -= 5000
-        model = "ds"
+    model = id_match.group(2)
     if note_id not in data:
         warn(f"Note {note_id} not found in dataset")
         return
@@ -156,11 +150,9 @@ with JsonlWriter(IntermediateFiles.DatasetThinking) as writer, open(
             score_file.write(f"0\n")
             continue
 
-        new_threshold = max(ACCEPT_THRESHOLD, max_score - 0.5)
-
         def accept_response(response: ScoredResponse) -> bool:
             avg = response.get_average()
-            return avg is not None and avg >= new_threshold
+            return avg is not None and avg >= ACCEPT_THRESHOLD
 
         accepted_models = [
             model for model, response in responses if accept_response(response)

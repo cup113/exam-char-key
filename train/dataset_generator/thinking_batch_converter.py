@@ -3,9 +3,9 @@ from train.utils import JsonlReader, JsonlWriter, IntermediateFiles
 from random import shuffle
 
 
-def convert(prompt_raw: PromptRaw, i: int, model: str) -> BatchRequest:
+def convert(prompt_raw: PromptRaw, i: int, model: str, model_short: str) -> BatchRequest:
     return {
-        "custom_id": f"request-tb-{i:04d}",
+        "custom_id": f"request-tb-{i:04d}-{model_short}",
         "method": "POST",
         "url": "/v1/chat/completions",
         "body": {
@@ -20,8 +20,8 @@ batch_requests_1: list[BatchRequest] = []
 batch_requests_2: list[BatchRequest] = []
 with JsonlReader(IntermediateFiles.DatasetThinkingRaw) as fr:
     for i, prompt_raw in enumerate(fr):
-        batch_requests_1.append(convert(prompt_raw, i + 1, "qwen-max-latest"))
-        batch_requests_2.append(convert(prompt_raw, i + 5001, "deepseek-v3"))
+        batch_requests_1.append(convert(prompt_raw, i, "qwen-max-latest", "qm"))
+        batch_requests_2.append(convert(prompt_raw, i, "deepseek-v3", "ds"))
 
 shuffle(batch_requests_1)
 
