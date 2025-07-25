@@ -7,26 +7,31 @@ from server.models import ZdicResult, ZdicExplanations
 ZDIC_URL = "https://www.zdic.net/hans/"
 
 class ZdicService:
-    def __init__(self):
+    def __init__(self, pb: PocketBaseService):
         self.zdic_url = ZDIC_URL
+        self.pb = pb
 
     async def get_result(self, word: str) -> ZdicResult | None:
         pocketbase = PocketBaseService()
-        cache = await pocketbase.zdc_retrieve(word)
+        cache = await pocketbase.zdc_search(word)
 
         if cache is None:
             response = await self.request_zdic(word)
             explanations = self.parse_zdic_response(response)
-            await pocketbase.zdc_insert(
+            await pocketbase.zdc_create(
                 word, explanations.model_dump_json()
             )
             cached = False
+            coins = 50 + len(explanations.model_dump_json()) // 5
         else:
             content = cache.get("content")
             if content is None:
                 return None
             explanations = ZdicExplanations.model_validate_json(content)
             cached = True
+            coins = 10 + len(explanations.model_dump_json()) // 20
+
+        await self.pb.users_spend_coins(coins, reason="zdic lookup")
 
         return self.get_final_response(explanations, cached)
 
