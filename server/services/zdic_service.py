@@ -12,13 +12,12 @@ class ZdicService:
         self.pb = pb
 
     async def get_result(self, word: str) -> ZdicResult | None:
-        pocketbase = PocketBaseService()
-        cache = await pocketbase.zdc_search(word)
+        cache = await self.pb.zdc_search(word)
 
         if cache is None:
             response = await self.request_zdic(word)
             explanations = self.parse_zdic_response(response)
-            await pocketbase.zdc_create(
+            await self.pb.zdc_create(
                 word, explanations.model_dump_json()
             )
             cached = False
