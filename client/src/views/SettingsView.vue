@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { useUserStore } from '@/stores/user';
 import { computed, ref } from 'vue';
+import { add_sep } from '@/stores/utils';
+import BalanceDetails from '@/components/BalanceDetails.vue';
 
 const userStore = useUserStore();
 
@@ -8,21 +10,6 @@ const email = ref('');
 const password = ref('');
 const isLoginMode = ref(true);
 const error = ref('');
-
-function add_sep(num: number) {
-    let result = "";
-    while (true) {
-        const last_three = (num % 1000).toString();
-        num = Math.floor(num / 1000);
-        if (!(num > 0)) {
-            result = last_three + result;
-            break;
-        } else {
-            result = "," + last_three.padStart(3, "0") + result;
-        }
-    }
-    return result;
-}
 
 const userInfo = computed(() => [
     { label: '用户名', value: userStore.user.name },
@@ -53,9 +40,8 @@ function handleLogout() {
 
 <template>
     <main class="p-4 flex flex-col items-center">
-        <section v-if="userStore.user.role === 'guest'" class="w-full max-w-md bg-white rounded-lg shadow-md p-6">
-            <div class="text-center mb-6">
-                <h2 class="text-2xl font-bold">{{ isLoginMode ? '用户登录' : '用户注册' }}</h2>
+        <section v-if="userStore.user.role === 'guest'" class="ec-standard-card">
+            <div class="justify-center">{{ isLoginMode ? '用户登录' : '用户注册' }}
             </div>
 
             <form @submit.prevent="handleAuth" class="space-y-4">
@@ -88,15 +74,15 @@ function handleLogout() {
             </div>
         </section>
 
-        <section v-else class="w-full max-w-md bg-white rounded-lg shadow-md p-6">
-            <div class="text-center mb-6">
-                <h2 class="text-2xl font-bold">用户信息</h2>
+        <section class="ec-standard-card">
+            <div class="justify-center">
+                用户信息
             </div>
 
             <div>
                 <div v-for="(info, index) in userInfo" :key="index"
-                    class="flex items-center justify-between p-4 bg-secondary-50">
-                    <span class="text-secondary-500">{{ info.label }}</span>
+                    class="flex items-center justify-between p-4 shadow-sm">
+                    <span class="text-secondary-500 min-w-12">{{ info.label }}</span>
                     <span class="font-medium text-primary-700" :class="{
                         'text-warning-700': info.isBalance,
                         'capitalize': info.isRole
@@ -106,12 +92,22 @@ function handleLogout() {
                 </div>
             </div>
 
-            <div class="mt-6">
-                <button @click="handleLogout"
-                    class="w-full bg-danger-500 text-white py-2 px-4 rounded-md hover:bg-danger-600 transition duration-300">
-                    登出
-                </button>
+            <div>
+                <div class="flex gap-2">
+                    <button @click="userStore.getUserInfo()"
+                        class="flex-1 bg-secondary-500 text-white py-2 px-4 rounded-md hover:bg-secondary-600 transition duration-300">
+                        刷新
+                    </button>
+                    <button @click="handleLogout"
+                        class="flex-1 bg-danger-500 text-white py-2 px-4 rounded-md hover:bg-danger-600 transition duration-300">
+                        登出
+                    </button>
+                </div>
             </div>
+        </section>
+
+        <section>
+            <balance-details></balance-details>
         </section>
     </main>
 </template>

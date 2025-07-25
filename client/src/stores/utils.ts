@@ -26,6 +26,24 @@ export function format_front(sentence: string, indices: Set<number>): string {
     return chars.join('').replace(DUPLICATE_TAG_REGEX, '');
 }
 
+export function add_sep(num: number): string {
+    if (num < 0) {
+        return `-${add_sep(-num)}`;
+    }
+    let result = "";
+    while (true) {
+        const last_three = (num % 1000).toString();
+        num = Math.floor(num / 1000);
+        if (!(num > 0)) {
+            result = last_three + result;
+            break;
+        } else {
+            result = "," + last_three.padStart(3, "0") + result;
+        }
+    }
+    return result;
+}
+
 export function update_from_query(responseChunk: ResponseChunk, frontendHandler: FrontendHandler) {
     switch (responseChunk.type) {
         case "freq":

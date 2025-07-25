@@ -54,6 +54,11 @@ export const useUserStore = defineStore("settings", () => {
         await apiStore.register(email, password, updateToken, updateUser);
     }
 
+    async function getUserInfo() {
+        const apiStore = useApiStore();
+        apiStore.getUserInfo(updateUser, updateToken);
+    }
+
     async function logout() {
         token.value = "";
         user.value = new User({
@@ -66,10 +71,7 @@ export const useUserStore = defineStore("settings", () => {
         });
     }
 
-    nextTick(() => {
-        const apiStore = useApiStore();
-        apiStore.getUserInfo(updateUser, updateToken);
-    })
+    nextTick(getUserInfo)
 
     return {
         user,
@@ -77,6 +79,7 @@ export const useUserStore = defineStore("settings", () => {
         usageInfo,
         updateUsage,
         updateUser,
+        getUserInfo,
         login,
         register,
         logout,
