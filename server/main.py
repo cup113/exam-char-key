@@ -181,7 +181,7 @@ def get_user_info(request: Request):
     return JSONResponse(request.state.auth_result)
 
 
-@app.post("/api/adopt")
+@app.post("/api/adopt-answer")
 async def adopt_answer(body: AdoptBody, request: Request):
     pb: PocketBaseService = request.state.pb
     return JSONResponse(

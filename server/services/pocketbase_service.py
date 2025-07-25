@@ -1,6 +1,6 @@
 from pocketbase import PocketBase
 from pocketbase.models.dtos import AuthResult, Record
-from pocketbase.models.errors import PocketBaseNotFoundError
+from pocketbase.models.errors import PocketBaseNotFoundError, PocketBaseBadRequestError
 
 from os import getenv
 from tqdm import tqdm
@@ -10,7 +10,7 @@ from typing import Coroutine, Any
 
 from server.services.logging_service import main_logger
 from server.config import Config, Roles
-from server.models import Role, FreqInfo, CorpusStatItem, CorpusItem, UserRaw
+from server.models import Role, FreqInfo, FreqInfoFileRaw, CorpusStatItem, CorpusItem, UserRaw
 
 
 class NotEnoughBalanceError(Exception):
@@ -57,7 +57,7 @@ class PocketBaseService:
         main_logger.info("Initializing Corpus...")
         with open(Config.FREQUENCY_PATH, "r", encoding="utf-8") as f:
             for line in tqdm(f, "Initializing Corpus"):
-                freq_info = FreqInfo.model_validate_json(line)
+                freq_info = FreqInfoFileRaw.model_validate_json(line).to_freq_info()
                 await self.corpus_init_load(freq_info)
 
     async def init_roles(self):
@@ -79,16 +79,11 @@ class PocketBaseService:
             main_logger.error(f"Auth (superuser) failed: {e}")
             return False
 
-    async def auth_login(self, email: str, password: str) -> AuthResult | None:
-        try:
-            auth_result = await self.users.auth.with_password(email, password)
-            self.user_id = auth_result.get("record").get("id") or ""
-            await self.users_update_active()
-            return auth_result
-        except Exception as e:
-            main_logger.error(f"Auth (login) failed: {e}")
-            return None
-
+    async def auth_login(self, email: str, password: str) -> AuthResult:
+        auth_result = await self.users.auth.with_password(email, password)
+        self.user_id = auth_result.get("record").get("id") or ""
+        await self.users_update_active()
+        return auth_result
     async def auth_register(
         self, email: str, password: str, role: Role
     ) -> AuthResult | None:
@@ -125,13 +120,13 @@ class PocketBaseService:
             return None
 
     async def auth_guest(self, ip: str):
-        cleaned_ip = ip.replace(".", "__").replace(":", "_")
-        fake_email = f"guest_{cleaned_ip}@none.com"
+        cleaned_ip = ip.replace(":", "_")
+        fake_email = f"{cleaned_ip}@guest.com"
         fake_pwd = f"guest.{cleaned_ip}"
         try:
             try:
                 auth_result = await self.auth_login(fake_email, fake_pwd)
-            except PocketBaseNotFoundError:
+            except (PocketBaseNotFoundError, PocketBaseBadRequestError):
                 auth_result = await self.auth_register(
                     fake_email, fake_pwd, Roles.GUEST
                 )
@@ -206,7 +201,7 @@ class PocketBaseService:
         if last_active_date != current_date:
             role = await self.roles_get(user.role)
             await self.users_spend_coins(
-                coins=-role.daily_coins, reason="Daily bonus" # TODO role
+                coins=-role.daily_coins, reason="Daily bonus"
             )
 
         await self.users.update(self.user_id, {"lastActive": current})
@@ -277,16 +272,13 @@ class PocketBaseService:
         tasks: list[Coroutine[Any, Any, Any]] = []
 
         tasks.append(
-            self.corpus_stats.create(freq_info.to_corpus_stat_item().model_dump())
+            self.corpus_stats.create(freq_info.model_dump())
         )
-
-        for note in freq_info.to_corpus_items():
-            tasks.append(self.corpus.create(note.model_dump()))
 
         result = await gather(*tasks, return_exceptions=True)
         for r in result:
             if isinstance(r, Exception):
-                main_logger.error(f"Corpus Init Load Failed in {freq_info.word}: {r}")
+                main_logger.error(f"Corpus Init Load Failed in {freq_info.stat.query}: {r}")
                 return False
 
     async def corpus_freq_retrieve(self, query: str) -> FreqInfo | None:
@@ -302,9 +294,9 @@ class PocketBaseService:
             await self.users_spend_coins(
                 20 + len(corpus_items["items"]) * 5, reason="Freq Retrieve"
             )
-            return FreqInfo.from_corpus(
-                corpus_stat_item=CorpusStatItem.model_validate(dict(corpus_stats_item)),
-                corpus_items=[
+            return FreqInfo(
+                stat=CorpusStatItem.model_validate(dict(corpus_stats_item)),
+                notes=[
                     CorpusItem.model_validate(dict(item))
                     for item in corpus_items["items"]
                 ],
@@ -365,5 +357,5 @@ class PocketBaseService:
 
     async def balance_details_create(self, delta: int, remaining: int, reason: str):
         return await self.balance_details.create(
-            params={"delta": delta, "remaining": remaining, "reason": reason}
+            params={"user": self.user_id, "delta": delta, "remaining": remaining, "reason": reason}
         )

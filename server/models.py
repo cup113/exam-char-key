@@ -22,12 +22,24 @@ class Note(BaseModel):
     def get_original_text(self):
         return self.context[self.index_range[0] : self.index_range[1]]
 
+    def to_corpus_item(self, type: Literal["textbook", "dataset"]):
+        return CorpusItem(
+            query=self.get_original_text(),
+            queryUser=None,
+            type=type,
+            context=self.context,
+            answer=self.core_detail
+        )
+
 
 class CorpusStatItem(BaseModel):
     query: str
     freqTextbook: int
     freqDataset: int
     freqQuery: int
+
+    def get_total_freq(self) -> int:
+        return self.freqTextbook * 6 + self.freqDataset + self.freqQuery * 3
 
 
 class CorpusItem(BaseModel):
@@ -38,66 +50,42 @@ class CorpusItem(BaseModel):
     answer: str
 
 
-class FreqInfo(BaseModel):
+class FreqInfoFileRaw(BaseModel):
     word: str
     textbook_freq: int
     guwen_freq: int
     query_freq: int
-    notes: list[Note]  # TODO too chaotic
+    notes: list[Note]
 
-    def get_total_freq(self) -> int:
-        return self.textbook_freq * 6 + self.guwen_freq + self.query_freq * 3
-
-    @classmethod
-    def create(cls, word: str) -> "FreqInfo":
+    def to_freq_info(self):
         return FreqInfo(
-            word=word, textbook_freq=0, guwen_freq=0, query_freq=0, notes=[]
+            stat=CorpusStatItem(
+                query=self.word,
+                freqTextbook=self.textbook_freq,
+                freqDataset=self.guwen_freq,
+                freqQuery=self.query_freq,
+            ),
+            notes=[note.to_corpus_item(
+                "textbook" if i < self.textbook_freq else "dataset"
+            ) for i, note in enumerate(self.notes)],
         )
+
+
+class FreqInfo(BaseModel):
+    stat: CorpusStatItem
+    notes: list[CorpusItem]
 
     @classmethod
-    def from_corpus(
-        cls, corpus_stat_item: CorpusStatItem, corpus_items: list[CorpusItem]
-    ):
-        return cls(
-            word=corpus_stat_item.query,
-            textbook_freq=corpus_stat_item.freqTextbook,
-            guwen_freq=corpus_stat_item.freqDataset,
-            query_freq=corpus_stat_item.freqQuery,
-            notes=[
-                Note(
-                    name_passage=corpus_item.query,
-                    context=corpus_item.context,
-                    index_range=(
-                        corpus_item.context.index(corpus_item.query),
-                        corpus_item.context.index(corpus_item.query)
-                        + len(corpus_item.query),
-                    ),
-                    detail=corpus_item.answer,
-                    core_detail=corpus_item.answer,
-                )
-                for corpus_item in corpus_items
-            ],
+    def empty(cls, word: str) -> "FreqInfo":
+        return FreqInfo(
+            stat=CorpusStatItem(
+                query=word,
+                freqTextbook=0,
+                freqDataset=0,
+                freqQuery=0,
+            ),
+            notes=[],
         )
-
-    def to_corpus_stat_item(self):
-        return CorpusStatItem(
-            query=self.word,
-            freqTextbook=self.textbook_freq,
-            freqDataset=self.guwen_freq,
-            freqQuery=self.query_freq,
-        )
-
-    def to_corpus_items(self):
-        return [
-            CorpusItem(
-                query=note.get_original_text(),
-                queryUser=None,
-                type="textbook" if i < self.textbook_freq else "dataset",
-                context=note.context,
-                answer=note.detail,
-            )
-            for i, note in enumerate(self.notes)
-        ]
 
 
 class Role(BaseModel):
