@@ -26,14 +26,14 @@ class Config:
     WYW_FLASH_MODEL = AiModel(
         base_url=AI_BASE_URL,
         id="qwen3-8b-ft-202507232312-96a6",
-        prompt_price=10,
-        completion_price=40,
+        prompt_price=5,
+        completion_price=20,
     )
     WYW_THINKING_MODEL = AiModel(
         base_url=AI_BASE_URL,
-        id="qwen3-8b-ft-202507231002-7aeb",
+        id="qwen3-8b-ft-202507251314-0fd2",
         prompt_price=5,
-        completion_price=20,
+        completion_price=50,
     )
 
     DEFAULT_BALANCE = 200_000

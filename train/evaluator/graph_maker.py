@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from typing import List
 
 # Convert the string data into a DataFrame
-with open("./train/result/evaluation-results-copy.csv", "r", encoding="gbk") as f:
+with open("./train/result/evaluation-results.csv", "r", encoding="gbk") as f:
     df = pd.read_csv(f, index_col=False)
 
     numeric_cols = df.columns[df.columns != 'model_name']
@@ -13,6 +13,8 @@ def simplify_model_name(model_name: str) -> str:
     return (
         model_name.replace("-avg", "")
         .replace("qwen3-8b", "q8")
+        .replace("qwen3-14b", "q14")
+        .replace("qwen3-32b", "q32")
         .replace("qwen-max", "qm")
         .replace("deepseek-v3", "ds")
         .replace("flash", "F")
@@ -29,7 +31,6 @@ def plot_average_scores_box(df: pd.DataFrame) -> None:
         "qwen3-8b-avg",
         "qwen-max-avg",
         "deepseek-v3-avg",
-        "eck-thinking-offline-avg",
     ]
 
     # Extract the data for the box plot
@@ -54,9 +55,9 @@ def plot_row_average_scores_line(df: pd.DataFrame) -> None:
     # Calculate the average score for each row across the numeric columns
     df['row_average'] = df[numeric_cols].mean(axis=1)
 
-    low_score_indices: List[int] = df[df['row_average'] < 2.3].index.tolist()
+    low_score_indices: List[int] = df[df['row_average'] < 2].index.tolist()
 
-    print("Rows with average score < 2.3:", low_score_indices)
+    print("Rows with average score < 2:", low_score_indices)
 
     # Plotting
     plt.figure(figsize=(15, 10))

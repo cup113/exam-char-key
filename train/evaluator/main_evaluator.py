@@ -17,13 +17,20 @@ from train.evaluator.subjects import (
     AiTaiyanSubject,
     Qwen8BSubject,
     Qwen8BFlashSubject,
-    QwenTurboSubject,
-    QwenTurboFlashSubject,
     QwenMaxSubject,
-    DeepSeekV3Subject
+    DeepSeekV3Subject,
 )
 from train.evaluator.evaluators import QwenLongEvaluator, QwenPlusEvaluator
-from train.models import EvaluationData, ScoredAnswer, EvaluationResult, AiEvaluator, AiSubject, CacheHandler, CompletionSourcePack
+from train.models import (
+    EvaluationData,
+    ScoredAnswer,
+    EvaluationResult,
+    AiEvaluator,
+    AiSubject,
+    CacheHandler,
+    CompletionSourcePack,
+)
+from time import sleep, time
 
 load_dotenv(".env")
 
@@ -41,13 +48,12 @@ subjects: list[AiSubject] = [
     AiTaiyanSubject(),
     QwenMaxSubject(),
     DeepSeekV3Subject(),
-    QwenTurboSubject(),
-    QwenTurboFlashSubject(),
     Qwen8BSubject(),
     Qwen8BFlashSubject(),
 ]
 
 evaluators: list[AiEvaluator] = [QwenLongEvaluator(), QwenPlusEvaluator()]
+
 
 async def answer_and_score(
     data: EvaluationData, subject: AiSubject, zdic_prompt: str
@@ -60,16 +66,19 @@ async def answer_and_score(
             client=client,
             cache_handler=cache_handler,
         )
-        subject_answer = (await subject.ask(pack)).strip()
+        subject_answer = (await subject.ask(pack)).strip().replace("\n", "")
         scored_answer = ScoredAnswer(answer=subject_answer, scores={})
         for evaluator in evaluators:
-            score = await evaluator.evaluate(data, subject_answer, client, cache_handler)
+            score = await evaluator.evaluate(
+                data, subject_answer, client, cache_handler
+            )
             if score is not None:
                 scored_answer.scores[evaluator.model_name] = score
         return subject.model_name, scored_answer
     except Exception as e:
         print(f"Error evaluating {data['type']} {data['context']} {data['query']}: {e}")
         return None
+
 
 async def main():
     dataset: list[EvaluationData] = []
@@ -90,9 +99,12 @@ async def main():
         writer.writeheader()
 
         for data in tqdm(dataset):
+            start_time = time()
             query = data["query"]
             tasks: list[Coroutine[Any, Any, tuple[str, ScoredAnswer] | None]] = []
-            zdic_response = await httpx_client.get(f"http://localhost:4122/api/zdic?q={query}")
+            zdic_response = await httpx_client.get(
+                f"http://localhost:4122/api/zdic?q={query}"
+            )
             if zdic_response.status_code == 200:
                 zdic_prompt = zdic_response.json()["zdic_prompt"]
             else:
@@ -110,6 +122,10 @@ async def main():
 
             writer.writerow(evaluation_result.to_dict())
             f.flush()
+            sleep(
+                max(0, min(32 - (time() - start_time), time() - start_time))
+            )  # If it's too fast, it's probably cached.
+
 
 if __name__ == "__main__":
     run(main())
