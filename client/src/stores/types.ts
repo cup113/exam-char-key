@@ -4,21 +4,15 @@ export type JsonType<T> = T extends Date ? string
 
 export class Note {
     public context: string;
-    public core_detail: string;
-    public detail: string;
-    public index_range: [number, number];
-    public name_passage: string;
+    public query: string;
+    public answer: string;
+    public type: "textbook" | "dataset" | "query";
 
     constructor(raw: Omit<JsonType<Note>, "get_keyword">) {
         this.context = raw.context;
-        this.core_detail = raw.core_detail;
-        this.detail = raw.detail;
-        this.index_range = raw.index_range;
-        this.name_passage = raw.name_passage;
-    }
-
-    public get_keyword() {
-        return this.context.substring(this.index_range[0], this.index_range[1]);
+        this.query = raw.query;
+        this.answer = raw.answer;
+        this.type = raw.type;
     }
 }
 
@@ -52,12 +46,38 @@ export class FreqResult {
     }
 }
 
+export interface BalanceDetail {
+    id: string;
+    user: string;
+    amount: number;
+    balance: number;
+    description: string;
+    created: string;
+}
+
+export class User {
+    public id: string;
+    public name: string;
+    public email: string;
+    public total_spent: number;
+    public balance: number;
+    public role: string;
+
+    constructor(raw: JsonType<User>) {
+        this.id = raw.id;
+        this.name = raw.name;
+        this.email = raw.email;
+        this.total_spent = raw.total_spent;
+        this.balance = raw.balance;
+        this.role = raw.role;
+    }
+}
+
 export interface HistoryRecord {
     id: string;
     level: string;
     front: string;
     back: string;
-    userModifiedBack?: string; // 用户修改的答案
     additions: never[];
     createdAt: string;
 }
@@ -66,11 +86,10 @@ export interface AiResult {
     content: string;
     stopped: boolean;
 }
+
 export interface AiUsageResult {
     prompt_tokens: number;
-    input_unit_price: number;
     completion_tokens: number;
-    output_unit_price: number;
 }
 
 export interface ZdicResult {

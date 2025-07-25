@@ -4,9 +4,9 @@ import { computed, reactive, ref, type Ref } from 'vue';
 import { nanoid } from 'nanoid';
 import { SearchTarget, type HistoryRecord, type FrontendHandler, FreqResult } from './types';
 import { format_front, parse_ai_thought_response } from './utils';
-import { queryFlash, queryThinking, searchOriginalText } from './api';
+import { useApiStore } from './api';
 import { useHistoryStore } from './history';
-import { useSettingsStore } from './settings';
+import { useUserStore } from './user';
 
 export const useQueryStore = defineStore("query", () => {
     const activeText = useLocalStorage("EC_activeText", "");
@@ -33,20 +33,22 @@ export const useQueryStore = defineStore("query", () => {
     });
 
     async function query() {
+        const apiStore = useApiStore();
+
         currentRecorded.value = false;
         lastQuery.sentence = querySentence.value;
         lastQuery.word = queryWord.value;
         lastQuery.index = queryIndex.value;
 
         await Promise.all([
-            queryFlash(queryWord.value, querySentence.value, getFrontendHandler()),
-            queryThinking(queryWord.value, querySentence.value, getFrontendHandler()),
+            apiStore.queryFlash(queryWord.value, querySentence.value, getFrontendHandler()),
+            apiStore.queryThinking(queryWord.value, querySentence.value, getFrontendHandler()),
         ]);
         console.log("Request Ended");
     }
 
     async function searchOriginal() {
-        await searchOriginalText(activeText.value, searchTarget.value, getFrontendHandler());
+        await useApiStore().searchOriginalText(activeText.value, searchTarget.value, getFrontendHandler());
     }
 
     function getFrontendHandler(): FrontendHandler {
@@ -68,7 +70,7 @@ export const useQueryStore = defineStore("query", () => {
             },
             updateFlash: getLazyEmptyUpdater(aiInstantResponse),
             updateThinking: getLazyEmptyUpdater(aiThoughtResponse),
-            updateUsage: useSettingsStore().updateUsage,
+            updateUsage: useUserStore().updateUsage,
             updateZdic: (zdicResult) => {
                 zdicResponse.value = zdicResult;
             },

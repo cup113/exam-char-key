@@ -10,13 +10,7 @@ export const useHistoryStore = defineStore("history", () => {
         const json = {
             version: 3,
             title: `文言文字词梳理 ${new Date().toLocaleString()}`,
-            records: selected.map(r => ({
-                id: r.id,
-                level: r.level,
-                front: r.front,
-                back: r.userModifiedBack ?? r.back,
-                additions: r.additions
-            })),
+            records: selected,
             footer: "",
             deckType: "type",
         };

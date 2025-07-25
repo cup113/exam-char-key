@@ -5,14 +5,16 @@ import NavigationMenu from './components/NavigationMenu.vue';
 
 <template>
   <div class="bg-secondary-100 min-h-screen">
-  <header class="flex items-center justify-center gap-4 py-4">
-    <img alt="Vue logo" class="logo" src="/favicon.ico" width="32" height="32" />
-    <div>
-      <h1 class="text-xl font-semibold text-primary-700"><RouterLink to="/">Exam Char Key</RouterLink></h1>
-    </div>
-  </header>
+    <header class="flex items-center justify-center gap-4 py-4">
+      <img alt="logo" src="/favicon.ico" width="32" height="32" />
+      <div>
+        <h1 class="text-xl font-semibold text-primary-700">
+          <RouterLink to="/">Exam Char Key</RouterLink>
+        </h1>
+      </div>
+    </header>
 
-  <RouterView />
-  <NavigationMenu />
+    <RouterView />
+    <NavigationMenu />
   </div>
 </template>

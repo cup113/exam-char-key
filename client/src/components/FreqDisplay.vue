@@ -21,12 +21,12 @@ const queryStore = useQueryStore();
                 <p>其中教科书：{{ queryStore.freqInfo.textbook_freq }}，古文语料库：{{ queryStore.freqInfo.guwen_freq }}，用户查询：{{ queryStore.freqInfo.query_freq }}</p>
             </div>
             <div>
-                <div v-for="note in queryStore.freqInfo.notes.slice(0, 20)">
+                <div v-for="note in queryStore.freqInfo.notes">
                     <div class="flex flex-col text-center items-center bg-primary-100 shadow-md py-2 my-2 px-2">
-                        <p v-html="stress_keyword(note.context.trim(), note.get_keyword())"
+                        <p v-html="stress_keyword(note.context.trim(), note.query)"
                                 class="text-secondary-700">
                         </p>
-                        <p class="w-full text-primary-700 font-bold">{{ note.detail }}</p>
+                        <p class="w-full text-primary-700 font-bold">{{ note.answer }}</p>
                     </div>
                 </div>
             </div>
