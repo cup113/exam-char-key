@@ -79,7 +79,7 @@ const buttons = [
             <div class="record-content flex-1 px-2 py-1">
               <div class="front-text text-gray-700" v-html="record.front"></div>
             </div>
-            <input v-model="record.userModifiedBack" :placeholder="record.back" class="px-2 py-1 w-full border-b text-primary-800" />
+            <input v-model="record.back" :placeholder="record.back" class="px-2 py-1 w-full border-b text-primary-800" />
           </div>
         </div>
       </div>
