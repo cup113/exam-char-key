@@ -1,6 +1,11 @@
 export type JsonType<T> = T extends Date ? string
     : T extends Function | undefined | symbol ? never
-    : T extends object ? { [K in keyof T]: JsonType<T[K]> } : T;
+    : T extends Array<any> ? {
+        [K in keyof T]: JsonType<T[K]>
+    }
+    : T extends object ? {
+        [K in keyof T as T[K] extends Function | undefined | symbol ? never : K]: JsonType<T[K]>
+    } : T;
 
 export class Note {
     public context: string;
@@ -16,33 +21,43 @@ export class Note {
     }
 }
 
+export class FreqResultStat {
+    query: string;
+    freqTextbook: number;
+    freqDataset: number;
+    freqQuery: number;
+
+    constructor(raw: Omit<JsonType<FreqResultStat>, "get_total_freq">) {
+        this.query = raw.query;
+        this.freqTextbook = raw.freqTextbook;
+        this.freqDataset = raw.freqDataset;
+        this.freqQuery = raw.freqQuery;
+    }
+
+    public get_total_freq() {
+        return this.freqTextbook * 6 + this.freqDataset + this.freqQuery * 3;
+    }
+}
+
 export class FreqResult {
-    word: string;
-    textbook_freq: number;
-    guwen_freq: number;
-    query_freq: number;
+    stat: FreqResultStat;
     notes: Note[];
 
     constructor(raw: Omit<JsonType<FreqResult>, "get_freq">) {
-        this.word = raw.word;
-        this.textbook_freq = raw.textbook_freq;
-        this.guwen_freq = raw.guwen_freq;
-        this.query_freq = raw.query_freq;
+        this.stat = new FreqResultStat(raw.stat);
         this.notes = raw.notes.map(note => new Note(note));
     }
 
     public static empty() {
         return new FreqResult({
-            word: "",
-            textbook_freq: 0,
-            guwen_freq: 0,
-            query_freq: 0,
+            stat: {
+                query: "",
+                freqTextbook: 0,
+                freqDataset: 0,
+                freqQuery: 0,
+            },
             notes: []
         });
-    }
-
-    public get_freq() {
-        return this.textbook_freq * 6 + this.guwen_freq + this.query_freq * 3;
     }
 }
 

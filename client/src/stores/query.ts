@@ -90,6 +90,8 @@ export const useQueryStore = defineStore("query", () => {
         };
         const historyStore = useHistoryStore();
         historyStore.insertHistory(newRecord);
+        const apiStore = useApiStore();
+        apiStore.adoptAnswer(lastQuery.sentence, lastQuery.word, answer);
     }
 
     return {
