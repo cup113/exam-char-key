@@ -58,7 +58,7 @@ def add_data(api_response: CompletionApiResponse) -> None:
     id_match = match(r"request-tb-(\d{4})-([a-zA-Z]+)", api_response["custom_id"])
     if not id_match:
         return
-    note_id = int(id_match.group(1).lstrip("0"))
+    note_id = int(id_match.group(1).lstrip("0") or "0")
     model = id_match.group(2)
 
     if not check_integrity(content):
@@ -87,7 +87,7 @@ def add_score(api_response: CompletionApiResponse) -> None:
     if not id_match:
         return
 
-    note_id = int(id_match.group(1).lstrip("0"))
+    note_id = int(id_match.group(1).lstrip("0") or "0")
     model = id_match.group(2)
     if note_id not in data:
         warn(f"Note {note_id} not found in dataset")
@@ -103,7 +103,7 @@ with JsonlReader(IntermediateFiles.DatasetThinkingRaw) as reader:
     for i, line in enumerate(reader):
         prompt_raw: PromptRaw = line
         user_prompt = prompt_raw["messages"][1]["content"]
-        data[i + 1] = ScoredNote(Note.from_dict(prompt_raw["note"]), user_prompt, {})
+        data[i] = ScoredNote(Note.from_dict(prompt_raw["note"]), user_prompt, {})
 
 
 with JsonlReader(IntermediateFiles.CompletionBatchThinking1) as reader:

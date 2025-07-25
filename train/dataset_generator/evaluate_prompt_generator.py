@@ -37,7 +37,12 @@ with JsonlReader(IntermediateFiles.DatasetThinkingRaw) as reader:
     for i, line in enumerate(reader):
         prompt_raw: PromptRaw = line
         note = Note.from_dict(prompt_raw["note"])
-        raw_data.update([(f"request-tb-{i + 1:04d}", note)])
+        raw_data.update(
+            [
+                (f"request-tb-{i:04d}-qm", note),
+                (f"request-tb-{i:04d}-ds", note),
+            ]
+        )
 
 
 class EvaluationFiles(TypedDict):

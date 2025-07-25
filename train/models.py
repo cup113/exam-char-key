@@ -66,7 +66,10 @@ class CacheHandler:
         if not path.exists(cache_path):
             return None
         with open(cache_path, "r", encoding="utf-8") as f:
-            return f.read()
+            cached_result = f.read().strip()
+            if len(cached_result) == 0:
+                return None
+            return cached_result
 
     def save_cache(self, hash_key: str, content: str) -> None:
         cache_path = self.get_cache_path(hash_key)
@@ -138,7 +141,8 @@ class AiSubject:
             top_p=0.95,
         )
         content = (completion.choices[0].message.content or "").strip()
-        cache_handler.save_cache(user_prompt, content)
+        if completion.choices[0].finish_reason == "stop":
+            cache_handler.save_cache(user_prompt, content)
         return content
 
     async def ask(self, pack: CompletionSourcePack) -> str:

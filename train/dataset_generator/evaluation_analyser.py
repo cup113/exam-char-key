@@ -5,7 +5,10 @@ def parse_line(line: str):
     parts = line.strip().split("\t")
     word = parts[0]
     qm_qp = qm_ql = qm_avg = ds_qp = ds_ql = ds_avg = None
-    pass_count = int(parts[-1])
+    try:
+        pass_count = int(parts[-1])
+    except ValueError:
+        pass_count = 0
 
     for part in parts[1:-1]:
         if part.startswith("qm:"):
@@ -36,6 +39,10 @@ def convert_to_csv(input_file: str, output_file: str):
             word, qm_qp, qm_ql, qm_avg, ds_qp, ds_ql, ds_avg, pass_count = parse_line(
                 line
             )
+            try:
+                word.encode("gbk")
+            except UnicodeEncodeError:
+                word = "??"
             writer.writerow(
                 [word, qm_qp, qm_ql, qm_avg, ds_qp, ds_ql, ds_avg, pass_count]
             )
