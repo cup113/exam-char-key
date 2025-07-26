@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { nextTick, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 import { useLocalStorage } from "@vueuse/core";
 import { useApiStore } from "./api";
 import { type AiUsageResult, User } from "./types";
@@ -20,6 +20,7 @@ export const useUserStore = defineStore("settings", () => {
         completion_price: 0,
     });
 
+
     const user = useLocalStorage("EC_user", User.empty(), {
         serializer: {
             read(raw) {
@@ -30,6 +31,7 @@ export const useUserStore = defineStore("settings", () => {
             }
         }
     });
+    const isGuest = computed(() => user.value.role.name === "Guest");
     const token = useLocalStorage("EC_token", "");
     const deepThinking = useLocalStorage('EC_deepThinking', true);
 
@@ -95,6 +97,7 @@ export const useUserStore = defineStore("settings", () => {
 
     return {
         user,
+        isGuest,
         token,
         usageInfo,
         balanceDetails,

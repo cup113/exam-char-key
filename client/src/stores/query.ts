@@ -8,7 +8,9 @@ import { useApiStore } from './api';
 import { useHistoryStore } from './history';
 import { useUserStore } from './user';
 
-const exampleText = `帝高阳之苗裔兮，朕皇考曰伯庸。
+const exampleText = `示例文本：《离骚》（节选）
+可点击上方“添加/修改文本内容”，将你想要查询的文本内容填至此处。
+帝高阳之苗裔兮，朕皇考曰伯庸。
 摄提贞于孟陬兮，惟庚寅吾以降。
 皇览揆余初度兮，肇锡余以嘉名。
 名余曰正则兮，字余曰灵均。
@@ -41,12 +43,19 @@ export const useQueryStore = defineStore("query", () => {
     const currentRecorded = ref(true);
     const zdicResponse = ref({ basic_explanations: new Array<string>(), detailed_explanations: new Array<string>(), phrase_explanations: new Array<string>() });
 
+    const requestIds = {
+        queryFlash: "",
+        queryThinking: "",
+        queryFreq: "",
+        searchOriginal: "",
+    };
+
     const aiThoughtStructured = computed(() => {
         return parse_ai_thought_response(aiThoughtResponse.value);
     });
 
-    async function queryFrequency(query: string, page: number = 1) {
-        freqInfo.value = await useApiStore().queryFreq(query, page);
+    async function queryFrequency(query: string, page: number = 1, requestId?: string) {
+        freqInfo.value = await useApiStore().queryFreq(query, page, requestId);
     }
 
     async function query(simple: boolean) {
@@ -60,16 +69,34 @@ export const useQueryStore = defineStore("query", () => {
         lastQuery.word = queryWord.value;
         lastQuery.index = queryIndex.value;
 
+        for (const requestId of [requestIds.queryFlash, requestIds.queryThinking, requestIds.queryFreq]) {
+            if (requestId) {
+                apiStore.abortRequest(requestId);
+            }
+        }
+
+        requestIds.queryFreq = nanoid();
+        requestIds.queryFlash = nanoid();
+        requestIds.queryThinking = nanoid();
+
         await Promise.all([
-            queryFrequency(queryWord.value),
-            apiStore.queryFlash(queryWord.value, querySentence.value, getFrontendHandler()),
-            apiStore.queryThinking(queryWord.value, querySentence.value, userStore.deepThinking, getFrontendHandler()),
+            queryFrequency(queryWord.value, 1, requestIds.queryFreq),
+            apiStore.queryFlash(queryWord.value, querySentence.value, getFrontendHandler(), requestIds.queryFlash),
+            apiStore.queryThinking(queryWord.value, querySentence.value, userStore.deepThinking, getFrontendHandler(), requestIds.queryThinking),
         ]);
         console.log("Request Ended");
     }
 
     async function searchOriginal() {
-        await useApiStore().searchOriginalText(activeText.value, searchTarget.value, getFrontendHandler());
+        const apiStore = useApiStore();
+
+        if (requestIds.searchOriginal) {
+            apiStore.abortRequest(requestIds.searchOriginal);
+        }
+
+        requestIds.searchOriginal = nanoid();
+
+        await apiStore.searchOriginalText(activeText.value, searchTarget.value, getFrontendHandler(), requestIds.searchOriginal);
     }
 
     function getFrontendHandler(): FrontendHandler {

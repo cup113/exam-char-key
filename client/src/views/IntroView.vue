@@ -3,8 +3,7 @@ import router from '@/router';
 import { onMounted } from 'vue';
 
 onMounted(() => {
-  const isNewUser = localStorage.getItem('exam-char-key.user-guide-shown') === null;
-  localStorage.setItem('exam-char-key.user-guide-shown', 'true');
+  const isNewUser = localStorage.getItem('EC_visited') === null;
   if (!isNewUser) {
     router.replace('/query');
   }
