@@ -17,8 +17,12 @@ const userInfo = computed(() => [
     { label: '邮箱', value: userStore.user.email },
     { label: '余额', value: add_sep(userStore.user.balance), isBalance: true },
     { label: '历史花费', value: add_sep(userStore.user.total_spent) },
-    { label: '角色', value: userStore.user.role, isRole: true },
+    { label: '角色', value: userStore.user.role.name, isRole: true },
 ]);
+
+const isGuest = computed(() => {
+    return userStore.user.role.name === 'Guest';
+})
 
 async function handleAuth() {
     error.value = '';
@@ -40,7 +44,7 @@ function handleLogout() {
 
 <template>
     <main class="p-4 flex flex-col items-center">
-        <section v-if="userStore.user.role === 'guest'" class="ec-standard-card">
+        <section v-if="isGuest" class="ec-standard-card">
             <div class="justify-center">{{ isLoginMode ? '用户登录' : '用户注册' }}
             </div>
 
@@ -67,7 +71,7 @@ function handleLogout() {
                 </button>
             </form>
 
-            <div class="mt-4 text-center">
+            <div class="text-center">
                 <button @click="isLoginMode = !isLoginMode" class="text-primary-600 hover:text-primary-700">
                     {{ isLoginMode ? '没有账户？去注册' : '已有账户？去登录' }}
                 </button>
@@ -98,7 +102,7 @@ function handleLogout() {
                         class="flex-1 bg-secondary-500 text-white py-2 px-4 rounded-md hover:bg-secondary-600 transition duration-300">
                         刷新
                     </button>
-                    <button @click="handleLogout"
+                    <button v-if="!isGuest" @click="handleLogout"
                         class="flex-1 bg-danger-500 text-white py-2 px-4 rounded-md hover:bg-danger-600 transition duration-300">
                         登出
                     </button>

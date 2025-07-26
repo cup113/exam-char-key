@@ -13,11 +13,10 @@ from server.services.zdic_service import ZdicService
 from server.services.completion_service import CompletionService
 from server.services.logging_service import main_logger
 from server.services.pocketbase_service import PocketBaseService
-from server.config import Config, Roles
+from server.config import Config
 from server.models import (
     ZdicResult,
     ServerResponseZdic,
-    ServerResponseFreqInfo,
 )
 
 
@@ -29,14 +28,15 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
 
         authorization = request.headers.get("Authorization")
         request.state.pb = PocketBaseService()
+
         if authorization is not None:
             if authorization.startswith("Bearer "):
                 authorization = authorization[len("Bearer ") :]
-            request.state.auth_result = await request.state.pb.auth_user(authorization)
+            await request.state.pb.auth_user(authorization)
             main_logger.info(f"Authorization: {authorization}")
         else:
             request.state.token = None
-            request.state.auth_result = await request.state.pb.auth_guest(ip_address)
+            await request.state.pb.auth_guest(ip_address)
 
         return await call_next(request)
 
@@ -89,10 +89,6 @@ async def query_flash_core(pb: PocketBaseService, context: str, q: str):
 
 async def query_thinking_core(pb: PocketBaseService, context: str, q: str):
     completion_service = CompletionService(client, pb)
-    freq_info = await pb.corpus_freq_retrieve(q)
-    if freq_info is not None:
-        yield ServerResponseFreqInfo.create(freq_info).to_jsonl_str()
-
     try:
         zdic_result = await ZdicService(pb).get_result(q)
 
@@ -154,6 +150,19 @@ async def search_original(
     )
 
 
+@app.get("/api/query/freq-info")
+async def get_freq_info(
+    request: Request,
+    q: str = Query(..., description="The query word", max_length=100),
+    page: int = Query(1, description="The page number", ge=1),
+):
+    pb: PocketBaseService = request.state.pb
+    result = await pb.corpus_freq_retrieve(q, page)
+    if result is None:
+        return JSONResponse({"message": f"{q} not found in database"}, status_code=404)
+    return JSONResponse(result.model_dump())
+
+
 @app.get("/api/zdic")
 async def get_zdic_only(
     request: Request, q: str = Query(..., description="The query word", max_length=100)
@@ -173,12 +182,19 @@ async def get_balance(
     page: int = Query(1, description="The page number"),
 ):
     pb: PocketBaseService = request.state.pb
-    return JSONResponse(await pb.balance_details_list(page=page))
+    return JSONResponse((await pb.balance_details_list(page=page)).model_dump())
 
 
 @app.get("/api/user")
 def get_user_info(request: Request):
-    return JSONResponse(request.state.auth_result)
+    auth_result = request.state.pb.latest_auth_result
+    if auth_result is None:
+        return JSONResponse(
+            {"message": "Not authenticated"},
+            status_code=401,
+        )
+
+    return JSONResponse(auth_result.model_dump())
 
 
 @app.post("/api/adopt-answer")
@@ -192,13 +208,15 @@ async def adopt_answer(body: AdoptBody, request: Request):
 @app.post("/api/auth/register")
 async def register(body: RegisterBody, request: Request):
     pb: PocketBaseService = request.state.pb
-    return JSONResponse(await pb.auth_register(body.email, body.password, Roles.USER))
+    result = await pb.users_guest_upgrade(body.email, body.password)
+
+    return JSONResponse(result.model_dump())
 
 
 @app.post("/api/auth/login")
 async def login(body: LoginBody, request: Request):
     pb: PocketBaseService = request.state.pb
-    return JSONResponse(await pb.auth_login(body.email, body.password))
+    return JSONResponse((await pb.auth_login(body.email, body.password)).model_dump())
 
 
 @app.get("/")

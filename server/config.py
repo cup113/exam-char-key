@@ -17,10 +17,7 @@ class Config:
     AI_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
     GENERAL_MODEL = AiModel(
-        base_url=AI_BASE_URL,
-        id="qwen-plus",
-        prompt_price=8,
-        completion_price=2
+        base_url=AI_BASE_URL, id="qwen-plus", prompt_price=8, completion_price=2
     )
 
     WYW_FLASH_MODEL = AiModel(
@@ -33,7 +30,7 @@ class Config:
         base_url=AI_BASE_URL,
         id="qwen3-8b-ft-202507251314-0fd2",
         prompt_price=5,
-        completion_price=50,
+        completion_price=40,  # Half reasoning
     )
 
     DEFAULT_BALANCE = 200_000

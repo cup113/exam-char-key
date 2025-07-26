@@ -12,14 +12,8 @@ export const useUserStore = defineStore("settings", () => {
         completion_price: 0,
     });
 
-    const user = useLocalStorage("EC_user", new User({
-        id: "",
-        name: "",
-        email: "",
-        total_spent: 0,
-        balance: 0,
-        role: "guest",
-    }), {
+
+    const user = useLocalStorage("EC_user", User.empty(), {
         serializer: {
             read(raw) {
                 return new User(JSON.parse(raw));
@@ -61,14 +55,7 @@ export const useUserStore = defineStore("settings", () => {
 
     async function logout() {
         token.value = "";
-        user.value = new User({
-            id: "",
-            name: "",
-            email: "",
-            total_spent: 0,
-            balance: 0,
-            role: "guest",
-        });
+        getUserInfo();
     }
 
     nextTick(getUserInfo)

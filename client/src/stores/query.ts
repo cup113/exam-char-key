@@ -43,6 +43,7 @@ export const useQueryStore = defineStore("query", () => {
         await Promise.all([
             apiStore.queryFlash(queryWord.value, querySentence.value, getFrontendHandler()),
             apiStore.queryThinking(queryWord.value, querySentence.value, getFrontendHandler()),
+            (async () => { freqInfo.value = await apiStore.queryFreq(queryWord.value, 1) })(),
         ]);
         console.log("Request Ended");
     }
@@ -65,9 +66,6 @@ export const useQueryStore = defineStore("query", () => {
         }
 
         return {
-            updateFreqInfo: (freqResult: FreqResult) => {
-                freqInfo.value = freqResult;
-            },
             updateFlash: getLazyEmptyUpdater(aiInstantResponse),
             updateThinking: getLazyEmptyUpdater(aiThoughtResponse),
             updateUsage: useUserStore().updateUsage,
