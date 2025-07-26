@@ -21,16 +21,16 @@ class ZdicService:
                 word, explanations.model_dump_json()
             )
             cached = False
-            coins = 50 + len(explanations.model_dump_json()) // 5
+            coins = 50 + len(explanations.model_dump_json()) // 10
         else:
             content = cache.get("content")
             if content is None:
                 return None
             explanations = ZdicExplanations.model_validate_json(content)
             cached = True
-            coins = 10 + len(explanations.model_dump_json()) // 20
+            coins = 10 + len(explanations.model_dump_json()) // 50
 
-        await self.pb.users_spend_coins(coins, reason="zdic lookup")
+        await self.pb.users_spend_coins(coins, reason=f"汉典查询 {word}")
 
         return self.get_final_response(explanations, cached)
 

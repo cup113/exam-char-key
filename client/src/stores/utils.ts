@@ -46,9 +46,6 @@ export function add_sep(num: number): string {
 
 export function update_from_query(responseChunk: ResponseChunk, frontendHandler: FrontendHandler) {
     switch (responseChunk.type) {
-        case "freq":
-            frontendHandler.updateFreqInfo(new FreqResult(responseChunk.data));
-            break;
         case "ai-flash":
             frontendHandler.updateFlash(responseChunk.data);
             break;

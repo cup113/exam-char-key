@@ -76,7 +76,11 @@ export class User {
     public email: string;
     public total_spent: number;
     public balance: number;
-    public role: string;
+    public role: {
+        id: string;
+        name: string;
+        daily_coins: number
+    };
 
     constructor(raw: JsonType<User>) {
         this.id = raw.id;
@@ -85,6 +89,21 @@ export class User {
         this.total_spent = raw.total_spent;
         this.balance = raw.balance;
         this.role = raw.role;
+    }
+
+    public static empty() {
+        return new User({
+            id: "",
+            name: "",
+            email: "",
+            total_spent: 0,
+            balance: 0,
+            role: {
+                id: "",
+                name: "Guest",
+                daily_coins: 0
+            }
+        })
     }
 }
 
@@ -113,10 +132,9 @@ export interface ZdicResult {
     phrase_explanations: string[];
 }
 
-export type ResponseChunk = { type: "freq", data: JsonType<FreqResult> } | { type: "ai-flash", data: string } | { type: "ai-thinking", data: AiResult } | { type: "ai-usage", data: AiUsageResult } | { type: "zdic", data: ZdicResult } | { type: "search-original", data: AiResult };
+export type ResponseChunk = { type: "ai-flash", data: string } | { type: "ai-thinking", data: AiResult } | { type: "ai-usage", data: AiUsageResult } | { type: "zdic", data: ZdicResult } | { type: "search-original", data: AiResult };
 
 export interface FrontendHandler {
-    updateFreqInfo: (freqResult: FreqResult) => void;
     updateFlash: (contentChunk: string) => void;
     updateThinking: (contentChunk: string) => void;
     updateUsage: (usageResult: AiUsageResult) => void;

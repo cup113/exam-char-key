@@ -1,7 +1,30 @@
-from pydantic import BaseModel, Field
+from pocketbase.models.dtos import AuthResult, ListResult, Record
+from pydantic import BaseModel, Field, field_serializer
 from enum import Enum
-from typing import Literal, Callable
+from typing import Literal, Callable, Coroutine, Any, TypeVar, Generic
 from datetime import datetime
+
+T = TypeVar("T")
+
+
+class ListResultModel(BaseModel, Generic[T]):
+    page: int
+    per_page: int
+    total_items: int
+    total_pages: int
+    items: list[T]
+
+    @classmethod
+    def map_list_result(
+        cls, func: Callable[[Record], T], list_result: ListResult[Record]
+    ) -> "ListResultModel[T]":
+        return cls(
+            page=list_result["page"],
+            per_page=list_result["perPage"],  # type: ignore
+            total_items=list_result["totalItems"],  # type: ignore
+            total_pages=list_result["totalPages"],  # type: ignore
+            items=[func(item) for item in list_result["items"]],
+        )
 
 
 class AiModel(BaseModel):
@@ -28,7 +51,7 @@ class Note(BaseModel):
             queryUser=None,
             type=type,
             context=self.context,
-            answer=self.core_detail
+            answer=self.core_detail,
         )
 
 
@@ -42,7 +65,24 @@ class CorpusStatItem(BaseModel):
         return self.freqTextbook * 6 + self.freqDataset + self.freqQuery * 3
 
 
+class CorpusStatItemRaw(BaseModel):
+    id: str
+    query: str
+    freqTextbook: int
+    freqDataset: int
+    freqQuery: int
+
+
 class CorpusItem(BaseModel):
+    query: str
+    queryUser: str | None
+    type: Literal["textbook", "dataset", "query"]
+    context: str
+    answer: str
+
+
+class CorpusItemRaw(BaseModel):
+    id: str
     query: str
     queryUser: str | None
     type: Literal["textbook", "dataset", "query"]
@@ -65,9 +105,10 @@ class FreqInfoFileRaw(BaseModel):
                 freqDataset=self.guwen_freq,
                 freqQuery=self.query_freq,
             ),
-            notes=[note.to_corpus_item(
-                "textbook" if i < self.textbook_freq else "dataset"
-            ) for i, note in enumerate(self.notes)],
+            notes=[
+                note.to_corpus_item("textbook" if i < self.textbook_freq else "dataset")
+                for i, note in enumerate(self.notes)
+            ],
         )
 
 
@@ -94,6 +135,9 @@ class Role(BaseModel):
     daily_coins: int
 
 
+RolesGetter = Callable[[str], Coroutine[Any, Any, Role]]
+
+
 class UserRaw(BaseModel):
     id: str
     email: str
@@ -103,14 +147,14 @@ class UserRaw(BaseModel):
     role: str
     lastActive: str
 
-    def to_user(self, roles_getter: Callable[[str], Role]) -> "User":
+    async def to_user(self, roles_getter: RolesGetter) -> "User":
         return User(
             id=self.id,
             email=self.email,
             name=self.name,
             total_spent=self.total_spent,
             balance=self.balance,
-            role=roles_getter(self.role),
+            role=await roles_getter(self.role),
             last_active=datetime.fromisoformat(self.lastActive.replace("Z", "+00:00")),
         )
 
@@ -123,6 +167,40 @@ class User(BaseModel):
     balance: int
     role: Role
     last_active: datetime
+
+    @field_serializer("last_active")
+    def serialize_last_active(self, value: datetime) -> str:
+        return value.isoformat()
+
+
+class AuthResultModel(BaseModel):
+    token: str
+    user: User
+
+    @classmethod
+    async def from_raw(cls, auth_result: AuthResult, roles_getter: RolesGetter):
+        return cls(
+            token=auth_result["token"],
+            user=await UserRaw.model_validate(auth_result["record"]).to_user(
+                roles_getter
+            ),
+        )
+
+
+class BalanceDetail(BaseModel):
+    user: str
+    delta: int
+    remaining: int
+    reason: str
+
+
+class BalanceDetailRaw(BaseModel):
+    user: str
+    delta: int
+    remaining: int
+    reason: str
+    id: str
+    created: str
 
 
 class AiUsage(BaseModel):

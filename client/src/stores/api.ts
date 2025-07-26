@@ -1,6 +1,6 @@
 import { update_from_query } from './utils';
 import { defineStore } from 'pinia';
-import { type ResponseChunk, type FrontendHandler, SearchTarget, User } from './types';
+import { type ResponseChunk, type FrontendHandler, SearchTarget, User, FreqResult } from './types';
 import { useUserStore } from './user';
 import { Sha256 } from '@aws-crypto/sha256-js';
 
@@ -111,6 +111,12 @@ export const useApiStore = defineStore("api", () => {
         await readStream(reader, decoder, frontendHandler);
     }
 
+    async function queryFreq(query: string, page: number): Promise<FreqResult> {
+        const response = await guardJsonResponse(call_get(`/api/query/freq-info?q=${encodeURIComponent(query)}&page=${page}`));
+
+        return new FreqResult(response);
+    }
+
     async function sha256(password: string) {
         const array = await new Sha256(password).digest();
         return Array.from(new Uint8Array(array))
@@ -126,7 +132,7 @@ export const useApiStore = defineStore("api", () => {
     async function login(email: string, password: string, updateToken: (token: string) => void, updateUser: (user: User) => void) {
         const response = await guardJsonResponse(call_post("/api/auth/login", { email, password: await sha256(password) }));
         updateToken(response.token);
-        updateUser(new User(response.record));
+        updateUser(new User(response.user));
         await getUserInfo(updateUser, updateToken);
     }
 
@@ -141,13 +147,14 @@ export const useApiStore = defineStore("api", () => {
 
     async function getUserInfo(updateUser: (user: User) => void, updateToken: (token: string) => void) {
         const authResult = await guardJsonResponse(call_get("/api/user"));
-        updateUser(new User(authResult.record));
+        updateUser(new User(authResult.user));
         updateToken(authResult.token);
     }
 
     return {
         queryFlash,
         queryThinking,
+        queryFreq,
         searchOriginalText,
         getBalanceDetails,
         register,

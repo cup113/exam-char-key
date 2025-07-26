@@ -23,7 +23,7 @@ async function fetchBalanceDetails(page: number = 1) {
     try {
         const response = await apiStore.getBalanceDetails(page);
         balanceDetails.value = response.items;
-        totalPages.value = response.totalPages;
+        totalPages.value = response.total_pages;
         currentPage.value = page;
     } catch (error) {
         console.error('Failed to fetch balance details:', error);
