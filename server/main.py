@@ -87,7 +87,7 @@ async def query_flash_core(pb: PocketBaseService, context: str, q: str):
         yield chunk.to_jsonl_str()
 
 
-async def query_thinking_core(pb: PocketBaseService, context: str, q: str):
+async def query_thinking_core(pb: PocketBaseService, context: str, q: str, deep: int):
     completion_service = CompletionService(client, pb)
     try:
         zdic_result = await ZdicService(pb).get_result(q)
@@ -102,6 +102,9 @@ async def query_thinking_core(pb: PocketBaseService, context: str, q: str):
         zdic_prompt = ""
         yield ServerResponseZdic.create(ZdicResult.empty()).to_jsonl_str()
 
+    if not deep:
+        return
+
     async for chunk in completion_service.generate_thought_response(
         context, q, zdic_prompt
     ):
@@ -113,9 +116,10 @@ async def query_thinking(
     request: Request,
     q: str = Query(..., description="The query word", min_length=1, max_length=100),
     context: str = Query(..., description="The context sentence", max_length=1000),
+    deep: int = Query(1, description="Whether to use deep search", ge=0, le=1),
 ):
     return StreamingResponse(
-        query_thinking_core(pb=request.state.pb, context=context, q=q),
+        query_thinking_core(pb=request.state.pb, context=context, q=q, deep=deep),
         media_type="application/json",
     )
 
