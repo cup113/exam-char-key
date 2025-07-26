@@ -112,9 +112,14 @@ export const useApiStore = defineStore("api", () => {
     }
 
     async function queryFreq(query: string, page: number): Promise<FreqResult> {
-        const response = await guardJsonResponse(call_get(`/api/query/freq-info?q=${encodeURIComponent(query)}&page=${page}`));
+        try {
+            const response = await guardJsonResponse(call_get(`/api/query/freq-info?q=${encodeURIComponent(query)}&page=${page}`));
 
-        return new FreqResult(response);
+            return new FreqResult(response);
+        } catch (e) {
+            return FreqResult.empty();
+
+        }
     }
 
     async function sha256(password: string) {

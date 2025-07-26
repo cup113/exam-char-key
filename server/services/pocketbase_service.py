@@ -379,7 +379,7 @@ class PocketBaseService:
             )
             corpus_items = await self.corpus.get_list(
                 page=page,
-                per_page=20,
+                per_page=15,
                 options={"filter": f"query='{self.sanitize(query)}'"},
             )
             await self.users_spend_coins(
@@ -391,6 +391,7 @@ class PocketBaseService:
                     CorpusItem.model_validate(dict(item))
                     for item in corpus_items["items"]
                 ],
+                total_pages=corpus_items["totalPages"],  # type: ignore
             )
         except PocketBaseNotFoundError:
             return None
@@ -462,7 +463,7 @@ class PocketBaseService:
         return ListResultModel[BalanceDetailRaw].map_list_result(
             BalanceDetailRaw.model_validate,
             await self.balance_details.get_list(
-                page=page, per_page=20, options={"sort": "-created"}
+                page=page, per_page=15, options={"sort": "-created"}
             ),
         )
 

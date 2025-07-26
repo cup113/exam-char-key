@@ -32,6 +32,10 @@ export const useQueryStore = defineStore("query", () => {
         return parse_ai_thought_response(aiThoughtResponse.value);
     });
 
+    async function queryFrequency(query: string, page: number = 1) {
+        freqInfo.value = await useApiStore().queryFreq(query, page);
+    }
+
     async function query() {
         const apiStore = useApiStore();
 
@@ -43,7 +47,7 @@ export const useQueryStore = defineStore("query", () => {
         await Promise.all([
             apiStore.queryFlash(queryWord.value, querySentence.value, getFrontendHandler()),
             apiStore.queryThinking(queryWord.value, querySentence.value, getFrontendHandler()),
-            (async () => { freqInfo.value = await apiStore.queryFreq(queryWord.value, 1) })(),
+            queryFrequency(queryWord.value),
         ]);
         console.log("Request Ended");
     }
@@ -108,5 +112,6 @@ export const useQueryStore = defineStore("query", () => {
         searchOriginal,
         adopt_answer,
         query,
+        queryFrequency,
     }
 });

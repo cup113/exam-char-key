@@ -42,10 +42,12 @@ export class FreqResultStat {
 export class FreqResult {
     stat: FreqResultStat;
     notes: Note[];
+    total_pages: number;
 
     constructor(raw: Omit<JsonType<FreqResult>, "get_freq">) {
         this.stat = new FreqResultStat(raw.stat);
         this.notes = raw.notes.map(note => new Note(note));
+        this.total_pages = raw.total_pages;
     }
 
     public static empty() {
@@ -56,7 +58,8 @@ export class FreqResult {
                 freqDataset: 0,
                 freqQuery: 0,
             },
-            notes: []
+            notes: [],
+            total_pages: 1,
         });
     }
 }

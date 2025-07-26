@@ -1,14 +1,29 @@
 <script lang="ts" setup>
 import { useQueryStore } from '@/stores/query';
 import { stress_keyword } from '@/stores/utils';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { FreqResult } from '@/stores/types';
 
 import FrequencyIcon from './icons/FrequencyIcon.vue';
+import MyPagination from './MyPagination.vue';
 
 const queryStore = useQueryStore();
 
 const stat = computed(() => queryStore.freqInfo.stat)
+
+const currentPage = ref(1);
+const itemsPerPage = 15;
+
+// 处理页码变更
+function handlePageChanged(page: number) {
+    currentPage.value = page;
+    queryStore.queryFrequency(queryStore.lastQuery.word, currentPage.value);
+}
+
+// 当查询改变时重置到第一页
+watch(() => queryStore.freqInfo.stat.query, () => {
+    currentPage.value = 1;
+});
 
 // 定义 badge 的显示文本和样式
 const getTypeBadgeInfo = (type: string) => {
@@ -38,10 +53,12 @@ const getTypeBadgeInfo = (type: string) => {
             </div>
             <div>
                 <div v-for="note, index in queryStore.freqInfo.notes" :key="note.query">
-                    <div class="flex flex-col text-center items-center bg-primary-100 shadow-md py-2 my-2 px-2 relative mt-7">
-                        <span class="absolute text-xs font-semibold px-2 py-1 rounded-t-lg whitespace-nowrap left-0 -top-5 right-0"
+                    <div
+                        class="flex flex-col text-center items-center bg-primary-100 shadow-md py-2 my-2 px-2 relative mt-7">
+                        <span
+                            class="absolute text-xs font-semibold px-2 py-1 rounded-t-lg whitespace-nowrap left-0 -top-5 right-0"
                             :class="getTypeBadgeInfo(note.type).class">
-                            {{ index + 1 }}. {{ getTypeBadgeInfo(note.type).text }}
+                            {{ (currentPage - 1) * itemsPerPage + index + 1 }}. {{ getTypeBadgeInfo(note.type).text }}
                         </span>
                         <div class="text-center px-2">
                             <span v-html="stress_keyword(note.context.trim(), note.query)" class="text-secondary-700">
@@ -52,6 +69,7 @@ const getTypeBadgeInfo = (type: string) => {
                         </div>
                     </div>
                 </div>
+                <MyPagination :current-page="currentPage" :total-pages="queryStore.freqInfo.total_pages" @page-changed="handlePageChanged" />
             </div>
         </div>
     </div>

@@ -109,12 +109,14 @@ class FreqInfoFileRaw(BaseModel):
                 note.to_corpus_item("textbook" if i < self.textbook_freq else "dataset")
                 for i, note in enumerate(self.notes)
             ],
+            total_pages=1,
         )
 
 
 class FreqInfo(BaseModel):
     stat: CorpusStatItem
     notes: list[CorpusItem]
+    total_pages: int
 
     @classmethod
     def empty(cls, word: str) -> "FreqInfo":
@@ -126,6 +128,7 @@ class FreqInfo(BaseModel):
                 freqQuery=0,
             ),
             notes=[],
+            total_pages=1,
         )
 
 

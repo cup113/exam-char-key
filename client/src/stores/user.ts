@@ -1,8 +1,16 @@
 import { defineStore } from "pinia";
-import { nextTick } from "vue";
+import { nextTick, ref } from "vue";
 import { useLocalStorage } from "@vueuse/core";
 import { useApiStore } from "./api";
 import { type AiUsageResult, User } from "./types";
+
+interface BalanceDetail {
+    id: string;
+    created: string;
+    delta: number;
+    remaining: number;
+    reason: string;
+}
 
 export const useUserStore = defineStore("settings", () => {
     const usageInfo = useLocalStorage("EC_usageInfo", {
@@ -11,7 +19,6 @@ export const useUserStore = defineStore("settings", () => {
         completion_tokens: 0,
         completion_price: 0,
     });
-
 
     const user = useLocalStorage("EC_user", User.empty(), {
         serializer: {
@@ -24,6 +31,12 @@ export const useUserStore = defineStore("settings", () => {
         }
     });
     const token = useLocalStorage("EC_token", "");
+
+    // Balance Details
+    const balanceDetails = ref<BalanceDetail[]>([]);
+    const bdCurrentPage = ref(1);
+    const bdTotalPages = ref(1);
+    const bdLoading = ref(false);
 
     function updateUser(_user: User) {
         user.value = _user;
@@ -38,19 +51,37 @@ export const useUserStore = defineStore("settings", () => {
         usageInfo.value.completion_tokens += usageResult.completion_tokens;
     }
 
+    async function fetchBalanceDetails(page: number = 1) {
+        bdLoading.value = true;
+        try {
+            const apiStore = useApiStore();
+            const response = await apiStore.getBalanceDetails(page);
+            balanceDetails.value = response.items;
+            bdTotalPages.value = response.total_pages;
+            bdCurrentPage.value = page;
+        } catch (error) {
+            console.error('Failed to fetch balance details:', error);
+        } finally {
+            bdLoading.value = false;
+        }
+    }
+
     async function login(email: string, password: string) {
         const apiStore = useApiStore();
         await apiStore.login(email, password, updateToken, updateUser);
+        await fetchBalanceDetails();
     }
 
     async function register(email: string, password: string) {
         const apiStore = useApiStore();
         await apiStore.register(email, password, updateToken, updateUser);
+        await fetchBalanceDetails();
     }
 
     async function getUserInfo() {
         const apiStore = useApiStore();
         apiStore.getUserInfo(updateUser, updateToken);
+        fetchBalanceDetails();
     }
 
     async function logout() {
@@ -58,17 +89,22 @@ export const useUserStore = defineStore("settings", () => {
         getUserInfo();
     }
 
-    nextTick(getUserInfo)
+    nextTick(getUserInfo);
 
     return {
         user,
         token,
         usageInfo,
+        balanceDetails,
+        bdCurrentPage,
+        bdTotalPages,
+        bdLoading,
         updateUsage,
         updateUser,
         getUserInfo,
         login,
         register,
         logout,
+        fetchBalanceDetails,
     };
 });
