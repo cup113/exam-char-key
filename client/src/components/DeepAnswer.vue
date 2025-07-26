@@ -11,6 +11,7 @@ const queryStore = useQueryStore();
         <div>
             <ai-icon></ai-icon>
             <brain-icon></brain-icon>
+            <span class="ml-1 text-secondary-400 text-sm">深度回答，仅供参考</span>
         </div>
         <div class="text-center text-xl font-bold text-warning-700 mx-auto px-4 rounded-xl min-h-6">
             <p v-for="answer in queryStore.aiThoughtStructured.answers" :key="answer">

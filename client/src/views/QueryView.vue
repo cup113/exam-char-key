@@ -11,7 +11,7 @@ const queryStore = useQueryStore();
 </script>
 
 <template>
-  <main class="flex flex-col items-center gap-4 pb-40">
+  <main class="flex flex-col items-center gap-4">
     <AddText></AddText>
     <TapSearch></TapSearch>
     <section class="flex flex-col md:flex-row gap-2 py-4">

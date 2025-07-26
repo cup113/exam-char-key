@@ -10,6 +10,7 @@ const queryStore = useQueryStore();
         <div>
             <ai-icon></ai-icon>
             <flash-icon></flash-icon>
+            <span class="ml-1 text-secondary-400 text-sm">快速回答，仅供参考</span>
         </div>
         <p class="text-center text-xl font-bold mx-auto px-4 rounded-xl text-warning-700"
             v-show="queryStore.aiInstantResponse">
