@@ -198,7 +198,7 @@ function toggleDeepThinking() {
                     <span>清空</span>
                 </button>
             </h2>
-            <div class="min-h-10 text-center text-secondary-500" v-if="chars.length === 0">暂无文本，请点击原文内容选择上下文吧！</div>
+            <div class="min-h-10 text-center text-secondary-500" v-if="chars.length === 0">暂无文本，请<strong>点击原文内容</strong>选择上下文吧！</div>
             <div class="min-h-10" v-else>
                 <div class="flex flex-wrap gap-1 text-lg justify-center">
                     <div v-for="(char, index) in chars" :key="index" class="p-1 rounded-md cursor-pointer"
@@ -251,6 +251,9 @@ function toggleDeepThinking() {
                     </popover-content>
                 </popover-portal>
             </popover-root>
+        </section>
+        <section v-show="chars.length > 0 && !queryStore.queryWord && !queryStore.lastQuery.word" class="text-center text-secondary-500">
+            请<strong>点击“已选中”区域你想要查询的汉字</strong>，激活查询功能！
         </section>
     </div>
 </template>
