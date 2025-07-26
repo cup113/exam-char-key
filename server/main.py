@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from server.services.zdic_service import ZdicService
 from server.services.completion_service import CompletionService
 from server.services.logging_service import main_logger
-from server.services.pocketbase_service import PocketBaseService
+from server.services.pocketbase_service import PocketBaseService, NotEnoughBalanceError
 from server.config import Config
 from server.models import (
     ZdicResult,
@@ -111,6 +111,14 @@ async def query_thinking_core(pb: PocketBaseService, context: str, q: str, deep:
         yield chunk.to_jsonl_str()
 
 
+@app.exception_handler(NotEnoughBalanceError)
+async def not_enough_balance_handler(request: Request, exc: NotEnoughBalanceError):
+    return JSONResponse(
+        status_code=402,
+        content={"message": "Not enough balance", "user_id": exc.user_id, "remaining": exc.remaining},
+    )
+
+
 @app.get("/api/query/thinking")
 async def query_thinking(
     request: Request,
@@ -118,8 +126,10 @@ async def query_thinking(
     context: str = Query(..., description="The context sentence", max_length=1000),
     deep: int = Query(1, description="Whether to use deep search", ge=0, le=1),
 ):
+    pb: PocketBaseService = request.state.pb
+    await pb.balance_check()
     return StreamingResponse(
-        query_thinking_core(pb=request.state.pb, context=context, q=q, deep=deep),
+        query_thinking_core(pb=pb, context=context, q=q, deep=deep),
         media_type="application/json",
     )
 
@@ -130,6 +140,8 @@ async def query_flash(
     q: str = Query(..., description="The query word", min_length=1, max_length=100),
     context: str = Query(..., description="The context sentence", max_length=1000),
 ):
+    pb: PocketBaseService = request.state.pb
+    await pb.balance_check()
     return StreamingResponse(
         query_flash_core(context=context, q=q, pb=request.state.pb),
         media_type="application/json",
@@ -144,6 +156,7 @@ async def search_original(
         "sentence", description="Target level of detail"
     ),
 ):
+    await request.state.pb.balance_check()
     completion_service = CompletionService(
         client,
         request.state.pb,

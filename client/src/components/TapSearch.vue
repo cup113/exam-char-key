@@ -194,11 +194,11 @@ function toggleDeepThinking() {
             <h2 class="text-xl font-bold mb-2 flex items-center justify-center gap-2">
                 <span>已选中</span>
                 <button @click="clearChunkSelection"
-                    class="rounded-lg text-base font-normal cursor-pointer flex items-center gap-2 bg-warning-600 text-white px-2 py-1 hover:bg-warning-700">
+                    class="rounded-lg text-base font-normal cursor-pointer flex items-center gap-2 bg-warning-600 text-white px-2 hover:bg-warning-700">
                     <span>清空</span>
                 </button>
             </h2>
-            <div class="min-h-10" v-if="paragraphs.length === 0">暂无文本</div>
+            <div class="min-h-10 text-center text-secondary-500" v-if="chars.length === 0">暂无文本，请点击原文内容选择上下文吧！</div>
             <div class="min-h-10" v-else>
                 <div class="flex flex-wrap gap-1 text-lg justify-center">
                     <div v-for="(char, index) in chars" :key="index" class="p-1 rounded-md cursor-pointer"
@@ -209,7 +209,7 @@ function toggleDeepThinking() {
                 </div>
             </div>
         </section>
-        <section class="flex justify-center gap-4">
+        <section class="flex justify-center gap-4" v-show="queryStore.lastQuery.word || queryStore.queryWord">
             <button @click="queryStore.query(true)" :disabled="!queryStore.queryWord"
                 class="rounded-lg text-lg cursor-pointer flex items-center gap-2 bg-primary-600 text-white px-4 py-2 hover:bg-primary-700 disabled:cursor-not-allowed">
                 <search-icon></search-icon>

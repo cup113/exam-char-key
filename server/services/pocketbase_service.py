@@ -27,11 +27,16 @@ from server.models import (
 )
 
 
-class NotEnoughBalanceError(Exception):
-    def __init__(self, user_id: str, remaining: int):
-        message = f"User {user_id} has not enough balance ({remaining} left)"
+class ServerException(Exception):
+    def __init__(self, message: str):
         super().__init__(message)
-        main_logger.warning(self.args[0])
+        main_logger.error(message)
+
+
+class NotEnoughBalanceError(ServerException):
+    def __init__(self, user_id: str, remaining: int):
+        message = f"User {user_id} doesn't have enough balance ({remaining} left)"
+        super().__init__(message)
         self.user_id = user_id
         self.remaining = remaining
 
@@ -262,11 +267,6 @@ class PocketBaseService:
                 )
             )
 
-            if coins > 0 and balance < 0:
-                raise NotEnoughBalanceError(
-                    user_id=self.get_user_id(), remaining=remaining
-                )
-
             return result
 
     async def users_guest_upgrade(self, email: str, password: str) -> AuthResultModel:
@@ -473,3 +473,8 @@ class PocketBaseService:
         return BalanceDetailRaw.model_validate(
             await self.balance_details.create(params=balance_detail.model_dump())
         )
+
+    async def balance_check(self) -> None:
+        balance = UserRaw.model_validate(await self.users.get_one(self.get_user_id())).balance
+        if balance < 0:
+            raise NotEnoughBalanceError(self.get_user_id(), balance)

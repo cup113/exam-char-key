@@ -29,7 +29,7 @@ watch(() => queryStore.activeText, () => {
             <button
                 class="rounded-lg text-lg cursor-pointer flex gap-2 bg-primary-600 text-white px-4 py-2 hover:bg-primary-700 mx-auto">
                 <Component :is="DocumentAddIcon" class="w-6 h-6" />
-                <span>添加文本</span>
+                <span>添加/修改文本内容</span>
             </button>
         </DialogTrigger>
 
