@@ -5,9 +5,9 @@ import DeepAnswer from '@/components/DeepAnswer.vue';
 import FreqDisplay from '@/components/FreqDisplay.vue';
 import AddText from '@/components/AddText.vue';
 import TapSearch from '@/components/TapSearch.vue';
-import { useQueryStore } from '@/stores/query';
+import { useUserStore } from '@/stores/user';
 
-const queryStore = useQueryStore();
+const userStore = useUserStore();
 </script>
 
 <template>
@@ -17,7 +17,7 @@ const queryStore = useQueryStore();
     <section class="flex flex-col md:flex-row gap-2 py-4">
       <div class="flex flex-col gap-2">
         <QuickAnswer></QuickAnswer>
-        <DeepAnswer></DeepAnswer>
+        <DeepAnswer v-show="userStore.deepThinking"></DeepAnswer>
         <FreqDisplay></FreqDisplay>
       </div>
       <ZdicExplanation></ZdicExplanation>

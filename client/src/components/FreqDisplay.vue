@@ -65,7 +65,7 @@ const getTypeBadgeInfo = (type: string) => {
                             </span>
                         </div>
                         <div class="flex">
-                            <p class="w-full text-primary-700 font-bold">{{ note.answer }}</p>
+                            <p class="w-full text-primary-700 font-bold">{{ note.answer.split('\n')[0] }}</p>
                         </div>
                     </div>
                 </div>

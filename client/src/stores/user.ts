@@ -31,6 +31,8 @@ export const useUserStore = defineStore("settings", () => {
         }
     });
     const token = useLocalStorage("EC_token", "");
+    const deepThinking = useLocalStorage('EC_deepThinking', true);
+
 
     // Balance Details
     const balanceDetails = ref<BalanceDetail[]>([]);
@@ -99,6 +101,7 @@ export const useUserStore = defineStore("settings", () => {
         bdCurrentPage,
         bdTotalPages,
         bdLoading,
+        deepThinking,
         updateUsage,
         updateUser,
         getUserInfo,

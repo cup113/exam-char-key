@@ -8,8 +8,21 @@ import { useApiStore } from './api';
 import { useHistoryStore } from './history';
 import { useUserStore } from './user';
 
+const exampleText = `帝高阳之苗裔兮，朕皇考曰伯庸。
+摄提贞于孟陬兮，惟庚寅吾以降。
+皇览揆余初度兮，肇锡余以嘉名。
+名余曰正则兮，字余曰灵均。
+纷吾既有此内美兮，又重之以修能。
+扈江离与辟芷兮，纫秋兰以为佩。
+汩余若将不及兮，恐年岁之不吾与。
+朝搴阰之木兰兮，夕揽洲之宿莽。
+日月忽其不淹兮，春与秋其代序。
+惟草木之零落兮，恐美人之迟暮。
+不抚壮而弃秽兮，何不改乎此度？
+乘骐骥以驰骋兮，来吾道夫先路！`;
+
 export const useQueryStore = defineStore("query", () => {
-    const activeText = useLocalStorage("EC_activeText", "");
+    const activeText = useLocalStorage("EC_activeText", exampleText);
     const searchTarget = useLocalStorage<SearchTarget>("EC_searchTarget", SearchTarget.None);
     const querySentence = ref("");
     const queryIndex = ref(new Set<number>());
@@ -36,8 +49,11 @@ export const useQueryStore = defineStore("query", () => {
         freqInfo.value = await useApiStore().queryFreq(query, page);
     }
 
-    async function query() {
+    async function query(simple: boolean) {
         const apiStore = useApiStore();
+        const userStore = useUserStore();
+
+        userStore.deepThinking = !simple;
 
         currentRecorded.value = false;
         lastQuery.sentence = querySentence.value;
@@ -45,9 +61,9 @@ export const useQueryStore = defineStore("query", () => {
         lastQuery.index = queryIndex.value;
 
         await Promise.all([
-            apiStore.queryFlash(queryWord.value, querySentence.value, getFrontendHandler()),
-            apiStore.queryThinking(queryWord.value, querySentence.value, getFrontendHandler()),
             queryFrequency(queryWord.value),
+            apiStore.queryFlash(queryWord.value, querySentence.value, getFrontendHandler()),
+            apiStore.queryThinking(queryWord.value, querySentence.value, userStore.deepThinking, getFrontendHandler()),
         ]);
         console.log("Request Ended");
     }

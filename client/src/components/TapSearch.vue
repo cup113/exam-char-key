@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useQueryStore } from '@/stores/query';
+import { useUserStore } from '@/stores/user';
 import { reactive, watch, computed, ref } from 'vue';
 import { PopoverArrow, PopoverContent, PopoverClose, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui';
 import SearchIcon from './icons/SearchIcon.vue';
@@ -13,6 +14,8 @@ const PUNCTUATIONS = {
     }
 };
 const PUNCTUATIONS_REGEX = new RegExp(`[${PUNCTUATIONS.getFull()}]`, 'g');
+
+const userStore = useUserStore();
 
 interface Paragraph {
     leadingPunctuation: string;
@@ -164,7 +167,10 @@ function fillAdoptedAnswer(answer: string) {
 function adoptAnswer() {
     queryStore.adopt_answer(adoptText.value);
     adoptText.value = "";
-    clearChunkSelection();
+}
+
+function toggleDeepThinking() {
+    userStore.deepThinking = !userStore.deepThinking;
 }
 
 </script>
@@ -185,7 +191,13 @@ function adoptAnswer() {
             </div>
         </section>
         <section>
-            <h2 class="text-xl font-bold mb-2 text-center">已选中</h2>
+            <h2 class="text-xl font-bold mb-2 flex items-center justify-center gap-2">
+                <span>已选中</span>
+                <button @click="clearChunkSelection"
+                    class="rounded-lg text-base font-normal cursor-pointer flex items-center gap-2 bg-warning-600 text-white px-2 py-1 hover:bg-warning-700">
+                    <span>清空</span>
+                </button>
+            </h2>
             <div class="min-h-10" v-if="paragraphs.length === 0">暂无文本</div>
             <div class="min-h-10" v-else>
                 <div class="flex flex-wrap gap-1 text-lg justify-center">
@@ -198,17 +210,22 @@ function adoptAnswer() {
             </div>
         </section>
         <section class="flex justify-center gap-4">
-            <button @click="queryStore.query" :disabled="!queryStore.queryWord"
+            <button @click="queryStore.query(true)" :disabled="!queryStore.queryWord"
+                class="rounded-lg text-lg cursor-pointer flex items-center gap-2 bg-primary-600 text-white px-4 py-2 hover:bg-primary-700 disabled:cursor-not-allowed">
+                <search-icon></search-icon>
+                <span>简单搜索</span>
+            </button>
+            <button @click="queryStore.query(false)" :disabled="!queryStore.queryWord"
                 class="rounded-lg text-lg cursor-pointer flex items-center gap-2 bg-warning-600 text-white px-4 py-2 hover:bg-warning-700 disabled:cursor-not-allowed">
                 <search-icon></search-icon>
-                <span>搜索</span>
+                <span>深度搜索</span>
             </button>
             <popover-root>
                 <popover-trigger as-child>
                     <button
                         class="rounded-lg text-lg flex items-center gap-2 bg-primary-600  text-white px-4 py-2 hover:bg-primary-700"
                         :class="queryStore.currentRecorded ? 'cursor-not-allowed' : 'cursor-pointer'"
-                        :disabled="queryStore.currentRecorded"><adopt-icon></adopt-icon><span>采纳</span></button>
+                        :disabled="queryStore.currentRecorded"><adopt-icon></adopt-icon><span>保存记录</span></button>
                 </popover-trigger>
                 <popover-portal>
                     <popover-content side="top" class="bg-white shadow-sm w-2xs px-2 py-2">

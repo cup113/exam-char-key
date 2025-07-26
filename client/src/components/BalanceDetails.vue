@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { onMounted } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { add_sep } from '@/stores/utils';
 

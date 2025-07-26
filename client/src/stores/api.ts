@@ -97,9 +97,10 @@ export const useApiStore = defineStore("api", () => {
     async function queryThinking(
         queryWord: string,
         querySentence: string,
+        enableDeepThinking: boolean,
         frontendHandler: FrontendHandler,
     ) {
-        const { reader, decoder } = await guardStreamingResponse(call_get(`/api/query/thinking?q=${encodeURIComponent(queryWord)}&context=${encodeURIComponent(querySentence)}`));
+        const { reader, decoder } = await guardStreamingResponse(call_get(`/api/query/thinking?q=${encodeURIComponent(queryWord)}&context=${encodeURIComponent(querySentence)}&deep=${Number(enableDeepThinking)}`));
 
         await readStream(reader, decoder, frontendHandler);
     }

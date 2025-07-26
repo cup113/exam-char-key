@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import IntroView from '@/views/IntroView.vue';
 import QueryView from '../views/QueryView.vue';
 import HistoryView from '@/views/HistoryView.vue';
 import SettingsView from '@/views/SettingsView.vue';
@@ -9,7 +10,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      redirect: '/query',
+      component: IntroView,
     },
     {
       path: '/query',
