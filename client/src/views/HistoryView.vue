@@ -61,7 +61,7 @@ const buttons = [
 
 <template>
   <main class="py-4 px-4 md:px-6 lg:px-8">
-    <toolbar-root class="bg-white flex flex-wrap justify-center p-2 shadow-md rounded-md">
+    <toolbar-root class="bg-white flex flex-col md:flex-row md:flex-wrap justify-center p-2 shadow-md rounded-md">
       <toolbar-button v-for="button in buttons" :key="button.text" @click="button.click" :class="button.className"
         :disabled="button.text !== '全部选中' && selectedRecords.length === 0"
         class="text-white py-2 px-4 cursor-pointer disabled:cursor-not-allowed">

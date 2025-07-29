@@ -29,14 +29,16 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         authorization = request.headers.get("Authorization")
         request.state.pb = PocketBaseService()
 
-        if authorization is not None:
-            if authorization.startswith("Bearer "):
-                authorization = authorization[len("Bearer ") :]
-            await request.state.pb.auth_user(authorization)
-            main_logger.info(f"Authorization: {authorization}")
-        else:
-            request.state.token = None
-            await request.state.pb.auth_guest(ip_address)
+        if "api" in request.url.path:
+            # To avoid unnecessary auth when just getting pages.
+            if authorization is not None:
+                if authorization.startswith("Bearer "):
+                    authorization = authorization[len("Bearer ") :]
+                await request.state.pb.auth_user(authorization)
+                main_logger.info(f"Authorization: {authorization}")
+            else:
+                request.state.token = None
+                await request.state.pb.auth_guest(ip_address)
 
         return await call_next(request)
 

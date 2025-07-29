@@ -210,15 +210,10 @@ function toggleDeepThinking() {
             </div>
         </section>
         <section class="flex justify-center gap-4" v-show="queryStore.lastQuery.word || queryStore.queryWord">
-            <button @click="queryStore.query(true)" :disabled="!queryStore.queryWord"
-                class="rounded-lg text-lg cursor-pointer flex items-center gap-2 bg-primary-600 text-white px-4 py-2 hover:bg-primary-700 disabled:cursor-not-allowed">
-                <search-icon></search-icon>
-                <span>简单搜索</span>
-            </button>
-            <button @click="queryStore.query(false)" :disabled="!queryStore.queryWord"
+            <button @click="queryStore.query()" :disabled="!queryStore.queryWord"
                 class="rounded-lg text-lg cursor-pointer flex items-center gap-2 bg-warning-600 text-white px-4 py-2 hover:bg-warning-700 disabled:cursor-not-allowed">
                 <search-icon></search-icon>
-                <span>深度搜索</span>
+                <span>查询释义</span>
             </button>
             <popover-root>
                 <popover-trigger as-child>

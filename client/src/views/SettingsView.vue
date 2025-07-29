@@ -3,6 +3,7 @@ import { useUserStore } from '@/stores/user';
 import { computed, ref } from 'vue';
 import { add_sep } from '@/stores/utils';
 import BalanceDetails from '@/components/BalanceDetails.vue';
+import { SwitchRoot, SwitchThumb } from 'reka-ui';
 
 const userStore = useUserStore();
 
@@ -43,7 +44,7 @@ function handleLogout() {
 </script>
 
 <template>
-    <main class="p-4 flex flex-col items-center">
+    <main class="p-4 flex flex-col items-center gap-4">
         <section v-if="isGuest" class="ec-standard-card">
             <div class="justify-center">{{ isLoginMode ? '用户登录' : '用户注册' }}
             </div>
@@ -76,6 +77,18 @@ function handleLogout() {
                     {{ isLoginMode ? '没有账户？去注册' : '已有账户？去登录' }}
                 </button>
             </div>
+        </section>
+
+        <section class="ec-standard-card">
+            <div class="justify-center">用户偏好</div>
+            <label class="flex items-center gap-2 justify-center">
+                深度思考模式
+                <switch-root
+                    class="w-8 h-5 shadow-sm flex data-[state=unchecked]:bg-secondary-300 data-[state=checked]:bg-primary-700 border border-secondary-300 data-[state=checked]:border-stone-700 rounded-full relative transition-[background]" v-model="userStore.deepThinking">
+                    <switch-thumb
+                        class="w-3.5 h-3.5 my-auto bg-secondary-50 text-xs flex items-center justify-center shadow-xl rounded-full transition-transform translate-x-0.5 will-change-transform data-[state=checked]:translate-x-full"></switch-thumb>
+                </switch-root>
+            </label>
         </section>
 
         <section class="ec-standard-card">

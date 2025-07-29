@@ -50,11 +50,9 @@ export const useQueryStore = defineStore("query", () => {
         freqInfo.value = await useApiStore().queryFreq(query, page, requestId);
     }
 
-    async function query(simple: boolean) {
+    async function query() {
         const apiStore = useApiStore();
         const userStore = useUserStore();
-
-        userStore.deepThinking = !simple;
 
         currentRecorded.value = false;
         lastQuery.sentence = querySentence.value;
