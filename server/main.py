@@ -217,9 +217,8 @@ def get_user_info(request: Request):
 @app.post("/api/adopt-answer")
 async def adopt_answer(body: AdoptBody, request: Request):
     pb: PocketBaseService = request.state.pb
-    return JSONResponse(
-        await pb.corpus_create_query(body.query, body.context, body.answer)
-    )
+    corpus_item = await pb.corpus_create_query(body.query, body.context, body.answer)
+    return JSONResponse(corpus_item.model_dump())
 
 
 @app.post("/api/auth/register")
