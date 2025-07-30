@@ -33,12 +33,12 @@ const vitePWA = VitePWA({
     theme_color: '#4F46E5',
     icons: [
       {
-        src: 'public/favicon-192x192.png',
+        src: 'favicon-192x192.png',
         sizes: '192x192',
         type: 'image/png'
       },
       {
-        src: 'public/favicon-512x512.png',
+        src: 'favicon-512x512.png',
         sizes: '512x512',
         type: 'image/png'
       }
