@@ -178,7 +178,7 @@ function toggleDeepThinking() {
 
 <template>
     <div class="max-w-2xs sm:max-w-md lg:max-w-3xl flex flex-col gap-4">
-        <section class="flex flex-col">
+        <section class="flex flex-col" :class="{ 'items-center': paragraphs.length === 1 }">
             <h2 class="text-xl font-bold mb-2 w-full text-center">原文内容</h2>
             <div v-for="(para, paraIndex) in paragraphs" :key="paraIndex">
                 <div class="inline-block font-mono mr-2 text-xs text-gray-500 w-6" v-if="paragraphs.length >= 2">({{ paraIndex + 1 }})</div>
