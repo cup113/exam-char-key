@@ -4,7 +4,7 @@ import NavigationMenu from './components/NavigationMenu.vue';
 </script>
 
 <template>
-  <div class="bg-secondary-100 min-h-screen pb-24">
+  <div class="bg-primary-100 min-h-screen pb-32">
     <header class="flex items-center justify-center gap-4 py-4">
       <img alt="logo" src="/favicon.ico" width="32" height="32" />
       <div>

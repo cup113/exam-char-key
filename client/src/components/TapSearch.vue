@@ -108,7 +108,8 @@ watch(paragraphs, () => {
                 }
             } else {
                 if (lastChunk) {
-                    if (PUNCTUATIONS.STOP.includes(lastChunk.nextPunctuation)) {
+                    if (PUNCTUATIONS.STOP.includes(lastChunk.nextPunctuation[0])) {
+                        // If it ends with patterns like 。”, we also deem it as a stop, so the first punctuation is chosen.
                         addPart(lastChunk.nextPunctuation);
                     }
                     addPart(ELLIPSE);
@@ -177,10 +178,10 @@ function toggleDeepThinking() {
 
 <template>
     <div class="max-w-2xs sm:max-w-md lg:max-w-3xl flex flex-col gap-4">
-        <section class="flex flex-col items-center">
-            <h2 class="text-xl font-bold mb-2">原文内容</h2>
+        <section class="flex flex-col">
+            <h2 class="text-xl font-bold mb-2 w-full text-center">原文内容</h2>
             <div v-for="(para, paraIndex) in paragraphs" :key="paraIndex">
-                <div class="inline-block font-mono mr-2">({{ paraIndex + 1 }})</div>
+                <div class="inline-block font-mono mr-2 text-xs text-gray-500 w-6" v-if="paragraphs.length >= 2">({{ paraIndex + 1 }})</div>
                 <div class="inline-block">{{ para.leadingPunctuation }}</div>
                 <div v-for="(chunk, index) in para.chunks" :key="index" class="inline-block">
                     <span class="cursor-pointer"
