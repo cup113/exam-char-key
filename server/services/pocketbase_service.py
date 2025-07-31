@@ -303,7 +303,7 @@ class PocketBaseService:
 
             if last_active_date != current_date:
                 role = await self.roles_get(user.role)
-                await self.users_spend_coins(coins=-role.daily_coins, reason="每日奖励")
+                await self.users_spend_coins(coins=-role.daily_coins, reason="每日登录奖励")
 
     ## Zdic Cache ##
 

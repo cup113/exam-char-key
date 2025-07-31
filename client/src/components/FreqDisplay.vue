@@ -48,8 +48,12 @@ const getTypeBadgeInfo = (type: string) => {
         </div>
         <div>
             <div>
-                <p>总频率指标：<strong class="text-warning-600">{{ stat.get_total_freq() }}</strong></p>
-                <p>其中教科书：{{ stat.freqTextbook }}，古文语料库：{{ stat.freqDataset }}，用户查询：{{ stat.freqQuery }}</p>
+                <p>
+                    <span>出现次数</span>
+                    <span>：教科书</span> <strong>{{ stat.freqTextbook }}</strong>
+                    <span>，古文语料库</span> {{ stat.freqDataset }}
+                    <span>，用户查询</span> {{ stat.freqQuery }}
+                </p>
             </div>
             <div>
                 <div v-for="note, index in queryStore.freqInfo.notes" :key="note.query">
@@ -69,7 +73,8 @@ const getTypeBadgeInfo = (type: string) => {
                         </div>
                     </div>
                 </div>
-                <MyPagination :current-page="currentPage" :total-pages="queryStore.freqInfo.total_pages" @page-changed="handlePageChanged" />
+                <MyPagination :current-page="currentPage" :total-pages="queryStore.freqInfo.total_pages"
+                    @page-changed="handlePageChanged" />
             </div>
         </div>
     </div>
