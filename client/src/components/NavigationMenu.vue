@@ -3,11 +3,13 @@ import { NavigationMenuRoot, NavigationMenuItem, NavigationMenuList } from 'reka
 import SearchIcon from './icons/SearchIcon.vue';
 import HistoryIcon from './icons/HistoryIcon.vue';
 import SettingsIcon from './icons/SettingsIcon.vue';
+import AboutIcon from './icons/AboutIcon.vue';
 
 const links = [
   { name: '搜索', to: '/query', icon: SearchIcon },
   { name: '历史', to: '/history', icon: HistoryIcon },
   { name: '设置', to: '/settings', icon: SettingsIcon },
+  { name: '关于', to: '/about', icon: AboutIcon },
 ]
 </script>
 

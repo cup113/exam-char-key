@@ -1,107 +1,108 @@
 <script lang="ts" setup>
-import router from '@/router';
-import { onMounted } from 'vue';
+import FlashIcon from '@/components/icons/FlashIcon.vue';
+import BrainIcon from '@/components/icons/BrainIcon.vue';
+import BookIcon from '@/components/icons/BookIcon.vue';
+import DictionaryIcon from '@/components/icons/DictionaryIcon.vue';
+import GithubIcon from '@/components/icons/GithubIcon.vue';
 
-onMounted(() => {
-  const isNewUser = localStorage.getItem('EC_visited') === null;
-  if (!isNewUser) {
-    router.replace('/query');
+const features = [
+  {
+    icon: FlashIcon,
+    title: 'AI快速回答',
+    description: '迅速获取语境中的文言释义'
+  },
+  {
+    icon: BrainIcon,
+    title: 'AI深度回答',
+    description: '结合字典资料让 AI 深度思考再回答'
+  },
+  {
+    icon: DictionaryIcon,
+    title: '汉典集成',
+    description: '实时查询汉典定义'
+  },
+  {
+    icon: BookIcon,
+    title: '教材集成',
+    description: '提供教材中的注释原文'
   }
-});
+];
+
+// 使用指南数据
+const guideSteps = [
+  '点击"开始使用"，在查询页面输入文本，或使用默认文本。',
+  '点击文本内容选中上下文，然后点击上下文中的字词。',
+  '点击"查询"同时获取 AI 快速回答、深度思考、汉典搜索结果、教材数据等。',
+  '点击"保存记录"选取你最满意的答案采纳。更多功能见"历史"界面。',
+  '点击"设置"进行深度配置，注册账号获得更多额度。'
+];
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto px-4 py-8" data-guide-step="0.1">
-    <div class="text-center mb-12">
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="text-center mb-10">
       <h1 class="text-3xl md:text-4xl font-bold text-primary-800 mb-4">Exam Char Key</h1>
       <p class="text-lg text-secondary-600 max-w-2xl mx-auto">
-        一个专注于古代汉字解释和AI辅助学习的中文语言学习平台
+        专注于<strong>文言文词语释义</strong>，集成 AI 助手的文言文学习辅助平台
       </p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-      <div class="bg-white rounded-xl shadow-md p-6 border border-secondary-200">
-        <h2 class="text-xl font-semibold text-primary-700 mb-3">🎯 核心功能</h2>
-        <ul class="space-y-2 text-secondary-700">
-          <li class="flex items-start">
-            <span class="text-primary-500 mr-2">•</span>
-            <span><strong>AI快速回答:</strong> 迅速获取语境中的文言释义</span>
-          </li>
-          <li class="flex items-start">
-            <span class="text-primary-500 mr-2">•</span>
-            <span><strong>AI深度回答:</strong> 结合网络资料让 AI 深度思考再回答</span>
-          </li>
-          <li class="flex items-start">
-            <span class="text-primary-500 mr-2">•</span>
-            <span><strong>汉典集成:</strong> 实时查询汉典定义</span>
-          </li>
-          <li class="flex items-start">
-            <span class="text-primary-500 mr-2">•</span>
-            <span><strong>教材集成:</strong> 提供教材中的注释原文</span>
-          </li>
-          <li class="flex items-start">
-            <span class="text-primary-500 mr-2">•</span>
-            <span><strong>频率分析:</strong> 统计字符在不同上下文中的使用频率</span>
-          </li>
-        </ul>
-      </div>
-
-      <div class="bg-white rounded-xl shadow-md p-6 border border-secondary-200">
-        <h2 class="text-xl font-semibold text-primary-700 mb-3">🤖 AI 能力</h2>
-        <ul class="space-y-2 text-secondary-700">
-          <li class="flex items-start">
-            <span class="text-primary-500 mr-2">•</span>
-            <span><strong>多AI模型:</strong> 集成Qwen模型，适用于不同任务</span>
-          </li>
-          <li class="flex items-start">
-            <span class="text-primary-500 mr-2">•</span>
-            <span><strong>上下文理解:</strong> 特别针对中文语言细微差别的训练</span>
-          </li>
-          <li class="flex items-start">
-            <span class="text-primary-500 mr-2">•</span>
-            <span><strong>实时处理:</strong> 流式AI响应，提升用户体验</span>
-          </li>
-        </ul>
+      <!-- 将"开始使用"按钮移到更显眼的位置 -->
+      <div class="mt-8">
+        <RouterLink to="/query"
+          class="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium text-lg py-3 px-8 rounded-lg transition duration-300 shadow-lg">
+          开始使用
+        </RouterLink>
       </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-md p-6 border border-secondary-200 mb-12">
-      <h2 class="text-xl font-semibold text-primary-700 mb-4">📚 教育工具</h2>
+    <div class="bg-white rounded-xl shadow-md p-6 border border-secondary-200 mb-8">
+      <h2 class="text-xl font-semibold text-primary-700 mb-4">🎯 核心功能</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="flex items-start">
-          <div class="bg-primary-100 p-3 rounded-lg mr-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+        <div v-for="(feature, index) in features" :key="index" class="flex items-start">
+          <div class="bg-primary-100 p-2 rounded-lg mr-3 mt-1">
+            <component :is="feature.icon" class="h-5 w-5 text-primary-600" />
           </div>
           <div>
-            <h3 class="font-medium text-secondary-800">历史记录跟踪</h3>
-            <p class="text-secondary-600 text-sm">跟踪您的查询和学习进度，支持导出功能用于复习</p>
-          </div>
-        </div>
-        <div class="flex items-start">
-          <div class="bg-primary-100 p-3 rounded-lg mr-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-            </svg>
-          </div>
-          <div>
-            <h3 class="font-medium text-secondary-800">交互式界面</h3>
-            <p class="text-secondary-600 text-sm">现代化的Vue.js前端，响应式设计</p>
+            <h3 class="font-medium text-secondary-800">{{ feature.title }}</h3>
+            <p class="text-secondary-600 text-sm">{{ feature.description }}</p>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="text-center">
-      <RouterLink to="/query"
-        class="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-8 rounded-lg transition duration-300">
-        开始使用
-      </RouterLink>
+    <div class="bg-white rounded-xl shadow-md p-6 border border-secondary-200 mb-8">
+      <h2 class="text-xl font-semibold text-primary-700 mb-4">📖 使用指南</h2>
+      <div class="prose prose-primary max-w-none">
+        <ol class="list-decimal pl-5 space-y-2 text-secondary-700">
+          <li v-for="(step, index) in guideSteps" :key="index">{{ step }}</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-md p-6 border border-secondary-200 mb-8">
+      <h2 class="text-xl font-semibold text-primary-700 mb-4">🔗 相关链接</h2>
+      <div class="flex flex-wrap gap-4">
+        <a href="https://github.com/cup113/exam-char-key" target="_blank"
+          class="flex items-center text-primary-700 hover:text-primary-800">
+          <GithubIcon class="h-5 w-5 mr-1" />
+          GitHub 仓库
+        </a>
+        <a href="https://leximory.com" target="_blank" class="text-primary-700 hover:text-primary-800 font-sm">友链：Leximory —— 语言学地学语言</a>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-md p-6 border border-secondary-200 mb-8 text-sm text-secondary-600">
+      <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <div>
+          <p>© 2025 Jason Li</p>
+          <p class="mt-1">本项目基于 MIT 协议开源。</p>
+        </div>
+        <div class="flex flex-wrap gap-4">
+          <RouterLink to="/query"
+            class="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">
+            开始使用
+          </RouterLink>
+        </div>
+      </div>
     </div>
   </div>
 </template>
