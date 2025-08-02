@@ -12,8 +12,6 @@ onMounted(() => {
 
 <template>
   <div class="max-w-4xl mx-auto px-4 py-8" data-guide-step="0.1">
-    <VOnboardingWrapper ref="wrapper"></VOnboardingWrapper>
-
     <div class="text-center mb-12">
       <h1 class="text-3xl md:text-4xl font-bold text-primary-800 mb-4">Exam Char Key</h1>
       <p class="text-lg text-secondary-600 max-w-2xl mx-auto">
@@ -101,8 +99,7 @@ onMounted(() => {
 
     <div class="text-center">
       <RouterLink to="/query"
-        class="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-8 rounded-lg transition duration-300"
-        data-guide-step="0.2">
+        class="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-8 rounded-lg transition duration-300">
         开始使用
       </RouterLink>
     </div>
