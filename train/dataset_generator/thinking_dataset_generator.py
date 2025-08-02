@@ -161,7 +161,7 @@ with JsonlWriter(IntermediateFiles.DatasetThinking) as writer, open(
         for model in accepted_models:
             completion = {
                 "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPTS.THINKING},
+                    {"role": "system", "content": SYSTEM_PROMPTS.THINKING_SIMPLIFIED},
                     {"role": "user", "content": note.prompt},
                     {"role": "assistant", "content": note.responses[model].answer }
                 ]
