@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from warnings import warn
-from re import sub, match, DOTALL
+from re import match, DOTALL
 from typing import TypedDict, Literal, Any
 from train.utils import SYSTEM_PROMPTS
 from openai import AsyncOpenAI
@@ -11,7 +11,7 @@ from hashlib import sha256
 NOTE_PAIR = ({"〔", "﹝"}, "〕")
 PUNCTUATIONS = set("，。；？！")
 NONSTOP_PUNCTUATIONS = set("，；")
-CONTEXT_CLAUSES = (2, 2)
+CONTEXT_CLAUSES = (3, 2)
 
 
 class EvaluationData(TypedDict):
@@ -216,6 +216,7 @@ class Note:
         Example:
             [秧根未牢莳未匝] 意思是，这块田里还没有栽插完毕。莳，移栽、种植。匝，布满、遍及。 -> [[莳] 移栽、种植, [匝] 布满、遍及]
         """
+        self.name_passage = self.name_passage.replace(" ", "")
         sub_notes: "list[Note]" = []
         if self.detail == "":
             return []
@@ -253,6 +254,9 @@ class Note:
                     sub_note_detail,
                     sub_note_detail,
                 )
+                if len(sub_note.get_original_text()) == 0:
+                    warn(f"Empty sub note in {self.name_passage}: {self.get_original_text()}")
+                    continue
                 sub_notes.append(sub_note)
                 self.core_detail = (
                     self.core_detail[:start_index]
@@ -365,8 +369,8 @@ class Passage:
                 left += 1
                 break
             if content[left] in PUNCTUATIONS:
-                punctuations_left -= 1
-        if content[left] in PUNCTUATIONS:
+                punctuations_left -= (1 if content[left] in NONSTOP_PUNCTUATIONS else 2)
+        while content[left] in PUNCTUATIONS:
             left += 1
 
         while (
@@ -374,8 +378,8 @@ class Passage:
         ):
             right += 1
             if content[right - 1] in PUNCTUATIONS:
-                punctuations_right -= 1
-        if content[right - 1] in NONSTOP_PUNCTUATIONS:
+                punctuations_right -= (1 if content[right - 1] in NONSTOP_PUNCTUATIONS else 2)
+        while content[right - 1] in NONSTOP_PUNCTUATIONS:
             right -= 1
         return (content[left:right], (original_left - left, original_right - left))
 
@@ -410,128 +414,6 @@ class Passage:
 
     @staticmethod
     def from_dict(d: dict[str, str | list[tuple[int, str]]]) -> "Passage": ...
-
-
-@dataclass_json
-@dataclass
-class ChineseGswPassage:
-    title: str
-    content: str
-    remark: str
-    writer: str
-
-    def extract_notes(self) -> list[Note]:
-        UNICODE_NUMBERING_SET = set(
-            "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇"
-            "⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛➀➁➂➃➄➅➆➇➈➉❶❷❸❹❺❻❼❽❾❿"
-        )
-
-        # 1. Data Cleaning
-        self.content = self.unify_punctuation(self.content)
-        self.remark = "".join(
-            ch for ch in self.remark if ch not in UNICODE_NUMBERING_SET
-        )  # remove numbering
-        self.remark = self.unify_punctuation(self.remark)
-        # remove patterns like （不足贵 一作：何足贵；不复醒 一作：不愿醒/不用醒） and pinyin in notes
-        REGEX_PARENTHESES = r"（.*?）"
-        REGEX_NUMBERING = r"(\d+)、|【(\d+)】|(\d+)。|(\d+)\."
-        self.content = sub(REGEX_PARENTHESES, "", self.content)
-        self.content = sub(REGEX_NUMBERING, "", self.content)
-        self.remark = sub(REGEX_PARENTHESES, "", self.remark)
-        # 2. extract notes
-        # Pattern like 唐张籍《吴楚词》（说/诗/诗云）：“今朝社日停针线。” where "：" marks content in other books, which should be excluded.
-        colon_index_list: list[int] = []
-        for i, c in enumerate(self.remark):
-            if c == "：":
-                if "》" in self.remark[max(i - 3, 0) : i]:
-                    continue
-                if i >= 2 and self.remark[i - 2 : i] in ["古义", "今义"]:
-                    continue
-                colon_index_list.append(i)
-
-        remark_list: list[tuple[int, int]] = []
-        STOP_CHARACTERS = (PUNCTUATIONS - NONSTOP_PUNCTUATIONS) | {"\n"}
-        for colon_index in colon_index_list:
-            cur = colon_index - 1
-            while cur >= 0 and self.remark[cur] not in STOP_CHARACTERS:
-                cur -= 1
-            remark_list.append((cur + 1, colon_index))
-        remark_list.reverse()
-        remark_end = len(self.remark)
-        context_cursor = len(self.content)
-
-        notes: list[Note] = []
-
-        for remark_start, colon_index in remark_list:
-            original_text = self.remark[remark_start:colon_index].strip()
-            text_start = self.content.find(original_text, 0, context_cursor)
-            detail = self.remark[(colon_index + 1) : remark_end].strip()
-
-            if text_start == -1:
-                if original_text in self.title:
-                    index_start = self.title.find(original_text)
-                    note = Note(
-                        name_passage=self.title,
-                        context=self.title,
-                        index_range=(index_start, index_start + len(original_text)),
-                        detail=detail,
-                        core_detail=detail,
-                    )
-                    notes.append(note)
-                    notes.extend(note.extract_sub_notes())
-                    remark_end = remark_start
-                    continue
-
-                text_start = self.content.find(original_text)
-                if text_start == -1:
-                    if "句" in original_text:
-                        # pattern like “但歌”二句, which cannot be found in the content
-                        continue
-                    warn(f"[{self.title}]“{original_text}”not found")
-                    continue
-                else:
-                    warn(
-                        f"[{self.title}]“{original_text}”not found, but found after“{text_start}”"
-                    )
-            index_range = (text_start, text_start + len(original_text))
-            context, new_index_range = Passage.get_context(self.content, index_range)
-
-            note = Note(
-                name_passage=self.title,
-                context=context,
-                index_range=new_index_range,
-                detail=detail,
-                core_detail=detail,
-            )
-            notes.append(note)
-            notes.extend(note.extract_sub_notes())
-            remark_end = remark_start
-
-        return notes
-
-    @classmethod
-    def unify_punctuation(cls, text: str) -> str:
-        """
-        Replace English punctuation with Chinese punctuation
-        """
-
-        PUNCTUATION_MAP = {
-            ":": "：",
-            ",": "，",
-            ".": "。",
-            "?": "？",
-            "!": "！",
-            ";": "；",
-            "(": "（",
-            ")": "）",
-            "[": "【",
-            "]": "】",
-        }
-
-        return "".join(PUNCTUATION_MAP.get(char, char) for char in text)
-
-    @staticmethod
-    def from_dict(d: dict[str, str]) -> "ChineseGswPassage": ...
 
 
 class BatchRequestMessage(TypedDict):

@@ -8,10 +8,8 @@ from time import sleep, time
 from tqdm import tqdm
 from httpx import Client
 from train.models import Note, PromptRaw
-from train.utils import sample_question_template, SYSTEM_PROMPTS, IntermediateFiles, JsonlReader, JsonlWriter
+from train.utils import SYSTEM_PROMPTS, IntermediateFiles, JsonlReader, JsonlWriter
 
-GUWEN_SAMPLE_INTERVAL = 5
-SAMPLE_START = 2
 CRAWL_INTERVAL = 10
 CRAWL_MIN_INTERVAL = 1
 
@@ -32,9 +30,9 @@ def get_completion(note: Note, i: int):
         zdic_prompt = ""
         cached = True
 
-    template = sample_question_template(i) + "请按要求仔细思考后回答。"
+    template = SYSTEM_PROMPTS.QUESTION_TEMPLATE + "请按要求仔细思考后回答。"
     user_prompt = (
-        template.format(context=note.context, character=original_text) + zdic_prompt
+        template.format(context=note.context, query=original_text) + zdic_prompt
     )
     completion: PromptRaw = {
         "messages": [
@@ -51,13 +49,6 @@ with JsonlReader(IntermediateFiles.NotesTextbook) as f:
         if note.is_short_note() and not note.is_title_note() and "\n" not in note.detail:
             notes.append(note)
 
-with JsonlReader(IntermediateFiles.NotesGuwen) as f:
-    for i, line in enumerate(f):
-        if i % GUWEN_SAMPLE_INTERVAL != SAMPLE_START:
-            continue
-        note = Note.from_dict(line)
-        if note.is_short_note() and not note.is_title_note() and "\n" not in note.detail:
-            notes.append(note)
 
 with JsonlWriter(IntermediateFiles.DatasetThinkingRaw) as f:
     for i, note in enumerate(tqdm(notes, unit="note")):
