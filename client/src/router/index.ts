@@ -32,6 +32,11 @@ const router = createRouter({
       name: 'settings',
       component: SettingsView,
     },
+    {
+      path: '/batch',
+      name: 'batch',
+      component: () => import('@/views/BatchView.vue'),
+    }
   ],
 })
 

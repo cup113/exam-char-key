@@ -105,6 +105,7 @@ export const useQueryStore = defineStore("query", () => {
                 zdicResponse.value = zdicResult;
             },
             updateSearchOriginal: getLazyEmptyUpdater(activeText),
+            updateExtract: () => {},
         };
     }
 

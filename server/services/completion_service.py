@@ -71,8 +71,9 @@ class CompletionService:
                 yield ServerResponseAiUsage.create(usage)
                 break
             delta = answer.choices[0].delta
-            reasoning_content = delta.reasoning_content  # type: ignore
-            if not isinstance(reasoning_content, str):
+            try:
+                reasoning_content = str(delta.reasoning_content)  # type: ignore
+            except:
                 reasoning_content = None
 
             # Special in Qwen3
@@ -162,5 +163,19 @@ class CompletionService:
         )
         async for chunk in self._process_response(
             response, ServerResponseType.SearchOriginal, Config.GENERAL_MODEL, "搜索原文"
+        ):
+            yield chunk.to_jsonl_str()
+
+    async def extract_model_test(self, prompt: str):
+        response  = await self._send_request(
+            model=Config.LONG_MODEL,
+            system_prompt=Config.PROMPT_AI_EXTRACT_MODEL_TEST,
+            user_prompt=prompt,
+            temperature=0.5,
+            search="no",
+        )
+
+        async for chunk in self._process_response(
+            response, ServerResponseType.AiExtract, Config.LONG_MODEL, "提取模卷"
         ):
             yield chunk.to_jsonl_str()

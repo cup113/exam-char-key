@@ -264,6 +264,22 @@ export const useApiStore = defineStore("api", () => {
         }
     }
 
+    async function extractModelTest(prompt: string, frontendHandler: FrontendHandler, requestId: string) {
+        try {
+            const { reader, decoder } = await guardStreamingResponse(
+                call_post(`/api/extract-model-test`, { prompt }, requestId), [], requestId
+            );
+
+            if (reader && decoder) {
+                await readStream(reader, decoder, frontendHandler);
+            }
+        } catch (error) {
+            if (!isAbortError(error)) {
+                console.error('Error in searchOriginalText:', error);
+            }
+        }
+    }
+
     async function queryFreq(query: string, page: number, requestId?: string): Promise<FreqResult> {
         const response = await guardJsonResponse(
             call_get(`/api/query/freq-info?q=${encodeURIComponent(query)}&page=${page}`, requestId),
@@ -316,6 +332,7 @@ export const useApiStore = defineStore("api", () => {
         queryThinking,
         queryFreq,
         searchOriginalText,
+        extractModelTest,
         getBalanceDetails,
         register,
         login,

@@ -251,6 +251,7 @@ class ServerResponseType(str, Enum):
     AiUsage = "ai-usage"
     AiFlash = "ai-flash"
     AiThinking = "ai-thinking"
+    AiExtract = "ai-extract"
     SearchOriginal = "search-original"
     Zdic = "zdic"
     FreqInfo = "freq"

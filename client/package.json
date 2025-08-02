@@ -17,6 +17,7 @@
     "@tiptap/starter-kit": "^2.11.9",
     "@tiptap/vue-3": "^2.11.9",
     "@vueuse/core": "^13.0.0",
+    "marked": "^16.1.1",
     "nanoid": "^5.1.5",
     "pinia": "^3.0.1",
     "reka-ui": "^2.1.0",

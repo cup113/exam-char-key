@@ -59,6 +59,10 @@ class AdoptBody(BaseModel):
     answer: str
 
 
+class ExtractBody(BaseModel):
+    prompt: str
+
+
 def init_ai_client():
     if not Config.API_KEY:
         raise ValueError("API_KEY is not set")
@@ -117,7 +121,11 @@ async def query_thinking_core(pb: PocketBaseService, context: str, q: str, deep:
 async def not_enough_balance_handler(request: Request, exc: NotEnoughBalanceError):
     return JSONResponse(
         status_code=402,
-        content={"message": "Not enough balance", "user_id": exc.user_id, "remaining": exc.remaining},
+        content={
+            "message": "Not enough balance",
+            "user_id": exc.user_id,
+            "remaining": exc.remaining,
+        },
     )
 
 
@@ -146,6 +154,20 @@ async def query_flash(
     await pb.balance_check()
     return StreamingResponse(
         query_flash_core(context=context, q=q, pb=request.state.pb),
+        media_type="application/json",
+    )
+
+
+@app.post("/api/extract-model-test")
+async def extract_model_test(
+    request: Request,
+    body: ExtractBody
+):
+    completion_service = CompletionService(
+        client=client, pb=request.state.pb
+    )
+    return StreamingResponse(
+        completion_service.extract_model_test(prompt=body.prompt),
         media_type="application/json",
     )
 

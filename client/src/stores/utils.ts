@@ -61,6 +61,9 @@ export function update_from_query(responseChunk: ResponseChunk, frontendHandler:
         case "search-original":
             frontendHandler.updateSearchOriginal(responseChunk.data.content);
             break;
+        case "ai-extract":
+            frontendHandler.updateExtract(responseChunk.data.content);
+            break;
         default:
             console.error(`Unknown type: ${JSON.stringify(responseChunk)}`);
             break;
