@@ -12,7 +12,7 @@ def get_evaluation_prompt(
     model_index_id: int,
     model: str,
 ) -> BatchRequest:
-    user_prompt = f"上下文：{note.context}\n需解释的词语：{note.get_original_text()}\n标准答案：{note.core_detail}\n学生答案：{answer_stu}\n请按要求评分并按格式输出。"
+    user_prompt = f"“{note.context}”中“{note.get_original_text()}”的含义。\n标准答案为：{note.core_detail}\n学生答案为：{answer_stu}\n请按要求评分并按格式输出。"
 
     return {
         "custom_id": f"{completion_custom_id}-ev-{model_index_id}",
@@ -39,7 +39,8 @@ with JsonlReader(IntermediateFiles.DatasetThinkingRaw) as reader:
         note = Note.from_dict(prompt_raw["note"])
         raw_data.update(
             [
-                (f"request-tb-{i:04d}-qm", note),
+                (f"request-tb-{i:04d}-qp", note),
+                (f"request-tb-{i:04d}-ql", note),
                 (f"request-tb-{i:04d}-ds", note),
             ]
         )
@@ -64,6 +65,7 @@ EVALUATION_FILES: list[EvaluationFiles] = [
 BATCH_FILENAMES = [
     IntermediateFiles.CompletionBatchThinking1,
     IntermediateFiles.CompletionBatchThinking2,
+    IntermediateFiles.CompletionBatchThinking3,
 ]
 
 

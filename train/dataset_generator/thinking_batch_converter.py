@@ -18,10 +18,12 @@ def convert(prompt_raw: PromptRaw, i: int, model: str, model_short: str) -> Batc
 
 batch_requests_1: list[BatchRequest] = []
 batch_requests_2: list[BatchRequest] = []
+batch_requests_3: list[BatchRequest] = []
 with JsonlReader(IntermediateFiles.DatasetThinkingRaw) as fr:
     for i, prompt_raw in enumerate(fr):
         batch_requests_1.append(convert(prompt_raw, i, "qwen-plus-latest", "qp"))
         batch_requests_2.append(convert(prompt_raw, i, "qwen-long-latest", "ql"))
+        batch_requests_3.append(convert(prompt_raw, i, "deepseek-v3", "ds"))
 
 shuffle(batch_requests_1)
 
@@ -31,4 +33,8 @@ with JsonlWriter(IntermediateFiles.PromptDatasetThinking1) as fw:
 
 with JsonlWriter(IntermediateFiles.PromptDatasetThinking2) as fw:
     for batch_request in batch_requests_2:
+        fw.write_line(batch_request)
+
+with JsonlWriter(IntermediateFiles.PromptDatasetThinking3) as fw:
+    for batch_request in batch_requests_3:
         fw.write_line(batch_request)

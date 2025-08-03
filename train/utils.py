@@ -56,8 +56,9 @@ class IntermediateFiles:
     DatasetFlash = "./train/result/dataset-flash.jsonl"
     DatasetThinking = "./train/result/dataset-thinking.jsonl"
     DatasetThinkingRaw = "./train/result/dataset-thinking-raw.jsonl"
-    PromptDatasetThinking1 = "./train/result/dataset-thinking-prompt-1.jsonl"
-    PromptDatasetThinking2 = "./train/result/dataset-thinking-prompt-2.jsonl"
+    PromptDatasetThinking1 = "./train/result/dataset-thinking-prompt-qp.jsonl"
+    PromptDatasetThinking2 = "./train/result/dataset-thinking-prompt-ql.jsonl"
+    PromptDatasetThinking3 = "./train/result/dataset-thinking-prompt-ds.jsonl"
     PromptEvaluationThinkingDataset1 = (
         "./train/result/dataset-thinking-evaluation-prompt-1.jsonl"
     )
@@ -65,10 +66,13 @@ class IntermediateFiles:
         "./train/result/dataset-thinking-evaluation-prompt-2.jsonl"
     )
     CompletionBatchThinking1 = (
-        "./train/result/dataset-thinking-batch-completion-1.jsonl"
+        "./train/result/dataset-thinking-batch-completion-qp.jsonl"
     )
     CompletionBatchThinking2 = (
-        "./train/result/dataset-thinking-batch-completion-2.jsonl"
+        "./train/result/dataset-thinking-batch-completion-ql.jsonl"
+    )
+    CompletionBatchThinking3 = (
+        "./train/result/dataset-thinking-batch-completion-ds.jsonl"
     )
     CompletionBatchEvaluationThinking1 = (
         "./train/result/dataset-evaluation-thinking-batch-completion-1.jsonl"

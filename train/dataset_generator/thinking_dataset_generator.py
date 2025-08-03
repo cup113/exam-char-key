@@ -9,7 +9,7 @@ from dataclasses import dataclass
 class ScoredResponse:
     answer: str
     model: str
-    scores: list[int]
+    scores: list[float]
 
     def get_average(self) -> float | None:
         if len(self.scores) == 0:
@@ -24,18 +24,31 @@ class ScoredNote:
     responses: dict[str, ScoredResponse]
 
 
-def parse_score(message: str) -> int | None:
+def parse_grade(message: str) -> str | None:
     """
     Parse the score from the message.
-    <think>...</think><score>9</score>
+    <think>...</think><grade>A</grade>
     """
 
-    score_match = match(r"(.*?)\<score\>([0-3])\<\/score\>", message.strip(), DOTALL)
+    grade_match = match(r"(.*?)\<grade\>([ABCDE])\<\/grade\>", message.strip(), DOTALL)
 
-    if score_match:
-        return int(score_match.group(2))
+    if grade_match:
+        return str(grade_match.group(2))
     else:
         return None
+
+
+def grade_to_score(grade: str | None) -> float | None:
+    if grade is None:
+        return None
+    return {
+        'A': 1.0,
+        'B': 0.8,
+        'C': 0.5,
+        'D': 0.2,
+        'E': 0.0,
+    }.get(grade)
+
 
 
 def check_integrity(message: str) -> bool:
@@ -43,7 +56,7 @@ def check_integrity(message: str) -> bool:
     Check the integrity of the response of the distilled model.
     """
 
-    pattern = r"\<think\>(.*?)\<\/think\>(.*?)\<explain\>(.*?)\<\/explain\>(.*?)\<answers\>(.*?)\<\/answers\>"
+    pattern = r"\*\*思考\*\*::.*?\n\*\*解释\*\*\:.*?\n\*\*答案\*\*\:.*?\n"
     return bool(match(pattern, message.strip(), DOTALL))
 
 
@@ -78,7 +91,8 @@ def add_score(api_response: CompletionApiResponse) -> None:
         warn(f"Error in response: {api_response['error']}")
         return
     content = api_response["response"]["body"]["choices"][0]["message"]["content"]
-    score = parse_score(content)
+    grade = parse_grade(content)
+    score = grade_to_score(grade)
     if score is None:
         single_line_content = content.replace("\n", "")
         warn(f"No score found in response: {single_line_content}")
@@ -114,6 +128,10 @@ with JsonlReader(IntermediateFiles.CompletionBatchThinking2) as reader:
     for line in reader:
         add_data(line)
 
+with JsonlReader(IntermediateFiles.CompletionBatchThinking3) as reader:
+    for line in reader:
+        add_data(line)
+
 
 with JsonlReader(IntermediateFiles.CompletionBatchEvaluationThinking1) as reader:
     for line in reader:
@@ -128,7 +146,7 @@ with JsonlWriter(IntermediateFiles.DatasetThinking) as writer, open(
     "./train/result/dataset-thinking-evaluation-scores.txt", "w", encoding="utf-8"
 ) as score_file:
     for note_id, note in data.items():
-        ACCEPT_THRESHOLD = 2.5
+        ACCEPT_THRESHOLD = 0.89
 
         score_file.write(f"{note.base.get_original_text()}\t")
         responses = list(note.responses.items())

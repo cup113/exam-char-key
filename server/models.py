@@ -93,7 +93,7 @@ class CorpusItemRaw(BaseModel):
 class FreqInfoFileRaw(BaseModel):
     word: str
     textbook_freq: int
-    guwen_freq: int
+    dataset_freq: int
     query_freq: int
     notes: list[Note]
 
@@ -102,7 +102,7 @@ class FreqInfoFileRaw(BaseModel):
             stat=CorpusStatItem(
                 query=self.word,
                 freqTextbook=self.textbook_freq,
-                freqDataset=self.guwen_freq,
+                freqDataset=self.dataset_freq,
                 freqQuery=self.query_freq,
             ),
             notes=[
