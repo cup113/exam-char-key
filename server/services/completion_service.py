@@ -73,8 +73,11 @@ class CompletionService:
                 yield ServerResponseAiUsage.create(usage)
                 break
             delta = answer.choices[0].delta
-            reasoning_content: str | None = delta.reasoning_content  # type: ignore
-            assert reasoning_content is None or isinstance(reasoning_content, str)
+            try:
+                reasoning_content: str | None = delta.reasoning_content  # type: ignore
+                assert reasoning_content is None or isinstance(reasoning_content, str)
+            except AttributeError:
+                reasoning_content = None
 
             # Special in Qwen3
             if reasoning_content is not None:
