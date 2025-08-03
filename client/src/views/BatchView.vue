@@ -2,6 +2,7 @@
 import { ref, onUnmounted } from 'vue'
 import { marked } from 'marked'
 import { useApiStore } from '@/stores/api'
+import { useLocalStorage } from '@vueuse/core'
 
 interface Task {
     id: string
@@ -12,7 +13,7 @@ interface Task {
 
 const apiStore = useApiStore()
 
-const tasks = ref<Task[]>([])
+const tasks = useLocalStorage('EC_tasks', new Array<Task>());
 const newPrompt = ref("");
 
 const renderMarkdown = (content: string) => {
@@ -20,7 +21,8 @@ const renderMarkdown = (content: string) => {
 }
 
 function addTask() {
-    const taskId = 'task_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9)
+    const promptExcerpt = newPrompt.value.replace(/\n|\s/g, '').slice(0, 15);
+    const taskId = 'task_' + Date.now() + "_" + Math.random().toString(36).substring(2, 5) + "_" + promptExcerpt + "_" + newPrompt.value.length;
 
     const task: Task = {
         id: taskId,
@@ -32,7 +34,7 @@ function addTask() {
     tasks.value.push(task);
     startTask(task);
 
-    newPrompt.value = ''
+    newPrompt.value = '';
 }
 
 function updateTask(_task: Task, deltaContent?: string, status?: 'pending' | 'running' | 'completed' | 'error') {
@@ -81,6 +83,11 @@ const removeTask = (taskId: string) => {
     }
 }
 
+const clearTasks = () => {
+    const ids = tasks.value.map(task => task.id);
+    ids.forEach(id => removeTask(id));
+}
+
 onUnmounted(() => {
     tasks.value.forEach(task => {
         apiStore.abortRequest(task.id);
@@ -101,11 +108,18 @@ onUnmounted(() => {
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                         rows="3" placeholder="输入模卷内容" required></textarea>
                 </div>
-                <button @click="addTask"
-                    class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md transition-colors"
-                    :disabled="!newPrompt.trim()">
-                    添加任务
-                </button>
+                <div class="flex justify-between">
+                    <button @click="addTask"
+                        class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md transition-colors"
+                        :disabled="!newPrompt.trim()">
+                        添加任务
+                    </button>
+                    <button @click="clearTasks"
+                        class="bg-danger-600 hover:bg-danger-700 text-white px-4 py-2 rounded-md transition-colors"
+                        :disabled="!tasks.length">
+                        清空任务
+                    </button>
+                </div>
             </div>
         </div>
 
