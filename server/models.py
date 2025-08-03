@@ -97,8 +97,8 @@ class FreqInfoFileRaw(BaseModel):
     query_freq: int
     notes: list[Note]
 
-    def to_freq_info(self):
-        return FreqInfo(
+    def to_freq_info_all(self):
+        return FreqInfoAll(
             stat=CorpusStatItem(
                 query=self.word,
                 freqTextbook=self.textbook_freq,
@@ -109,8 +109,12 @@ class FreqInfoFileRaw(BaseModel):
                 note.to_corpus_item("textbook" if i < self.textbook_freq else "dataset")
                 for i, note in enumerate(self.notes)
             ],
-            total_pages=1,
         )
+
+
+class FreqInfoAll(BaseModel):
+    stat: CorpusStatItem
+    notes: list[CorpusItem]
 
 
 class FreqInfo(BaseModel):

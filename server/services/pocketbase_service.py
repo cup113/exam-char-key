@@ -14,6 +14,7 @@ from server.config import Config, Roles
 from server.models import (
     Role,
     FreqInfo,
+    FreqInfoAll,
     FreqInfoFileRaw,
     CorpusStatItem,
     CorpusStatItemRaw,
@@ -133,14 +134,15 @@ class PocketBaseService:
     ## Init ##
 
     async def init_corpus(self) -> None:
-        if not await self._corpus_is_empty():
+        if not await self._corpus_is_empty() and not await self._corpus_is_old():
             main_logger.info("Corpus already initialized.")
             return
 
         main_logger.info("Initializing Corpus...")
+        await self._corpus_delete_all()
         with open(Config.FREQUENCY_PATH, "r", encoding="utf-8") as f:
             for line in tqdm(f, "Initializing Corpus"):
-                freq_info = FreqInfoFileRaw.model_validate_json(line).to_freq_info()
+                freq_info = FreqInfoFileRaw.model_validate_json(line).to_freq_info_all()
                 await self._corpus_init_load(freq_info)
 
     async def init_roles(self) -> None:
@@ -357,10 +359,12 @@ class PocketBaseService:
 
         main_logger.info("Corpus Deletion Completed.")
 
-    async def _corpus_init_load(self, freq_info: FreqInfo) -> bool:
+    async def _corpus_init_load(self, freq_info: FreqInfoAll) -> bool:
         tasks: list[Coroutine[Any, Any, Any]] = []
 
-        tasks.append(self.corpus_stats.create(freq_info.model_dump()))
+        tasks.append(self.corpus_stats.create(freq_info.stat.model_dump()))
+        for note in freq_info.notes:
+            tasks.append(self.corpus.create(note.model_dump()))
 
         result = await gather(*tasks, return_exceptions=True)
         for r in result:
@@ -380,7 +384,7 @@ class PocketBaseService:
             corpus_items = await self.corpus.get_list(
                 page=page,
                 per_page=15,
-                options={"filter": f"query='{self.sanitize(query)}'"},
+                options={"filter": f"query~'{self.sanitize(query)}'"},
             )
             await self.users_spend_coins(
                 20 + len(corpus_items["items"]) * 5, reason=f"词频查询 {query}"
@@ -414,7 +418,7 @@ class PocketBaseService:
         try:
             stats = await self.corpus_stats.get_first(
                 {
-                    "filter": f"query = '{self.sanitize(query)}'",
+                    "filter": f"query='{self.sanitize(query)}'",
                 }
             )
         except PocketBaseNotFoundError:
@@ -454,6 +458,17 @@ class PocketBaseService:
             return False
         except PocketBaseNotFoundError:
             return True
+
+    async def _corpus_is_old(self) -> bool:
+        MARK = "悲昔游"
+        try:
+            await self.corpus.get_first({
+                "filter": f"query='{MARK}' && type='dataset'",
+            })
+            return True
+        except PocketBaseNotFoundError:
+            return False
+
 
     ## Balance Details ##
 

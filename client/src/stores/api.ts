@@ -290,7 +290,22 @@ export const useApiStore = defineStore("api", () => {
             return FreqResult.empty();
         }
 
-        return new FreqResult(response);
+        const result = new FreqResult(response);
+        result.notes.sort((a, b) => {
+            if (a.query.length !== b.query.length) {
+                return a.query.length - b.query.length;
+            }
+            if (a.type !== b.type) {
+                if (a.type === "textbook") {
+                    return -1;
+                }
+                if (b.type === "textbook") {
+                    return 1;
+                }
+            }
+            return a.query.localeCompare(b.query);
+        });
+        return result;
     }
 
     async function sha256(password: string) {
