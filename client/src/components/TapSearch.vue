@@ -41,6 +41,7 @@ const aiAdoptSuggestions = computed(() => {
     return [queryStore.aiInstantResponse, ...queryStore.aiThoughtStructured.answers].map(answer => answer.replace("。", ""));
 });
 const adoptText = ref("");
+const showSelectionWarning = ref(false);
 
 watch(() => queryStore.activeText, () => {
     const fullText = queryStore.activeText.trim();
@@ -140,12 +141,56 @@ watch(chars, () => {
             queryStore.queryIndex.add(index);
         }
     })
+
+    checkSelectionWarning();
 }, { immediate: true, deep: true });
+
+function checkSelectionWarning() {
+    if (chars.length === 0) {
+        showSelectionWarning.value = false;
+        return;
+    }
+
+    const selectedCount = chars.filter(char => char.selected).length;
+    if (selectedCount >= 5) {
+        showSelectionWarning.value = true;
+        return;
+    }
+
+    let firstSelectedIndex = -1;
+    let lastSelectedIndex = -1;
+    let selectedCharsCount = 0;
+
+    chars.forEach((char, index) => {
+        if (char.selected) {
+            if (firstSelectedIndex === -1) {
+                firstSelectedIndex = index;
+            }
+            lastSelectedIndex = index;
+            selectedCharsCount++;
+        }
+    });
+
+    if (selectedCharsCount > 1 && (lastSelectedIndex - firstSelectedIndex + 1) > selectedCharsCount) {
+        showSelectionWarning.value = true;
+        return;
+    }
+
+    showSelectionWarning.value = false;
+}
 
 function selectChunk(indexPara: number, indexChunk: number) {
     const paragraph = paragraphs[indexPara];
     const chunk = paragraph.chunks[indexChunk];
     chunk.selected = !chunk.selected;
+}
+
+function selectWholeParagraph(indexPara: number) {
+    const paragraph = paragraphs[indexPara];
+    const allSelected = paragraph.chunks.every(chunk => chunk.selected);
+    paragraph.chunks.forEach(chunk => {
+        chunk.selected = !allSelected;
+    });
 }
 
 function clearChunkSelection() {
@@ -169,11 +214,6 @@ function adoptAnswer() {
     queryStore.adopt_answer(adoptText.value);
     adoptText.value = "";
 }
-
-function toggleDeepThinking() {
-    userStore.deepThinking = !userStore.deepThinking;
-}
-
 </script>
 
 <template>
@@ -181,7 +221,13 @@ function toggleDeepThinking() {
         <section class="flex flex-col" :class="{ 'items-center': paragraphs.length === 1 }">
             <h2 class="text-xl font-bold mb-2 w-full text-center">原文内容</h2>
             <div v-for="(para, paraIndex) in paragraphs" :key="paraIndex">
-                <div class="inline-block font-mono mr-2 text-xs text-gray-500 w-6" v-if="paragraphs.length >= 2">({{ paraIndex + 1 }})</div>
+                <div 
+                    class="inline-block font-mono mr-2 text-base font-bold cursor-pointer w-8 text-center rounded hover:bg-blue-200 transition-colors"
+                    v-if="paragraphs.length >= 2" 
+                    @click="selectWholeParagraph(paraIndex)"
+                    title="点击全选/取消全选该段落">
+                    ({{ paraIndex + 1 }})
+                </div>
                 <div class="inline-block">{{ para.leadingPunctuation }}</div>
                 <div v-for="(chunk, index) in para.chunks" :key="index" class="inline-block">
                     <span class="cursor-pointer"
@@ -207,6 +253,10 @@ function toggleDeepThinking() {
                         @click="selectChar(index)">
                         {{ char.char }}
                     </div>
+                </div>
+                <div v-if="showSelectionWarning" class="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded text-yellow-800 text-sm">
+                    <p>提示：本产品更适合一次查询一个汉字或词语。建议分次查询。</p>
+                    <p>在深度思考模式下，系统会自动提供整句翻译和上下文分析。</p>
                 </div>
             </div>
         </section>

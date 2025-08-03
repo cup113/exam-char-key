@@ -94,7 +94,7 @@ onUnmounted(clearTasks);
 
 <template>
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 class="text-xl font-semibold mb-4">添加新任务</h2>
+        <h2 class="text-xl font-semibold mb-4">模卷数据提取器</h2>
         <div class="space-y-4">
             <div>
                 <textarea v-model="newPrompt"
