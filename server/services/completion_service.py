@@ -57,7 +57,7 @@ class CompletionService:
         response: AsyncStream[ChatCompletionChunk],
         response_type: ServerResponseType,
         model: AiModel,
-        completion_type: str
+        completion_type: str,
     ):
         reasoning = False
         async for answer in response:
@@ -67,14 +67,14 @@ class CompletionService:
                     prompt_tokens=answer.usage.prompt_tokens,
                     completion_tokens=answer.usage.completion_tokens,
                 )
-                await self.pb.users_spend_coins(usage.calc_cost(), reason=f"AI {completion_type}")
+                await self.pb.users_spend_coins(
+                    usage.calc_cost(), reason=f"AI {completion_type}"
+                )
                 yield ServerResponseAiUsage.create(usage)
                 break
             delta = answer.choices[0].delta
-            try:
-                reasoning_content = str(delta.reasoning_content)  # type: ignore
-            except:
-                reasoning_content = None
+            reasoning_content: str | None = delta.reasoning_content  # type: ignore
+            assert reasoning_content is None or isinstance(reasoning_content, str)
 
             # Special in Qwen3
             if reasoning_content is not None:
@@ -162,12 +162,15 @@ class CompletionService:
             search="force",
         )
         async for chunk in self._process_response(
-            response, ServerResponseType.SearchOriginal, Config.GENERAL_MODEL, "搜索原文"
+            response,
+            ServerResponseType.SearchOriginal,
+            Config.GENERAL_MODEL,
+            "搜索原文",
         ):
             yield chunk.to_jsonl_str()
 
     async def extract_model_test(self, prompt: str):
-        response  = await self._send_request(
+        response = await self._send_request(
             model=Config.LONG_MODEL,
             system_prompt=Config.PROMPT_AI_EXTRACT_MODEL_TEST,
             user_prompt=prompt,

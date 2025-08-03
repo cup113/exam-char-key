@@ -77,16 +77,20 @@ const guideSteps = [
         </ol>
       </div>
     </div>
-
     <div class="bg-white rounded-xl shadow-md p-6 border border-secondary-200 mb-8">
       <h2 class="text-xl font-semibold text-primary-700 mb-4">🔗 相关链接</h2>
-      <div class="flex flex-wrap gap-4">
+      <div class="flex flex-wrap justify-center gap-6">
         <a href="https://github.com/cup113/exam-char-key" target="_blank"
-          class="flex items-center text-primary-700 hover:text-primary-800">
-          <GithubIcon class="h-5 w-5 mr-1" />
-          GitHub 仓库
+          class="flex items-center text-primary-700 hover:text-primary-800 bg-primary-50 hover:bg-primary-100 py-2 px-4 rounded-lg transition duration-300">
+          <GithubIcon class="h-5 w-5 mr-2" />
+          <span class="font-medium">GitHub 仓库</span>
         </a>
-        <a href="https://leximory.com" target="_blank" class="text-primary-700 hover:text-primary-800 font-sm">友链：Leximory —— 语言学地学语言</a>
+        <a href="https://leximory.com" target="_blank"
+          class="flex items-center text-primary-700 hover:text-primary-800 bg-primary-50 hover:bg-primary-100 py-2 px-4 rounded-lg transition duration-300">
+          <BookIcon class="h-5 w-5 mr-2" />
+          <span class="font-medium">[友链] Leximory</span>
+          <span class="ml-2 text-sm text-primary-800 hidden sm:inline">—— 语言学地学语言</span>
+        </a>
       </div>
     </div>
 
