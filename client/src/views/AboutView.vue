@@ -100,6 +100,11 @@ const guideSteps = [
           <p>© 2025 Jason Li</p>
           <p class="mt-1">本项目基于 MIT 协议开源。</p>
         </div>
+        <div>
+          <a href="https://github.com/cup113/exam-char-key" target="_blank">
+            <img src="https://img.shields.io/github/v/tag/cup113/exam-char-key?label=%E5%BD%93%E5%89%8D%E7%89%88%E6%9C%AC" alt="GitHub tag (latest SemVer)">
+          </a>
+        </div>
         <div class="flex flex-wrap gap-4">
           <RouterLink to="/query"
             class="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">
