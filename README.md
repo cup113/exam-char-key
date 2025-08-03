@@ -127,7 +127,7 @@ The application uses Alibaba Cloud's DashScope API (Qwen models). Configure your
 - **Models Available**:
   - `qwen-plus`: General purpose model
   - `qwen-turbo`: Fast response model
-  - `qwen3-8b-ft-202507232312-96a6`: Specialized ancient Chinese model in flash responding
+  - `qwen3-8b-ft-202508031744-1c46`: Specialized ancient Chinese model in flash responding
   - `qwen3-8b-ft-202507251314-0fd2`: Specialized ancient Chinese model in thinking responding
 
 ## Usage
@@ -207,7 +207,7 @@ If you'd like to train on your own, you're supposed to execute the scripts in th
 ```bash
 python -m train.extractor.textbook_extractor
 python -m train.extractor.ancient_classifier
-python -m train.extractor.guwen_extractor
+python -m train.extractor.model_extractor
 python -m train.extractor.textbook_extractor # This should be run again, at this time non-ancient works will be sorted out.
 
 python -m train.dataset_generator.flash_dataset_generator

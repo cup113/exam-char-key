@@ -20,8 +20,8 @@ batch_requests_1: list[BatchRequest] = []
 batch_requests_2: list[BatchRequest] = []
 with JsonlReader(IntermediateFiles.DatasetThinkingRaw) as fr:
     for i, prompt_raw in enumerate(fr):
-        batch_requests_1.append(convert(prompt_raw, i, "qwen-max-latest", "qm"))
-        batch_requests_2.append(convert(prompt_raw, i, "deepseek-v3", "ds"))
+        batch_requests_1.append(convert(prompt_raw, i, "qwen-plus-latest", "qp"))
+        batch_requests_2.append(convert(prompt_raw, i, "qwen-long-latest", "ql"))
 
 shuffle(batch_requests_1)
 

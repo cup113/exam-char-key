@@ -1,6 +1,6 @@
 """
 *** Please open dev server first! ***
-Should take 10s * 6660 notes = 66600s = 18.5h without cache
+Should take 10s * 1080 notes = 10800s = 3h without cache
 """
 
 from json import loads
@@ -9,7 +9,9 @@ from tqdm import tqdm
 from httpx import Client
 from train.models import Note, PromptRaw
 from train.utils import SYSTEM_PROMPTS, IntermediateFiles, JsonlReader, JsonlWriter
+from random import shuffle
 
+(TEXTBOOK_SAMPLE_INTERVAL, TEXTBOOK_SAMPLE_START) = (5, 1)
 CRAWL_INTERVAL = 10
 CRAWL_MIN_INTERVAL = 1
 
@@ -20,7 +22,9 @@ notes: list[Note] = []
 def get_completion(note: Note, i: int):
     original_text = note.get_original_text()
 
-    response = client.get(f"http://localhost:4122/api/zdic?q={original_text}", timeout=20)
+    response = client.get(
+        f"http://localhost:4122/api/zdic?q={original_text}", timeout=20
+    )
     if response.status_code == 200:
         response_json = loads(response.text)
         zdic_prompt: str = response_json["zdic_prompt"]
@@ -43,11 +47,27 @@ def get_completion(note: Note, i: int):
     }
     return completion, cached
 
+
 with JsonlReader(IntermediateFiles.NotesTextbook) as f:
     for i, line in enumerate(f):
         note = Note.from_dict(line)
-        if note.is_short_note() and not note.is_title_note() and "\n" not in note.detail:
+        if i % TEXTBOOK_SAMPLE_INTERVAL != TEXTBOOK_SAMPLE_START:
+            continue
+        if (
+            note.is_short_note()
+            and not note.is_title_note()
+            and "\n" not in note.detail
+        ):
             notes.append(note)
+
+
+with JsonlReader(IntermediateFiles.NotesModelTests) as f:
+    for line in f:
+        note = Note.from_dict(line)
+        if note.is_short_note():
+            notes.append(note)
+
+shuffle(notes)
 
 
 with JsonlWriter(IntermediateFiles.DatasetThinkingRaw) as f:

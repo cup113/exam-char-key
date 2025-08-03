@@ -16,7 +16,7 @@ class SYSTEM_PROMPTS:
 2. 给出用你思考结果代入的句子解释，着重突出词语在语境中的含义。这一行用“**解释**：”开头。
 3. 输出 1~2 个最终的解释，若有两个义项则中间用分号“；”分隔。这一行用“**答案**：”开头。"""
 
-    THINKING_SIMPLIFIED = "你专精于高中语文文言词语释义，需要给出准确的语境中的词语解释。仅特殊语境下补充引申义，否则从本义出发。你可以参考汉典的义项（若有）。输出格式时，要求以“**思考**：”“**解释**：”“**答案**：”分别开头输出三行文本。代入时要深度思考，解释时要解释句子含义及代入词语解释，答案输出 1~2 个，若 2 个则用“；”分隔。"
+    THINKING_SIMPLIFIED = "你专精于简短、准确地回答高中语文文言文语境中的词语释义。从本义出发，仅特殊情况下补充引申义。你可以参考汉典的义项（若有）。输出格式时，要求以“**思考**：”“**解释**：”“**答案**：”分别开头输出三行文本。代入时要深度思考，解释时要解释句子含义及代入词语解释，答案输出 1~2 个，若 2 个则用“；”分隔。"
 
     EVALUATION = """你是一位大模型训练专家，同时对文言实词有着深入的理解。你要评测模型的回答，以辅助获得更高质量的语料库和更公平的测评结果。
 
@@ -50,7 +50,8 @@ class IntermediateFiles:
     PassagesTextbook = "./train/result/textbook-passages.jsonl"
     IsAncientTextbook = "./train/result/textbook-is-ancient.jsonl"
     NotesTextbook = "./train/result/textbook-notes.jsonl"
-    ModelTests = "./train/model-training-dataset/model-training-dataset.csv"
+    CSVModelTests = "./train/model-training-dataset/model-training-dataset.csv"
+    NotesModelTests = "./train/result/model-tests-notes.jsonl"
     StatFrequency = "./train/result/word-frequency.jsonl"
     DatasetFlash = "./train/result/dataset-flash.jsonl"
     DatasetThinking = "./train/result/dataset-thinking.jsonl"

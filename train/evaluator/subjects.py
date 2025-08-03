@@ -13,7 +13,7 @@ class OnlineAiSubject(AiSubject):
 
 
 class EckFlashSubject(FlashAiSubject):
-    model_code = "qwen3-8b-ft-202507232312-96a6"
+    model_code = "qwen3-8b-ft-202508031744-1c46"
     model_name = "eck-flash"
 
 
