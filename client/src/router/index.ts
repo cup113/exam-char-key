@@ -3,6 +3,7 @@ import AboutView from '@/views/AboutView.vue';
 import QueryView from '../views/QueryView.vue';
 import HistoryView from '@/views/HistoryView.vue';
 import SettingsView from '@/views/SettingsView.vue';
+import BatchView from '@/views/BatchView.vue';
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -35,7 +36,7 @@ const router = createRouter({
     {
       path: '/batch',
       name: 'batch',
-      component: () => import('@/views/BatchView.vue'),
+      component: BatchView,
     }
   ],
 })
