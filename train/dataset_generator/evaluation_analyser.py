@@ -4,25 +4,30 @@ import csv
 def parse_line(line: str):
     parts = line.strip().split("\t")
     word = parts[0]
-    qm_qp = qm_ql = qm_avg = ds_qp = ds_ql = ds_avg = None
+    qp_qp = qp_ql = qp_avg = ql_qp = ql_ql = ql_avg = ds_qp = ds_ql = ds_avg = None
     try:
         pass_count = int(parts[-1])
     except ValueError:
         pass_count = 0
 
     for part in parts[1:-1]:
-        if part.startswith("qm:"):
-            scores = part.split(":")[2].split(";")
-            qm_avg = float(part.split(":")[1])
-            qm_qp = float(scores[0])
-            qm_ql = float(scores[1]) if len(scores) == 2 else None
-        elif part.startswith("ds:"):
+        if part.startswith("ds:"):
             scores = part.split(":")[2].split(";")
             ds_avg = float(part.split(":")[1])
             ds_qp = float(scores[0])
             ds_ql = float(scores[1]) if len(scores) == 2 else None
+        elif part.startswith("qp:"):
+            scores = part.split(":")[2].split(";")
+            qp_avg = float(part.split(":")[1])
+            qp_qp = float(scores[0])
+            qp_ql = float(scores[1]) if len(scores) == 2 else None
+        elif part.startswith("ql:"):
+            scores = part.split(":")[2].split(";")
+            ql_avg = float(part.split(":")[1])
+            ql_qp = float(scores[0])
+            ql_ql = float(scores[1]) if len(scores) == 2 else None
 
-    return word, qm_qp, qm_ql, qm_avg, ds_qp, ds_ql, ds_avg, pass_count
+    return word, qp_qp, qp_ql, qp_avg, ql_qp, ql_ql, ql_avg, ds_qp, ds_ql, ds_avg, pass_count
 
 
 def convert_to_csv(input_file: str, output_file: str):
@@ -32,11 +37,11 @@ def convert_to_csv(input_file: str, output_file: str):
         reader = infile.readlines()
         writer = csv.writer(outfile)
         writer.writerow(
-            ["词汇", "qm-qp", "qm-ql", "qm-平均", "ds-qp", "ds-ql", "ds-平均", "通过数"]
+            ["词汇", "qp-qp", "qp-ql", "qp-平均", "ql-qp", "ql-ql", "ql-平均", "ds-qp", "ds-ql", "ds-平均", "通过数"]
         )
 
         for line in reader:
-            word, qm_qp, qm_ql, qm_avg, ds_qp, ds_ql, ds_avg, pass_count = parse_line(
+            word, qp_qp, qp_ql, qp_avg, ql_qp, ql_ql, ql_avg, ds_qp, ds_ql, ds_avg, pass_count = parse_line(
                 line
             )
             try:
@@ -44,7 +49,7 @@ def convert_to_csv(input_file: str, output_file: str):
             except UnicodeEncodeError:
                 word = "??"
             writer.writerow(
-                [word, qm_qp, qm_ql, qm_avg, ds_qp, ds_ql, ds_avg, pass_count]
+                [word, qp_qp, qp_ql, qp_avg, ql_qp, ql_ql, ql_avg, ds_qp, ds_ql, ds_avg, pass_count]
             )
 
 

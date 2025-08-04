@@ -7,6 +7,9 @@ from train.utils import SYSTEM_PROMPTS
 from openai import AsyncOpenAI
 from os import path, mkdir
 from hashlib import sha256
+from json import load, JSONDecodeError, dump
+from datetime import datetime
+
 
 NOTE_PAIR = ({"〔", "﹝"}, "〕")
 PUNCTUATIONS = set("，。；？！")
@@ -58,23 +61,57 @@ class CacheHandler:
         if not path.exists(cache_dir):
             mkdir(cache_dir)
 
-    def get_cache_path(self, hash_key: str) -> str:
-        return path.join(self.cache_dir, sha256(hash_key.encode()).hexdigest())
+    def get_cache_info(self, hash_key: str) -> tuple[str, str, str]:
+        full_hash = sha256(hash_key.encode()).hexdigest()
+        first_char = full_hash[0]
+        second_third_chars = full_hash[1:3]
+        return full_hash, first_char, second_third_chars
 
     def query_cache(self, hash_key: str) -> str | None:
-        cache_path = self.get_cache_path(hash_key)
-        if not path.exists(cache_path):
+        full_hash, first_char, second_third_chars = self.get_cache_info(hash_key)
+
+        dir_path = path.join(self.cache_dir, first_char)
+        if not path.exists(dir_path):
             return None
-        with open(cache_path, "r", encoding="utf-8") as f:
-            cached_result = f.read().strip()
-            if len(cached_result) == 0:
-                return None
-            return cached_result
+
+        json_path = path.join(dir_path, f"{second_third_chars}.json")
+        if not path.exists(json_path):
+            return None
+
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                cache_data = load(f)
+
+            if full_hash in cache_data:
+                return cache_data[full_hash]["content"]
+            return None
+        except (JSONDecodeError, KeyError):
+            return None
 
     def save_cache(self, hash_key: str, content: str) -> None:
-        cache_path = self.get_cache_path(hash_key)
-        with open(cache_path, "w", encoding="utf-8") as f:
-            f.write(content)
+        full_hash, first_char, second_third_chars = self.get_cache_info(hash_key)
+
+        dir_path = path.join(self.cache_dir, first_char)
+        if not path.exists(dir_path):
+            mkdir(dir_path)
+
+        json_path = path.join(dir_path, f"{second_third_chars}.json")
+
+        cache_data = {}
+        if path.exists(json_path):
+            try:
+                with open(json_path, "r", encoding="utf-8") as f:
+                    cache_data = load(f)
+            except JSONDecodeError:
+                cache_data = {}
+
+        cache_data[full_hash] = {
+            "content": content,
+            "created": datetime.now().isoformat(),
+        }
+
+        with open(json_path, "w", encoding="utf-8") as f:
+            dump(cache_data, f, ensure_ascii=False)
 
 
 @dataclass
@@ -255,7 +292,9 @@ class Note:
                     sub_note_detail,
                 )
                 if len(sub_note.get_original_text()) == 0:
-                    warn(f"Empty sub note in {self.name_passage}: {self.get_original_text()}")
+                    warn(
+                        f"Empty sub note in {self.name_passage}: {self.get_original_text()}"
+                    )
                     continue
                 sub_notes.append(sub_note)
                 self.core_detail = (
@@ -369,7 +408,7 @@ class Passage:
                 left += 1
                 break
             if content[left] in PUNCTUATIONS:
-                punctuations_left -= (1 if content[left] in NONSTOP_PUNCTUATIONS else 2)
+                punctuations_left -= 1 if content[left] in NONSTOP_PUNCTUATIONS else 2
         while content[left] in PUNCTUATIONS:
             left += 1
 
@@ -378,7 +417,9 @@ class Passage:
         ):
             right += 1
             if content[right - 1] in PUNCTUATIONS:
-                punctuations_right -= (1 if content[right - 1] in NONSTOP_PUNCTUATIONS else 2)
+                punctuations_right -= (
+                    1 if content[right - 1] in NONSTOP_PUNCTUATIONS else 2
+                )
         while content[right - 1] in NONSTOP_PUNCTUATIONS:
             right -= 1
         return (content[left:right], (original_left - left, original_right - left))

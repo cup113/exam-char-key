@@ -12,7 +12,7 @@ def get_evaluation_prompt(
     model_index_id: int,
     model: str,
 ) -> BatchRequest:
-    user_prompt = f"“{note.context}”中“{note.get_original_text()}”的含义。\n标准答案为：{note.core_detail}\n学生答案为：{answer_stu}\n请按要求评分并按格式输出。"
+    user_prompt = f"题目：“{note.context}”中“{note.get_original_text()}”的含义。\n标准答案为：{note.core_detail}\n学生答案为：{answer_stu}\n请按要求评分并按格式输出。"
 
     return {
         "custom_id": f"{completion_custom_id}-ev-{model_index_id}",
@@ -79,18 +79,15 @@ for out_no, evaluation_file in enumerate(EVALUATION_FILES):
                         "message"
                     ]["content"]
                     raw_match = match(
-                        r"(.*?)\<answers\>(.*?)\<\/answers\>(.*?)", raw_answer, DOTALL
+                        r".*?\*\*答案\*\*[:：]\s*(.*)", raw_answer, DOTALL
                     )
                     note = raw_data[completion["custom_id"]]
 
                     if raw_match is None:
-                        if "<answers>" in raw_answer:
-                            print(f"{completion['custom_id']} lack end tag </answers>")
-                        else:
-                            warn(f"Answer to {note.to_dict()} unmatched: {raw_answer}")
+                        warn(f"Answer to {note.to_dict()} unmatched: {raw_answer}")
                         continue
 
-                    answer = raw_match.groups()[1].strip()
+                    answer = raw_match.group(1).strip()
                     writer.write_line(
                         get_evaluation_prompt(
                             answer,
