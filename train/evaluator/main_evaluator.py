@@ -17,7 +17,9 @@ from train.evaluator.subjects import (
     AiTaiyanSubject,
     Qwen8BSubject,
     Qwen8BFlashSubject,
-    QwenMaxSubject,
+    QwenPlusSubject,
+    QwenPlusFlashSubject,
+    QwenLongSubject,
     DeepSeekV3Subject,
 )
 from train.evaluator.evaluators import QwenLongEvaluator, QwenPlusEvaluator
@@ -46,7 +48,9 @@ subjects: list[AiSubject] = [
     EckFlashSubject(),
     EckThinkingSubject(),
     AiTaiyanSubject(),
-    QwenMaxSubject(),
+    QwenPlusSubject(),
+    QwenPlusFlashSubject(),
+    QwenLongSubject(),
     DeepSeekV3Subject(),
     Qwen8BSubject(),
     Qwen8BFlashSubject(),

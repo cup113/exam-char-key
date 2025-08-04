@@ -18,7 +18,7 @@ class EckFlashSubject(FlashAiSubject):
 
 
 class EckThinkingSubject(OnlineAiSubject):
-    model_code = "qwen3-8b-ft-202507251314-0fd2"
+    model_code = "qwen3-8b-ft-202508041131-e7d8"
     model_name = "eck-thinking"
 
 
@@ -48,9 +48,19 @@ class Qwen8BFlashSubject(FlashAiSubject):
     model_name = "qwen3-8b-flash"
 
 
-class QwenMaxSubject(OnlineAiSubject):
-    model_code = "qwen-max-latest"
-    model_name = "qwen-max"
+class QwenLongSubject(OnlineAiSubject):
+    model_code = "qwen-long-latest"
+    model_name = "qwen-long"
+
+
+class QwenPlusSubject(OnlineAiSubject):
+    model_code = "qwen-plus-latest"
+    model_name = "qwen-plus"
+
+
+class QwenPlusFlashSubject(FlashAiSubject):
+    model_code = "qwen-plus-latest"
+    model_name = "qwen-plus-flash"
 
 
 class DeepSeekV3Subject(OnlineAiSubject):
