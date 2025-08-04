@@ -3,7 +3,13 @@ import { useQueryStore } from '@/stores/query';
 import AiIcon from './icons/AiIcon.vue';
 import BrainIcon from './icons/BrainIcon.vue';
 import { CollapsibleRoot, CollapsibleTrigger, CollapsibleContent } from 'reka-ui';
+import { marked } from 'marked';
+
 const queryStore = useQueryStore();
+
+const renderMarkdown = (content: string) => {
+    return marked.parse(content)
+}
 </script>
 
 <template>
@@ -26,8 +32,8 @@ const queryStore = useQueryStore();
                 深度思考内容 ({{ queryStore.aiThoughtStructured.think.length }} 字符)
             </collapsible-trigger>
             <collapsible-content class="py-2">
-                <p class="text-secondary-400 text-sm indent-4" v-show="queryStore.aiThoughtStructured.think">
-                    {{ queryStore.aiThoughtStructured.think }}</p>
+                <p class="text-secondary-400 text-sm indent-4" v-show="queryStore.aiThoughtStructured.think"
+                    v-html="renderMarkdown(queryStore.aiThoughtStructured.think)"></p>
             </collapsible-content>
         </collapsible-root>
     </div>

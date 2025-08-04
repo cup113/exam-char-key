@@ -16,6 +16,7 @@ from json import loads, dumps
 from dotenv import load_dotenv
 from os import getenv
 from typing import Literal
+from tqdm import tqdm
 
 
 @dataclass
@@ -104,8 +105,6 @@ async def reflect_on_response(
         )
 
         try:
-            print(messages)
-            print(reflection_prompt)
             response = await client.chat.completions.create(
                 model=model_code,
                 messages=messages + [{"role": "user", "content": reflection_prompt}],  # type: ignore
@@ -114,7 +113,6 @@ async def reflect_on_response(
             )
 
             content = response.choices[0].message.content
-            print(content)
             if content:
                 # 解析结果
                 try:
@@ -133,6 +131,7 @@ async def reflect_on_response(
                         return result
 
                     elif not accept_standard:
+                        print(f"{model_code} Rejecting standard answer of {correct_answer}")
                         cache_handler.save_cache(cache_key, dumps(None))
                         return None
 
@@ -263,7 +262,8 @@ async def main():
         "./train/result/dataset-thinking-evaluation-scores.txt", "w", encoding="utf-8"
     ) as score_file:
         ACCEPT_THRESHOLD = 0.74
-        for note_id, note in data.items():
+        QUALITY_THRESHOLD = 0.89
+        for note_id, note in tqdm(data.items()):
             score_file.write(f"{note.base.get_original_text()}\t")
             responses = list(note.responses.items())
             scores: list[float] = []
@@ -283,6 +283,8 @@ async def main():
                         continue # Error
                     if final_answer is not None:
                         response.answer = final_answer
+                if score < QUALITY_THRESHOLD:
+                    response.answer = ""
                 scores.append(score)
                 scores_display = ";".join(f"{s}" for s in response.scores)
                 score_file.write(f"{model}:{score:.2f}:{scores_display}\t")
@@ -290,6 +292,8 @@ async def main():
             score_file.write(f"{len(responses)}\n")
 
             for model, response in responses:
+                if response.answer == "":
+                    continue
                 completion = {
                     "messages": [
                         {

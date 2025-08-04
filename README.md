@@ -128,7 +128,7 @@ The application uses Alibaba Cloud's DashScope API (Qwen models). Configure your
   - `qwen-plus`: General purpose model
   - `qwen-turbo`: Fast response model
   - `qwen3-8b-ft-202508031744-1c46`: Specialized ancient Chinese model in flash responding
-  - `qwen3-8b-ft-202507251314-0fd2`: Specialized ancient Chinese model in thinking responding
+  - `qwen3-8b-ft-202508041131-e7d8`: Specialized ancient Chinese model in thinking responding
 
 ## Usage
 

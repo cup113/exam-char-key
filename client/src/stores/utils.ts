@@ -88,35 +88,29 @@ export function parse_ai_thought_response(response: string): AiThoughtStructured
     let area: 'think' | 'explain' | 'answers' | '' = '';
 
     lines.forEach(line => {
-        let startIndex = 0;
-        let endIndex = line.length;
+        let text = "";
 
-        if (line.startsWith("<think>")) {
-            area = 'think';
-            startIndex = line.indexOf('>') + 1;
-        } else if (line.startsWith("<explain>")) {
-            area = 'explain';
-            startIndex = line.indexOf('>') + 1;
-        } else if (line.startsWith("<answers>")) {
-            area = 'answers';
-            startIndex = line.indexOf('>') + 1;
-        }
-
-        if (line.endsWith("</think>") || line.endsWith("</explain>") || line.endsWith("</answers>")) {
-            endIndex = line.lastIndexOf('<');
+        if (line.startsWith("*")) {
+            if (line.startsWith("**思考**")) {
+                area = 'think';
+            } else if (line.startsWith("**解释**")) {
+                area = 'explain';
+            } else if (line.startsWith("**答案**")) {
+                area = 'answers';
+            } else {
+                area = '';
+            }
+            text = /\*\*(.+?)\*\*[:：]\s*(.*)/.exec(line)?.[2] ?? ""
+        } else {
+            text = line;
         }
 
         if (area) {
-            const text = line.substring(startIndex, endIndex);
             if (area === 'answers') {
                 result.answers.push(...(text.trim() ? text.split("；") : []));
             } else {
                 result[area] += text + '\n';
             }
-        }
-
-        if (endIndex !== line.length) {
-            area = '';
         }
     });
 

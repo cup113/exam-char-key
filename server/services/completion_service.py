@@ -82,13 +82,13 @@ class CompletionService:
             # Special in Qwen3
             if reasoning_content is not None:
                 if not reasoning:
-                    content = "<think>" + reasoning_content
+                    content = "**思考**：" + reasoning_content
                     reasoning = True
                 else:
                     content = reasoning_content
             else:
                 if reasoning:
-                    content = "</think>\n" + (delta.content or "")
+                    content = delta.content or ""
                     reasoning = False
                 else:
                     content = delta.content or ""
