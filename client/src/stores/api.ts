@@ -228,13 +228,13 @@ export const useApiStore = defineStore("api", () => {
     async function queryThinking(
         queryWord: string,
         querySentence: string,
-        enableDeepThinking: boolean,
+        enableDeepThinking: number,
         frontendHandler: FrontendHandler,
         requestId?: string
     ) {
         try {
             const { reader, decoder } = await guardStreamingResponse(
-                call_get(`/api/query/thinking?q=${encodeURIComponent(queryWord)}&context=${encodeURIComponent(querySentence)}&deep=${Number(enableDeepThinking)}`, requestId),
+                call_get(`/api/query/thinking?q=${encodeURIComponent(queryWord)}&context=${encodeURIComponent(querySentence)}&deep=${enableDeepThinking}`, requestId),
                 [], requestId,
             );
 

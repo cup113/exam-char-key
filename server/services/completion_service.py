@@ -40,6 +40,8 @@ class CompletionService:
             }
         if model.thinking:
             extra_body["enable_thinking"] = True
+        else:
+            extra_body["enable_thinking"] = False
         return await self.client.chat.completions.create(
             model=model.id,
             messages=[
@@ -88,7 +90,7 @@ class CompletionService:
                     content = reasoning_content
             else:
                 if reasoning:
-                    content = delta.content or ""
+                    content = "\n" + (delta.content or "")
                     reasoning = False
                 else:
                     content = delta.content or ""
@@ -133,8 +135,8 @@ class CompletionService:
 
         yield ServerResponseAiFlash.create(data=content)
 
-    async def generate_thought_response(self, context: str, q: str, zdic_prompt: str):
-        model = Config.WYW_THINKING_MODEL
+    async def generate_thought_response(self, context: str, q: str, zdic_prompt: str, deep: bool):
+        model = Config.WYW_THINKING_MODEL_DEEP if deep else Config.WYW_THINKING_MODEL
         response = await self._send_request(
             model=model,
             system_prompt=Config.PROMPT_AI_THOUGHT,

@@ -33,7 +33,7 @@ export const useUserStore = defineStore("settings", () => {
     });
     const isGuest = computed(() => user.value.role.name === "Guest");
     const token = useLocalStorage("EC_token", "");
-    const deepThinking = useLocalStorage('EC_deepThinking', true);
+    const deepThinking = useLocalStorage('EC_deepThinking_v2', 1);
 
 
     // Balance Details

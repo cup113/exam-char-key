@@ -2,7 +2,7 @@
 import { useQueryStore } from '@/stores/query';
 import { stress_keyword } from '@/stores/utils';
 import { computed, ref, watch } from 'vue';
-import { FreqResult } from '@/stores/types';
+import { Note } from '@/stores/types';
 
 import FrequencyIcon from './icons/FrequencyIcon.vue';
 import MyPagination from './MyPagination.vue';
@@ -14,18 +14,15 @@ const stat = computed(() => queryStore.freqInfo.stat)
 const currentPage = ref(1);
 const itemsPerPage = 15;
 
-// 处理页码变更
 function handlePageChanged(page: number) {
     currentPage.value = page;
     queryStore.queryFrequency(queryStore.lastQuery.word, currentPage.value);
 }
 
-// 当查询改变时重置到第一页
 watch(() => queryStore.freqInfo.stat.query, () => {
     currentPage.value = 1;
 });
 
-// 定义 badge 的显示文本和样式
 const getTypeBadgeInfo = (type: string) => {
     switch (type) {
         case 'textbook':
@@ -38,6 +35,18 @@ const getTypeBadgeInfo = (type: string) => {
             throw new Error(`Unknown note type from FreqInfo: ${type}`)
     }
 };
+
+
+function escapeHtml(unsafe: string): string {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+}
+
+function get_stressed_context(note: Note) {
+    return stress_keyword(escapeHtml(note.context.trim()), escapeHtml(note.query));
+}
 </script>
 
 <template>
@@ -65,7 +74,7 @@ const getTypeBadgeInfo = (type: string) => {
                             {{ (currentPage - 1) * itemsPerPage + index + 1 }}. {{ getTypeBadgeInfo(note.type).text }}
                         </span>
                         <div class="text-center px-2">
-                            <span v-html="stress_keyword(note.context.trim(), note.query)" class="text-secondary-700">
+                            <span v-html="get_stressed_context(note)" class="text-secondary-700">
                             </span>
                         </div>
                         <div class="flex">

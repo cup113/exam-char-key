@@ -33,7 +33,14 @@ class Config:
         base_url=AI_BASE_URL,
         id="qwen3-8b-ft-202508041131-e7d8",
         prompt_price=5,
+        completion_price=20,
+    )
+    WYW_THINKING_MODEL_DEEP = AiModel(
+        base_url=AI_BASE_URL,
+        id="qwen3-8b-ft-202508041131-e7d8",
+        prompt_price=5,
         completion_price=50,
+        thinking=True,
     )
 
     ROLES = [Roles.ADMIN, Roles.CORE, Roles.USER, Roles.GUEST]

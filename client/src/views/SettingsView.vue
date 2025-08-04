@@ -41,6 +41,18 @@ async function handleAuth() {
 function handleLogout() {
     userStore.logout();
 }
+
+// 修改 deepThinkingOptions，添加描述信息
+const deepThinkingOptions = [
+    { value: 0, label: '关闭', description: '关闭AI深度思考功能，仅提供快速回答', cost: '成本降低 98%' },
+    { value: 1, label: '浅度模式', description: '启用浅度思考，提供基本的分析和解释', cost: '成本降低 70%' },
+    { value: 2, label: '深度模式', description: '启用深度思考，提供详细的分析和推理过程', cost: '成本最高' },
+];
+
+const currentDeepThinkingOption = computed(() => {
+    const option = deepThinkingOptions.find(opt => opt.value === userStore.deepThinking);
+    return option || deepThinkingOptions[0];
+});
 </script>
 
 <template>
@@ -59,7 +71,7 @@ function handleLogout() {
                 <div>
                     <label class="block text-sm font-medium text-secondary-500 mb-1">密码</label>
                     <input v-model="password" type="password" required
-                        class="w-full px-3 py-2 border border-secondary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        class="w-full px-3 py-2 border border-secondary-500 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
 
                 <div v-if="error" class="text-error-500 text-sm">
@@ -81,14 +93,31 @@ function handleLogout() {
 
         <section class="ec-standard-card">
             <div class="justify-center">用户偏好</div>
-            <label class="flex items-center gap-2 justify-center">
-                深度思考模式
-                <switch-root
-                    class="w-8 h-5 shadow-sm flex data-[state=unchecked]:bg-secondary-300 data-[state=checked]:bg-primary-700 border border-secondary-300 data-[state=checked]:border-stone-700 rounded-full relative transition-[background]" v-model="userStore.deepThinking">
-                    <switch-thumb
-                        class="w-3.5 h-3.5 my-auto bg-secondary-50 text-xs flex items-center justify-center shadow-xl rounded-full transition-transform translate-x-0.5 will-change-transform data-[state=checked]:translate-x-full"></switch-thumb>
-                </switch-root>
-            </label>
+
+            <div class="p-4">
+                <div class="flex items-center justify-between">
+                    <label class="text-secondary-700">
+                        思考模式
+                    </label>
+                    <div class="text-sm text-secondary-500">
+                        {{ currentDeepThinkingOption.label }}
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-2">
+                    <button v-for="option in deepThinkingOptions" :key="option.value"
+                        @click="userStore.deepThinking = option.value" :class="[
+                            'flex-1 py-2 px-3 text-sm rounded-md transition-colors',
+                            userStore.deepThinking === option.value
+                                ? 'bg-primary-600'
+                                : 'bg-secondary-100 text-secondary-700 hover:bg-secondary-200'
+                        ]">
+                        {{ option.label }}
+                    </button>
+                </div>
+                <div class="mt-2 text-xs text-secondary-500">
+                    {{ currentDeepThinkingOption.description }}（{{ currentDeepThinkingOption.cost }}）
+                </div>
+            </div>
         </section>
 
         <section class="ec-standard-card">

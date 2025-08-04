@@ -112,7 +112,7 @@ async def query_thinking_core(pb: PocketBaseService, context: str, q: str, deep:
         return
 
     async for chunk in completion_service.generate_thought_response(
-        context, q, zdic_prompt
+        context, q, zdic_prompt, deep=deep == 2
     ):
         yield chunk.to_jsonl_str()
 
@@ -134,7 +134,9 @@ async def query_thinking(
     request: Request,
     q: str = Query(..., description="The query word", min_length=1, max_length=100),
     context: str = Query(..., description="The context sentence", max_length=1000),
-    deep: int = Query(1, description="Whether to use deep search", ge=0, le=1),
+    deep: int = Query(
+        1, description="Deep thinking level (0=disabled, 1=limited, 2=deep)", ge=0, le=2
+    ),
 ):
     pb: PocketBaseService = request.state.pb
     await pb.balance_check()
@@ -159,13 +161,8 @@ async def query_flash(
 
 
 @app.post("/api/extract-model-test")
-async def extract_model_test(
-    request: Request,
-    body: ExtractBody
-):
-    completion_service = CompletionService(
-        client=client, pb=request.state.pb
-    )
+async def extract_model_test(request: Request, body: ExtractBody):
+    completion_service = CompletionService(client=client, pb=request.state.pb)
     return StreamingResponse(
         completion_service.extract_model_test(prompt=body.prompt),
         media_type="application/json",
