@@ -23,42 +23,42 @@ const maxConcurrent = 5;
 
 // 表格样式类
 const tableClasses = computed(() => ({
-  table: 'min-w-full divide-y divide-secondary-200',
-  thead: 'bg-secondary-50',
-  th: 'px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider',
-  tbody: 'bg-white divide-y divide-secondary-200',
-  td: 'px-6 py-4 whitespace-nowrap text-sm',
-  queryCell: 'font-medium text-secondary-900',
-  contextCell: 'text-secondary-500 max-w-xs truncate',
-  answerCell: 'text-primary-600 font-bold max-w-md',
-  answerContent: 'prose prose-sm',
-  actionCell: 'space-x-2',
-  deepConfirmButton: 'text-primary-600 hover:text-primary-900 shadow-sm px-1 rounded-md',
-  removeTaskButton: 'text-danger-500 hover:text-danger-700 shadow-sm px-1 rounded-md'
+    table: 'min-w-full divide-y divide-secondary-200',
+    thead: 'bg-secondary-50',
+    th: 'px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider',
+    tbody: 'bg-white divide-y divide-secondary-200',
+    td: 'px-6 py-4 whitespace-nowrap text-sm',
+    queryCell: 'font-medium text-secondary-900',
+    contextCell: 'text-secondary-500 max-w-xs truncate',
+    answerCell: 'text-primary-600 font-bold max-w-md',
+    answerContent: 'prose prose-sm',
+    actionCell: 'space-x-2',
+    deepConfirmButton: 'text-primary-600 hover:text-primary-900 shadow-sm px-1 rounded-md',
+    removeTaskButton: 'text-danger-500 hover:text-danger-700 shadow-sm px-1 rounded-md'
 }));
 
 // 状态显示文本
 const statusText = computed(() => ({
-  pending: '等待中',
-  running: '执行中',
-  completed: '已完成',
-  error: '错误'
+    pending: '等待中',
+    running: '执行中',
+    completed: '已完成',
+    error: '错误'
 }));
 
 // 状态样式类
 const statusClass = computed(() => (status: string) => {
-  switch (status) {
-    case 'pending':
-      return 'text-secondary-600';
-    case 'running':
-      return 'text-warning-600';
-    case 'completed':
-      return 'text-primary-600';
-    case 'error':
-      return 'text-danger-600';
-    default:
-      return '';
-  }
+    switch (status) {
+        case 'pending':
+            return 'text-secondary-600';
+        case 'running':
+            return 'text-warning-600';
+        case 'completed':
+            return 'text-primary-600';
+        case 'error':
+            return 'text-danger-600';
+        default:
+            return '';
+    }
 });
 
 function executeBatchQueries() {
@@ -186,7 +186,9 @@ function deepConfirm(query: string, context: string) {
         queryStore.queryIndex.add(index + i);
     }
     const userStore = useUserStore();
-    userStore.deepThinking = true;
+    if (userStore.deepThinking === 0) {
+        userStore.deepThinking = 1;
+    }
     queryStore.query();
     router.push('/query');
 }
@@ -240,7 +242,7 @@ onUnmounted(() => {
                     <tbody :class="tableClasses.tbody">
                         <tr v-for="task in batchQueryTasks" :key="task.id">
                             <td :class="[tableClasses.td, tableClasses.queryCell]">{{ task.query
-                                }}</td>
+                            }}</td>
                             <td :class="[tableClasses.td, tableClasses.contextCell]">{{ task.context }}</td>
                             <td :class="[tableClasses.td, tableClasses.answerCell]">
                                 <div :class="tableClasses.answerContent">{{ task.answer }}</div>
