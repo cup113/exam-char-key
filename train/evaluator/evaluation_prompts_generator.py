@@ -1,6 +1,6 @@
 """
 Please also turn on server when running this script.
-Should take about 2 hours to complete.
+Should take 2h unless cached.
 """
 
 from dotenv import load_dotenv
@@ -9,8 +9,8 @@ from openai import AsyncOpenAI
 from httpx import AsyncClient
 from tqdm import tqdm
 from typing import Coroutine, Any
-from csv import DictReader, DictWriter
 from asyncio import run, gather
+from csv import DictReader
 from train.evaluator.subjects import (
     EckFlashSubject,
     EckThinkingSubject,
@@ -25,14 +25,13 @@ from train.evaluator.subjects import (
 from train.evaluator.evaluators import QwenLongEvaluator, QwenPlusEvaluator
 from train.models import (
     EvaluationData,
-    ScoredAnswer,
-    EvaluationResult,
     AiEvaluator,
     AiSubject,
     CacheHandler,
     CompletionSourcePack,
+    BatchRequest,
 )
-from time import sleep, time
+from train.utils import IntermediateFiles, JsonlWriter
 
 load_dotenv(".env")
 
@@ -59,9 +58,9 @@ subjects: list[AiSubject] = [
 evaluators: list[AiEvaluator] = [QwenLongEvaluator(), QwenPlusEvaluator()]
 
 
-async def answer_and_score(
-    data: EvaluationData, subject: AiSubject, zdic_prompt: str
-) -> tuple[str, ScoredAnswer] | None:
+async def subject_answer(
+    data: EvaluationData, subject: AiSubject, zdic_prompt: str, index: int
+) -> list[BatchRequest]:
     try:
         pack = CompletionSourcePack(
             context=data["context"],
@@ -71,41 +70,37 @@ async def answer_and_score(
             cache_handler=cache_handler,
         )
         subject_answer = (await subject.ask(pack)).strip().replace("\n", "")
-        scored_answer = ScoredAnswer(answer=subject_answer, scores={})
-        for evaluator in evaluators:
-            score = await evaluator.evaluate(
-                data, subject_answer, client, cache_handler
+
+        result = [
+            evaluator.get_request(
+                data=data,
+                subject_answer=subject_answer,
+                cache_handler=cache_handler,
+                id_prefix=f"final-{index:03d}-{subject.model_name}",
             )
-            if score is not None:
-                scored_answer.scores[evaluator.model_name] = score
-        return subject.model_name, scored_answer
+            for evaluator in evaluators
+        ]
+
+        return [r for r in result if r is not None]
     except Exception as e:
         print(f"Error evaluating {data['type']} {data['context']} {data['query']}: {e}")
-        return None
+        return []
 
 
 async def main():
     dataset: list[EvaluationData] = []
+
     with open("./train/evaluation-dataset/dataset.csv", "r", encoding="utf-8") as f:
         reader = DictReader(f)
         for row in reader:
             dataset.append(row)  # type: ignore
 
-    with open(
-        "./train/result/evaluation-results.csv", "w", encoding="gbk", newline=""
-    ) as f:
-        fields = ["type", "context", "query", "answer"]
-        for subject in subjects:
-            fields.append(f"{subject.model_name}-ans")
-            fields.append(f"{subject.model_name}-avg")
-
-        writer = DictWriter(f, fieldnames=fields)
-        writer.writeheader()
-
-        for data in tqdm(dataset):
-            start_time = time()
+    with JsonlWriter(IntermediateFiles.PromptEvaluationFinal1) as f1, JsonlWriter(
+        IntermediateFiles.PromptEvaluationFinal2
+    ) as f2:
+        for index, data in enumerate(tqdm(dataset)):
             query = data["query"]
-            tasks: list[Coroutine[Any, Any, tuple[str, ScoredAnswer] | None]] = []
+            tasks: list[Coroutine[Any, Any, list[BatchRequest]]] = []
             zdic_response = await httpx_client.get(
                 f"http://localhost:4122/api/zdic?q={query}"
             )
@@ -115,20 +110,22 @@ async def main():
                 zdic_prompt = "汉典未给出解释。"
 
             for subject in subjects:
-                tasks.append(answer_and_score(data, subject, zdic_prompt))
+                tasks.append(subject_answer(data, subject, zdic_prompt, index))
+            requests = await gather(*tasks)
 
-            scored_answers = await gather(*tasks)
-            evaluation_result = EvaluationResult(base=data, results={})
-            for scored_answer_ in scored_answers:
-                if scored_answer_ is not None:
-                    model_name, scored_answer = scored_answer_
-                    evaluation_result.results[model_name] = scored_answer
+            total_len = sum(len(request) for request in requests)
+            if total_len == 0:
+                continue # Cached, skip.
 
-            writer.writerow(evaluation_result.to_dict())
-            f.flush()
-            sleep(
-                max(0, min(32 - (time() - start_time), time() - start_time))
-            )  # If it's too fast, it's probably cached.
+            for request in requests:
+                for batch_request in request:
+                    model = batch_request["body"]["model"]
+                    if model == "qwen-plus-latest":
+                        f1.write_line(batch_request)
+                    elif model == "qwen-long-latest":
+                        f2.write_line(batch_request)
+                    else:
+                        raise ValueError(f"Unknown model: {model}")
 
 
 if __name__ == "__main__":

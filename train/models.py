@@ -27,7 +27,7 @@ class EvaluationData(TypedDict):
 @dataclass
 class ScoredAnswer:
     answer: str
-    scores: dict[str, int]
+    scores: dict[str, float]
 
     def get_average_score(self) -> float:
         return sum(self.scores.values()) / max(len(self.scores), 1)
@@ -134,8 +134,13 @@ class AiSubject:
         supplement_prompt = (
             "不要输出除答案外的无关文字。" if "ft" not in self.model_code else ""
         )
+        system_prompt = (
+            SYSTEM_PROMPTS.FLASH
+            if "ft" not in self.model_code
+            else SYSTEM_PROMPTS.FLASH_SIMPLIFIED
+        )
         content = await self.get_ali_completion(
-            system_prompt=SYSTEM_PROMPTS.FLASH,
+            system_prompt=system_prompt,
             user_prompt=f"请解释古文“{pack.context}”中，“{pack.query}”的含义。请迅速回答。{supplement_prompt}",
             client=pack.client,
             cache_handler=pack.cache_handler,
@@ -143,14 +148,19 @@ class AiSubject:
         return content
 
     async def get_online_completion(self, pack: CompletionSourcePack) -> str:
+        system_prompt = (
+            SYSTEM_PROMPTS.THINKING
+            if "ft" not in self.model_code
+            else SYSTEM_PROMPTS.THINKING_SIMPLIFIED
+        )
         content = await self.get_ali_completion(
-            system_prompt=SYSTEM_PROMPTS.THINKING,
+            system_prompt=system_prompt,
             user_prompt=f"请解释古文“{pack.context}”中，“{pack.query}”的含义。请按要求仔细思考后回答。\n{pack.zdic_prompt}",
             client=pack.client,
             cache_handler=pack.cache_handler,
         )
         match_content = match(
-            r"(.*?)\<answers\>(.*?)\<\/answers\>", content.strip(), DOTALL
+            r"(.*?)\*\*答案\*\*[:：]\s*(.*)", content.strip(), DOTALL
         )
         if not match_content:
             return ""
@@ -163,7 +173,8 @@ class AiSubject:
         client: AsyncOpenAI,
         cache_handler: CacheHandler,
     ) -> str:
-        cache = cache_handler.query_cache(user_prompt)
+        cache_key = f"{system_prompt}||{user_prompt}||{self.model_code}"
+        cache = cache_handler.query_cache(cache_key)
         if cache is not None:
             return cache
 
@@ -174,12 +185,12 @@ class AiSubject:
                 {"role": "user", "content": user_prompt},
             ],
             extra_body={"enable_thinking": False},
-            temperature=0,
+            temperature=0.2,
             top_p=0.95,
         )
         content = (completion.choices[0].message.content or "").strip()
         if completion.choices[0].finish_reason == "stop":
-            cache_handler.save_cache(user_prompt, content)
+            cache_handler.save_cache(cache_key, content)
         return content
 
     async def ask(self, pack: CompletionSourcePack) -> str:
@@ -193,13 +204,13 @@ class AiEvaluator:
     def __init__(self):
         pass
 
-    async def evaluate(
+    def get_request(
         self,
         data: EvaluationData,
         subject_answer: str,
-        client: AsyncOpenAI,
         cache_handler: CacheHandler,
-    ) -> int | None:
+        id_prefix: str,
+    ) -> "BatchRequest | None":
         answer = data["answer"]
         context = data["context"]
         query = data["query"]
@@ -207,31 +218,25 @@ class AiEvaluator:
         cache_key = f"{context}&&{query}&&{answer}&&{subject_answer}&&{self.model_name}"
         cache_result = cache_handler.query_cache(cache_key)
         if cache_result:
-            return int(cache_result)
-
-        completion = await client.chat.completions.create(
-            model=self.model_code,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPTS.EVALUATION},
-                {
-                    "role": "user",
-                    "content": f"上下文：{context}\n需解释的词语：{query}\n标准答案：{answer}\n学生答案：{subject_answer}\n请按要求评分并按格式输出。",
-                },
-            ],
-            temperature=0,
-            top_p=0.95,
-        )
-
-        content = completion.choices[0].message.content or ""
-        match_content = match(
-            r"(.*?)\<score\>(.*?)\<\/score\>", content.strip(), DOTALL
-        )
-        if not match_content:
             return None
 
-        score = min(int(match_content.group(2)), 3)
-        cache_handler.save_cache(cache_key, str(score))
-        return score
+        return {
+            "url": "/v1/chat/completions",
+            "method": "POST",
+            "custom_id": f"{id_prefix}-ev-{self.model_name}",
+            "body": {
+                "model": self.model_code,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPTS.EVALUATION},
+                    {
+                        "role": "user",
+                        "content": f"“{context}”中的“{query}”，标准答案为：{answer}\n学生答案为：{subject_answer}\n请按要求评分并按格式输出。",
+                    },
+                ],
+                "temperature": 0.2,
+                "top_p": 0.95,
+            },
+        }
 
 
 @dataclass_json

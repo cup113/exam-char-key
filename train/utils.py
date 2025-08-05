@@ -65,6 +65,8 @@ class IntermediateFiles:
     PromptEvaluationThinkingDataset2 = (
         "./train/result/dataset-thinking-evaluation-prompt-2.jsonl"
     )
+    PromptEvaluationFinal1 = "./train/result/final-evaluation-prompt-1.jsonl"
+    PromptEvaluationFinal2 = "./train/result/final-evaluation-prompt-2.jsonl"
     CompletionBatchThinking1 = (
         "./train/result/dataset-thinking-batch-completion-qp.jsonl"
     )
