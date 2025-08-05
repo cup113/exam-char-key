@@ -32,6 +32,7 @@ from train.models import (
     BatchRequest,
 )
 from train.utils import IntermediateFiles, JsonlWriter
+from hashlib import sha256
 
 load_dotenv(".env")
 
@@ -70,13 +71,14 @@ async def subject_answer(
             cache_handler=cache_handler,
         )
         subject_answer = (await subject.ask(pack)).strip().replace("\n", "")
+        hashed_id = sha256(subject_answer.encode()).hexdigest()
 
         result = [
             evaluator.get_request(
                 data=data,
                 subject_answer=subject_answer,
                 cache_handler=cache_handler,
-                id_prefix=f"final-{index:03d}-{subject.model_name}",
+                id_prefix=f"final-{index:03d}-{hashed_id}",
             )
             for evaluator in evaluators
         ]
@@ -117,15 +119,23 @@ async def main():
             if total_len == 0:
                 continue # Cached, skip.
 
+            existing_ids: set[str] = set()
+            duplicated_count = 0
             for request in requests:
                 for batch_request in request:
+                    if batch_request["custom_id"] in existing_ids:
+                        duplicated_count += 1
+                        continue
                     model = batch_request["body"]["model"]
                     if model == "qwen-plus-latest":
                         f1.write_line(batch_request)
+                        existing_ids.add(batch_request["custom_id"])
                     elif model == "qwen-long-latest":
                         f2.write_line(batch_request)
                     else:
                         raise ValueError(f"Unknown model: {model}")
+            if duplicated_count != 0:
+                tqdm.write(f"Saved {duplicated_count} duplicated requests in note {index:03d}")
 
 
 if __name__ == "__main__":

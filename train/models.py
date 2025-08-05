@@ -163,6 +163,7 @@ class AiSubject:
             r"(.*?)\*\*答案\*\*[:：]\s*(.*)", content.strip(), DOTALL
         )
         if not match_content:
+            warn(f"Model illegal response: {content}")
             return ""
         return match_content.group(2).strip()
 
@@ -214,8 +215,9 @@ class AiEvaluator:
         answer = data["answer"]
         context = data["context"]
         query = data["query"]
+        user_prompt = f"“{context}”中的“{query}”，标准答案为：{answer}\n学生答案为：{subject_answer}\n请按要求评分并按格式输出。"
 
-        cache_key = f"{context}&&{query}&&{answer}&&{subject_answer}&&{self.model_name}"
+        cache_key = f"EV&&{user_prompt}&&{self.model_name}"
         cache_result = cache_handler.query_cache(cache_key)
         if cache_result:
             return None
@@ -228,10 +230,7 @@ class AiEvaluator:
                 "model": self.model_code,
                 "messages": [
                     {"role": "system", "content": SYSTEM_PROMPTS.EVALUATION},
-                    {
-                        "role": "user",
-                        "content": f"“{context}”中的“{query}”，标准答案为：{answer}\n学生答案为：{subject_answer}\n请按要求评分并按格式输出。",
-                    },
+                    {"role": "user", "content": user_prompt},
                 ],
                 "temperature": 0.2,
                 "top_p": 0.95,
