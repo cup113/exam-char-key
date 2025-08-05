@@ -61,7 +61,6 @@ async function startTask(task: Task) {
                 updateTask(task, contentChunk, undefined);
             },
             updateFlash() { },
-            updateSearchOriginal() { },
             updateThinking() { },
             updateUsage() {
                 updateTask(task, undefined, 'completed');

@@ -58,9 +58,6 @@ export function update_from_query(responseChunk: ResponseChunk, frontendHandler:
         case "zdic":
             frontendHandler.updateZdic(responseChunk.data);
             break;
-        case "search-original":
-            frontendHandler.updateSearchOriginal(responseChunk.data.content);
-            break;
         case "ai-extract":
             frontendHandler.updateExtract(responseChunk.data.content);
             break;

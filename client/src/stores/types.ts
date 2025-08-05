@@ -135,7 +135,7 @@ export interface ZdicResult {
     phrase_explanations: string[];
 }
 
-export type ResponseChunk = { type: "ai-flash", data: string } | { type: "ai-thinking", data: AiResult } | { type: "ai-usage", data: AiUsageResult } | { type: "zdic", data: ZdicResult } | { type: "search-original", data: AiResult } | { type: 'ai-extract', data: AiResult };
+export type ResponseChunk = { type: "ai-flash", data: string } | { type: "ai-thinking", data: AiResult } | { type: "ai-usage", data: AiUsageResult } | { type: "zdic", data: ZdicResult } | { type: 'ai-extract', data: AiResult };
 
 export interface FrontendHandler {
     updateFlash: (contentChunk: string) => void;
@@ -143,7 +143,6 @@ export interface FrontendHandler {
     updateExtract: (contentChunk: string) => void;
     updateUsage: (usageResult: AiUsageResult) => void;
     updateZdic: (zdicResult: ZdicResult) => void;
-    updateSearchOriginal: (contentChunk: string) => void;
 }
 
 export enum SearchTarget {

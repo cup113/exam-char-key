@@ -8,16 +8,6 @@ const queryStore = useQueryStore();
 
 const inputText = ref(queryStore.activeText);
 
-function handleAddText() {
-    const trimmedText = inputText.value.trim();
-    if (trimmedText) {
-        queryStore.activeText = trimmedText;
-        if (queryStore.searchTarget !== 'none') {
-            queryStore.searchOriginal();
-        }
-    }
-}
-
 watch(() => queryStore.activeText, () => {
     inputText.value = queryStore.activeText;
 })
@@ -40,18 +30,9 @@ watch(() => queryStore.activeText, () => {
                 <DialogTitle class="text-xl font-semibold">添加文本</DialogTitle>
                 <textarea name="text" rows="5" class="block w-full min-h-20 bg-secondary-200 p-2"
                     placeholder="请输入文言文文本……" v-model="inputText"></textarea>
-                <label class="flex items-center gap-4">
-                    <span>语境搜索选项</span>
-                    <select name="context-search" class="bg-secondary-200 p-2 rounded-md" v-model="queryStore.searchTarget">
-                        <option value="none">不搜索，语境充足</option>
-                        <option value="sentence">搜索对应句子</option>
-                        <option value="paragraph">搜索对应段落</option>
-                        <option value="full-text">搜索对应文章</option>
-                    </select>
-                </label>
 
                 <div class="flex justify-around w-full">
-                    <DialogClose @click="handleAddText">
+                    <DialogClose>
                         <button class="text-white bg-primary-600 px-4 py-2 rounded-md hover:bg-primary-700">确定</button>
                     </DialogClose>
                     <DialogClose>

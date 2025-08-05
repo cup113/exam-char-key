@@ -70,6 +70,7 @@ export default defineConfig({
         manualChunks: {
           vue: ['vue', 'vue-router', 'pinia', '@vueuse/core'],
           ui: ['reka-ui'],
+          utils: ['@aws-crypto/sha256-js', 'marked']
         }
       }
     }

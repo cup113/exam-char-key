@@ -129,9 +129,9 @@ document.addEventListener('click', handleDocumentClick);
 <template>
   <main class="py-4 px-4 md:px-6 lg:px-8">
     <toolbar-root class="bg-white flex flex-col md:flex-row md:flex-wrap justify-center p-2 shadow-md rounded-md">
-      <div class="relative">
+      <div class="relative w-full md:w-auto">
         <toolbar-button ref="exportButtonRef" @click="toggleExportMenu"
-          class="bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 cursor-pointer disabled:cursor-not-allowed flex items-center"
+          class="bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 cursor-pointer disabled:cursor-not-allowed flex items-center w-full justify-center"
           :disabled="selectedRecords.length === 0">
           <ExportIcon class="inline-block mr-2" />
           <span>导出选中</span>
@@ -148,7 +148,7 @@ document.addEventListener('click', handleDocumentClick);
 
       <toolbar-button v-for="button in toolbarButtons" :key="button.text" @click="button.action"
         :class="button.className" :disabled="!button.condition()"
-        class="text-white py-2 px-4 cursor-pointer disabled:cursor-not-allowed flex items-center">
+        class="text-white py-2 px-4 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center">
         <Component :is="button.icon" class="inline-block mr-2" />
         <span>{{ button.text }}</span>
       </toolbar-button>

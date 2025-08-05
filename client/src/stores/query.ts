@@ -59,7 +59,6 @@ export const useQueryStore = defineStore("query", () => {
         queryFlash: "",
         queryThinking: "",
         queryFreq: "",
-        searchOriginal: "",
     };
 
     const aiThoughtStructured = computed(() => {
@@ -147,18 +146,6 @@ export const useQueryStore = defineStore("query", () => {
         console.log("Request Ended");
     }
 
-    async function searchOriginal() {
-        const apiStore = useApiStore();
-
-        if (requestIds.searchOriginal) {
-            apiStore.abortRequest(requestIds.searchOriginal);
-        }
-
-        requestIds.searchOriginal = nanoid();
-
-        await apiStore.searchOriginalText(activeText.value, searchTarget.value, getFrontendHandler(), requestIds.searchOriginal);
-    }
-
     function getFrontendHandler(): FrontendHandler {
         function getLazyEmptyUpdater(reference: Ref<string>) {
             let isFirst = true;
@@ -179,7 +166,6 @@ export const useQueryStore = defineStore("query", () => {
             updateZdic: (zdicResult) => {
                 zdicResponse.value = zdicResult;
             },
-            updateSearchOriginal: getLazyEmptyUpdater(activeText),
             updateExtract: () => { },
         };
     }
@@ -273,7 +259,6 @@ export const useQueryStore = defineStore("query", () => {
         currentRecorded,
         chars,
         paragraphs,
-        searchOriginal,
         adopt_answer,
         query,
         queryFrequency,

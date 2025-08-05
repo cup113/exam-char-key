@@ -4,7 +4,6 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from openai import AsyncOpenAI
-from typing import Literal
 from httpx import ConnectTimeout
 from asyncio import create_task
 from pydantic import BaseModel
@@ -165,25 +164,6 @@ async def extract_model_test(request: Request, body: ExtractBody):
     completion_service = CompletionService(client=client, pb=request.state.pb)
     return StreamingResponse(
         completion_service.extract_model_test(prompt=body.prompt),
-        media_type="application/json",
-    )
-
-
-@app.get("/api/search-original")
-async def search_original(
-    request: Request,
-    excerpt: str = Query(..., description="Excerpt to search in", max_length=10000),
-    target: Literal["sentence", "paragraph", "full-text"] = Query(
-        "sentence", description="Target level of detail"
-    ),
-):
-    await request.state.pb.balance_check()
-    completion_service = CompletionService(
-        client,
-        request.state.pb,
-    )
-    return StreamingResponse(
-        completion_service.search_original_text(excerpt, target),
         media_type="application/json",
     )
 

@@ -188,8 +188,8 @@ python run_dev.py
 ### API Endpoints
 
 - `GET /` - Serve frontend application
-- `POST /api/query` - Quick & Deep AI responses & ZDIC lookup
-- `POST /api/search-original` - Search original context of given excerpts
+- `POST /api/flash` - Flash AI response
+- `POST /api/query/thinking` - Deep Thinking AI response & ZDIC lookup
 - `GET /api/zdic` - Direct ZDIC dictionary lookups
 
 ## Training & AI Models
@@ -213,13 +213,13 @@ python -m train.extractor.textbook_extractor # This should be run again, at this
 python -m train.dataset_generator.flash_dataset_generator
 python -m train.dataset_generator.thinking_prompt_generator
 python -m train.dataset_generator.thinking_batch_converter
-### !Batch reasoning and place result in train/result/dataset-thinking-batch-completion-{1,2}.json
+### !Batch reasoning and place result in train/result/dataset-thinking-batch-completion-{1,2,3}.json
 python -m train.dataset_generator.evaluate_prompt_generator
 ### !Batch reasoning and place result in train/result/dataset-thinking-evaluation-completion-{1,2}.json
 python -m train.dataset_generator.thinking_dataset_generator
 ```
 
-**Fine Tune**: Using SFT algorithm, dataset `train/result/dataset-flash.jsonl` and `train/result/dataset-thinking.jsonl` to fine-tune the Qwen3-14b and Qwen3-8b model, respectively.
+**Fine Tune**: Using SFT algorithm, dataset `train/result/dataset-flash.jsonl` and `train/result/dataset-thinking.jsonl` to fine-tune 2 separate Qwen3-8b models.
 
 ### Development Guidelines
 
@@ -236,4 +236,5 @@ For support, questions, or feature requests: create an issue on GitHub, or conta
 - **Qwen AI Models** by Alibaba Cloud for advanced language processing
 - **ZDIC** for comprehensive Chinese character dictionary
 - **Vue.js** and **FastAPI** communities for excellent frameworks
+- **[Leximory](https://github.com/NarixHine/leximory)** for UI/UX & system design inspiration
 - Contributors to the Chinese language learning community

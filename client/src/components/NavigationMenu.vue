@@ -14,7 +14,7 @@ const links = [
 </script>
 
 <template>
-    <NavigationMenuRoot class="fixed bottom-0 w-full p-2 bg-secondary-200 md:right-4 md:bottom-4 md:w-auto md:rounded-xl">
+    <NavigationMenuRoot class="fixed bottom-0 w-full p-2 bg-primary-200 md:right-4 md:bottom-4 md:w-auto md:rounded-xl">
         <NavigationMenuList class="flex md:flex-col items-center justify-center gap-4">
             <NavigationMenuItem v-for="link in links" :key="link.to"
                 class="rounded-lg text-secondary-700 hover:text-warning-700 px-2 py-1 font-bold">

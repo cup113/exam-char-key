@@ -248,22 +248,6 @@ export const useApiStore = defineStore("api", () => {
         }
     }
 
-    async function searchOriginalText(excerpt: string, target: SearchTarget, frontendHandler: FrontendHandler, requestId?: string) {
-        try {
-            const { reader, decoder } = await guardStreamingResponse(
-                call_get(`/api/search-original?excerpt=${encodeURIComponent(excerpt)}&target=${target}`, requestId), [], requestId
-            );
-
-            if (reader && decoder) {
-                await readStream(reader, decoder, frontendHandler);
-            }
-        } catch (error) {
-            if (!isAbortError(error)) {
-                console.error('Error in searchOriginalText:', error);
-            }
-        }
-    }
-
     async function extractModelTest(prompt: string, frontendHandler: FrontendHandler, requestId: string) {
         try {
             const { reader, decoder } = await guardStreamingResponse(
@@ -275,7 +259,7 @@ export const useApiStore = defineStore("api", () => {
             }
         } catch (error) {
             if (!isAbortError(error)) {
-                console.error('Error in searchOriginalText:', error);
+                console.error('Error in extractModelTest:', error);
             }
         }
     }
@@ -346,7 +330,6 @@ export const useApiStore = defineStore("api", () => {
         queryFlash,
         queryThinking,
         queryFreq,
-        searchOriginalText,
         extractModelTest,
         getBalanceDetails,
         register,

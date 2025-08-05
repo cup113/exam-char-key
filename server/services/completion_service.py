@@ -150,30 +150,6 @@ class CompletionService:
         ):
             yield chunk
 
-    async def search_original_text(
-        self, excerpt: str, target: Literal["sentence", "paragraph", "full-text"]
-    ):
-        PROMPT_MAP = {
-            "sentence": "请给出原文所在的句子，若有同段内的前后句更好。",
-            "paragraph": "请给出原文所在的段落，若段落太短可扩充上下段。",
-            "full-text": "请给出原文所在的全文。若全文过长，可以选择经典（出现在课文中或文言文练习中）的节选。千字以内建议全文输出。",
-        }
-
-        response = await self._send_request(
-            model=Config.GENERAL_MODEL,
-            system_prompt=Config.PROMPT_AI_SEARCH_ORIGINAL,
-            user_prompt=f"原文内容节选: {excerpt}\n{PROMPT_MAP[target]}",
-            temperature=0,
-            search="force",
-        )
-        async for chunk in self._process_response(
-            response,
-            ServerResponseType.SearchOriginal,
-            Config.GENERAL_MODEL,
-            "搜索原文",
-        ):
-            yield chunk.to_jsonl_str()
-
     async def extract_model_test(self, prompt: str):
         response = await self._send_request(
             model=Config.LONG_MODEL,

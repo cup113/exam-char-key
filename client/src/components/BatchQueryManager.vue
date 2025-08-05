@@ -147,7 +147,6 @@ async function startBatchQueryTask(task: BatchQueryTask) {
             updateFlash(contentChunk: string) {
                 updateBatchQueryTask(taskId, contentChunk, undefined);
             },
-            updateSearchOriginal() { },
             updateThinking() { },
             updateUsage() {
                 updateBatchQueryTask(taskId, undefined, 'completed');
