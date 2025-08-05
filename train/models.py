@@ -159,9 +159,7 @@ class AiSubject:
             client=pack.client,
             cache_handler=pack.cache_handler,
         )
-        match_content = match(
-            r"(.*?)\*\*答案\*\*[:：]\s*(.*)", content.strip(), DOTALL
-        )
+        match_content = match(r"(.*?)\*\*答案\*\*[:：]\s*(.*)", content.strip(), DOTALL)
         if not match_content:
             warn(f"Model illegal response: {content}")
             return ""
@@ -197,6 +195,10 @@ class AiSubject:
     async def ask(self, pack: CompletionSourcePack) -> str:
         raise NotImplementedError
 
+    @classmethod
+    def answer_to_hex(cls, answer: str) -> str:
+        return sha256(answer.replace("；", "，").encode("utf-8")).hexdigest()[:16]
+
 
 class AiEvaluator:
     model_code: str
@@ -216,8 +218,9 @@ class AiEvaluator:
         context = data["context"]
         query = data["query"]
         user_prompt = f"“{context}”中的“{query}”，标准答案为：{answer}\n学生答案为：{subject_answer}\n请按要求评分并按格式输出。"
+        system_prompt = SYSTEM_PROMPTS.EVALUATION
 
-        cache_key = f"EV&&{user_prompt}&&{self.model_name}"
+        cache_key = f"EV&&{system_prompt}&&{user_prompt}&&{self.model_name}"
         cache_result = cache_handler.query_cache(cache_key)
         if cache_result:
             return None
@@ -229,7 +232,7 @@ class AiEvaluator:
             "body": {
                 "model": self.model_code,
                 "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPTS.EVALUATION},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
                 "temperature": 0.2,
