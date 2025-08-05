@@ -59,7 +59,11 @@ evaluators: list[AiEvaluator] = [QwenLongEvaluator(), QwenPlusEvaluator()]
 
 
 async def subject_answer(
-    data: EvaluationData, subject: AiSubject, zdic_prompt: str, index: int
+    data: EvaluationData,
+    subject: AiSubject,
+    zdic_prompt: str,
+    index: int,
+    ff: JsonlWriter
 ) -> list[BatchRequest]:
     try:
         pack = CompletionSourcePack(
@@ -70,13 +74,20 @@ async def subject_answer(
             cache_handler=cache_handler,
         )
         subject_answer = (await subject.ask(pack)).strip().replace("\n", "")
+        answer_hex = subject.answer_to_hex(subject_answer)
+        ff.write_line({
+            "index": index,
+            "answer": subject_answer,
+            "hex": answer_hex,
+            "model": subject.model_name,
+        })
 
         result = [
             evaluator.get_request(
                 data=data,
                 subject_answer=subject_answer,
                 cache_handler=cache_handler,
-                id_prefix=f"final-{index:03d}-{subject.answer_to_hex(subject_answer)}",
+                id_prefix=f"final-{index:03d}-{answer_hex}",
             )
             for evaluator in evaluators
         ]
@@ -97,7 +108,7 @@ async def main():
 
     with JsonlWriter(IntermediateFiles.PromptEvaluationFinal1) as f1, JsonlWriter(
         IntermediateFiles.PromptEvaluationFinal2
-    ) as f2:
+    ) as f2, JsonlWriter(IntermediateFiles.CompletionFinals) as ff:
         for index, data in enumerate(tqdm(dataset)):
             query = data["query"]
             tasks: list[Coroutine[Any, Any, list[BatchRequest]]] = []
@@ -110,12 +121,12 @@ async def main():
                 zdic_prompt = "汉典未给出解释。"
 
             for subject in subjects:
-                tasks.append(subject_answer(data, subject, zdic_prompt, index))
+                tasks.append(subject_answer(data, subject, zdic_prompt, index, ff))
             requests = await gather(*tasks)
 
             total_len = sum(len(request) for request in requests)
             if total_len == 0:
-                continue # Cached, skip.
+                continue  # Cached, skip.
 
             existing_ids: set[str] = set()
             duplicated_count = 0
@@ -134,7 +145,9 @@ async def main():
                     else:
                         raise ValueError(f"Unknown model: {model}")
             if duplicated_count != 0:
-                tqdm.write(f"Saved {duplicated_count} duplicated requests in note {index:03d}")
+                tqdm.write(
+                    f"Saved {duplicated_count} duplicated requests in note {index:03d}"
+                )
 
 
 if __name__ == "__main__":
