@@ -16,7 +16,7 @@ class FinalCompletionRaw(BaseModel):
 class ScoredAnswer(BaseModel):
     answer: str
     models: list[str]
-    scores: list[float]
+    score: float
 
 
 class ScoredQuestion(BaseModel):
@@ -29,7 +29,7 @@ class ScoredQuestion(BaseModel):
 
 
 def extract_score(content: str) -> float | None:
-    match_obj = match(r"(.*?)\<grade\>([A-E])\<\/grade\>", content, DOTALL)
+    match_obj = match(r"(.*?)\<grade\>.*([A-E]).*<\/grade\>", content, DOTALL)
     if match_obj is None:
         return None
     return {
@@ -52,7 +52,7 @@ with JsonlReader(IntermediateFiles.CompletionFinals) as f:
                 type="", context="", query="", correct_answer="", answers={}, index=r.index
             ),
         ).answers.setdefault(
-            r.hex, ScoredAnswer(answer=r.answer, models=[], scores=[])
+            r.hex, ScoredAnswer(answer=r.answer, models=[], score=0.88)
         ).models.append(
             r.model
         )
@@ -76,7 +76,7 @@ def process_score_response(response: CompletionApiResponse) -> None:
     if score is None:
         warn(f"Invalid score: {score_content}")
         return
-    questions[note_id].answers[answer_hex].scores.append(score)
+    questions[note_id].answers[answer_hex].score = score
 
 
 with JsonlReader(IntermediateFiles.CompletionBatchEvaluationFinal) as f:

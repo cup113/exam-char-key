@@ -34,8 +34,7 @@ def process_jsonl_to_excel(input_file: str, output_file: str):
                 for _model_id, answer_info in answers.items():
                     models = answer_info.get("models", [])
                     answer = answer_info.get("answer", "")
-                    scores = answer_info.get("scores", [])
-                    score = (sum(scores) / len(scores)) if scores else ""
+                    score = answer_info.get("score", 0.88)
 
                     # 使用模型名称作为列名
                     for model_name in models:
@@ -44,8 +43,10 @@ def process_jsonl_to_excel(input_file: str, output_file: str):
                         display_name = display_name.replace("deepseek-v3", "ds")
                         display_name = display_name.replace("qwen-plus", "qp")
                         display_name = display_name.replace("qwen-long", "ql")
+                        display_name = display_name.replace("qwen-flash", "qfF")
                         display_name = display_name.replace("qwen3-8b", "q8")
                         display_name = display_name.replace("-flash", "F")
+                        display_name = display_name.replace("-thinking", "T")
 
                         row_data[f"{display_name}_answer"] = answer
                         row_data[f"{display_name}"] = score
@@ -55,26 +56,23 @@ def process_jsonl_to_excel(input_file: str, output_file: str):
     # 转换为DataFrame
     df = pd.DataFrame(processed_data)
 
-    # 创建新列 eckM, q8M, qpM 表示某些模型的最高分
+    # 创建新列 eckM, q8M, qlM 表示某些模型的最高分
     # 首先初始化这些列为0
     df["eckM"] = 0
     df["q8M"] = 0
-    df["qpM"] = 0
+    df["qlM"] = 0
 
-    # 计算 eckM (eck-flash, eck-thinking 的最高分)
     eck_flash_scores = df.get("eckF", pd.Series([0] * len(df)))
-    eck_thinking_scores = df.get("eck-thinking", pd.Series([0] * len(df)))
+    eck_thinking_scores = df.get("eckT", pd.Series([0] * len(df)))
     df["eckM"] = pd.concat([eck_flash_scores, eck_thinking_scores], axis=1).max(axis=1)
 
-    # 计算 q8M (qwen3-8b-flash, qwen3-8b 的最高分)
     q8_flash_scores = df.get("q8F", pd.Series([0] * len(df)))
     q8_scores = df.get("q8", pd.Series([0] * len(df)))
     df["q8M"] = pd.concat([q8_flash_scores, q8_scores], axis=1).max(axis=1)
 
-    # 计算 qpM (qwen-plus, qwen-plus-flash 的最高分)
-    qp_scores = df.get("qp", pd.Series([0] * len(df)))
-    qp_flash_scores = df.get("qpF", pd.Series([0] * len(df)))
-    df["qpM"] = pd.concat([qp_scores, qp_flash_scores], axis=1).max(axis=1)
+    qp_scores = df.get("ql", pd.Series([0] * len(df)))
+    qp_flash_scores = df.get("qlF", pd.Series([0] * len(df)))
+    df["qlM"] = pd.concat([qp_scores, qp_flash_scores], axis=1).max(axis=1)
 
     # 过滤出真正的分数列（模型分数列）
     actual_score_columns = [
@@ -99,15 +97,15 @@ def process_jsonl_to_excel(input_file: str, output_file: str):
         "eckF",
         "q8F",
         "taiyan",
-        "qpF",
-        "eck-thinking",
+        "qfF",
+        "qlF",
+        "eckT",
         "q8",
-        "qp",
         "ql",
         "ds",
         "eckM",
         "q8M",
-        "qpM",
+        "qlM",
     ]
 
     # 构建新的列顺序
