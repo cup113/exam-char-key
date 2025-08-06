@@ -42,11 +42,10 @@ function handleLogout() {
     userStore.logout();
 }
 
-// 修改 deepThinkingOptions，添加描述信息
 const deepThinkingOptions = [
-    { value: 0, label: '关闭', description: '关闭AI深度思考功能，仅提供快速回答', cost: '成本降低 98%' },
-    { value: 1, label: '浅度模式', description: '启用浅度思考，提供基本的分析和解释', cost: '成本降低 70%' },
-    { value: 2, label: '深度模式', description: '启用深度思考，提供详细的分析和推理过程', cost: '成本最高' },
+    { value: 0, label: '关闭', tag: "省成本", description: '关闭AI深度思考功能，仅提供快速回答', cost: '平均查询成本 800/次' },
+    { value: 1, label: '浅度模式', tag: "推荐", description: '启用浅度思考，提供基本的分析和解释', cost: '平均查询成本 15,000/次' },
+    { value: 2, label: '深度模式', tag: "成本高", description: '启用深度思考，提供详细的分析和推理过程', cost: '平均查询成本 150,000/次' },
 ];
 
 const currentDeepThinkingOption = computed(() => {
@@ -104,7 +103,7 @@ const currentDeepThinkingOption = computed(() => {
                     </div>
                 </div>
                 <div class="flex gap-2 mt-2">
-                    <button v-for="option in deepThinkingOptions" :key="option.value"
+                    <button class="relative" v-for="option in deepThinkingOptions" :key="option.value"
                         @click="userStore.deepThinking = option.value" :class="[
                             'flex-1 py-2 px-3 text-sm rounded-md transition-colors',
                             userStore.deepThinking === option.value
@@ -112,6 +111,7 @@ const currentDeepThinkingOption = computed(() => {
                                 : 'bg-secondary-100 text-secondary-700 hover:bg-secondary-200'
                         ]">
                         {{ option.label }}
+                        <span class="absolute text-xs -right-2 -top-2 rounded-md bg-primary-200/80 p-1">{{ option.tag }}</span>
                     </button>
                 </div>
                 <div class="mt-2 text-xs text-secondary-500">
