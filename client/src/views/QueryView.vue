@@ -28,7 +28,6 @@ function goToBatch() {
           class="rounded-lg text-sm cursor-pointer flex gap-2 bg-secondary-600 text-white px-4 py-2 hover:bg-secondary-700">
           批量搜索
         </button>
-        <span class="absolute -top-2 -right-2 bg-warning-500 text-white text-xs px-1 py-0.5 rounded">Beta</span>
       </div>
     </div>
     <TapSearch></TapSearch>

@@ -25,21 +25,21 @@ class Config:
 
     WYW_FLASH_MODEL = AiModel(
         base_url=AI_BASE_URL,
-        id="qwen3-8b-ft-202508031744-1c46",
+        id="qwen-long-latest",
         prompt_price=5,
         completion_price=20,
     )
     WYW_THINKING_MODEL = AiModel(
         base_url=AI_BASE_URL,
-        id="qwen3-8b-ft-202508041131-e7d8",
+        id="qwen-long-latest",
         prompt_price=5,
         completion_price=20,
     )
     WYW_THINKING_MODEL_DEEP = AiModel(
         base_url=AI_BASE_URL,
-        id="qwen3-8b-ft-202508041131-e7d8",
-        prompt_price=5,
-        completion_price=50,
+        id="qwen-plus-latest",
+        prompt_price=8,
+        completion_price=80,
         thinking=True,
     )
 
@@ -47,9 +47,14 @@ class Config:
 
     FREQUENCY_PATH = "server/word-frequency.jsonl"
 
-    PROMPT_FLASH = "你专精于简短、准确地回答高中语文文言文语境中的词语释义。从本义出发，仅特殊情况下补充引申义。不输出多余内容。"
+    PROMPT_FLASH = "你是一位高中语文老师，深入研究高考文言文词语解释。答案简短，以准确为主，不太过意译。一般可以给出一个精准解释，语境特殊时可以补充引申义。简洁地回答用户的问题，除答案外不输出任何内容。"
 
-    PROMPT_AI_THOUGHT = """你专精于简短、准确地回答高中语文文言文语境中的词语释义。从本义出发，仅特殊情况下补充引申义。你可以参考汉典的义项（若有）。输出格式时，要求以“**思考**：”“**解释**：”“**答案**：”分别开头输出三行文本。代入时要深度思考，解释时要解释句子含义及代入词语解释，答案输出 1~2 个，若 2 个则用“；”分隔。"""
+    PROMPT_AI_THOUGHT = """你是一位高中语文老师，深入研究高考文言文词语解释。答案简短，并且不太过意译。一般可以给出一个精准解释，语境特殊时可以补充引申义。若涉及通假字，则需答：通“(通假字)”，(含义)。你需要按要求深度思考并回答用户问题。
+汉典是一个权威的网站，内含该字的多数义项，但不一定全面。
+回答步骤如下：
+1. 思考句义，敢于多次尝试并依照汉典义项（若有）代入阐释。这一行用“**思考**：”开头。
+2. 给出用你思考结果代入的句子解释，着重突出词语在语境中的含义。这一行用“**解释**：”开头。
+3. 输出 1~2 个最终的解释，若有两个义项则中间用分号“；”分隔。这一行用“**答案**：”开头。"""
 
     PROMPT_AI_EXTRACT_MODEL_TEST = """你是一位助教，你要帮助教师完成重复性的操作任务。请细致地完成。教师会给你一段文本、题目、标准答案，但他正在编撰一套汇编题目，专门针对文言释义这一板块的内容。高考中有三道题是考察这一方面的，一般是14（两道填空）、15（两道选择）、17（翻译句子），题号可能有所变动。格式为 Markdown，一般来说需要解释的词语会被加粗，但也有时会遗漏。这时，需要解释的词语需要你结合标准答案进行推断。此外，原文下可能会有注释，注释可以是不错的补充。其余题目如断句、选择、简答分析不必理会。
 
