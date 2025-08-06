@@ -79,16 +79,10 @@ def process_score_response(response: CompletionApiResponse) -> None:
     questions[note_id].answers[answer_hex].scores.append(score)
 
 
-evaluation_final_files = [
-    # IntermediateFiles.CompletionBatchEvaluationFinal1,
-    IntermediateFiles.CompletionBatchEvaluationFinal2,
-]
-
-for file_path in evaluation_final_files:
-    with JsonlReader(file_path) as f:
-        for final_evaluation in f:
-            response: CompletionApiResponse = final_evaluation
-            process_score_response(response)
+with JsonlReader(IntermediateFiles.CompletionBatchEvaluationFinal) as f:
+    for final_evaluation in f:
+        response: CompletionApiResponse = final_evaluation
+        process_score_response(response)
 
 with JsonlWriter(IntermediateFiles.FinalRaw) as f:
     for question in questions.values():

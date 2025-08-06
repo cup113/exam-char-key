@@ -3,38 +3,27 @@ from train.utils import JsonlReader, JsonlWriter, IntermediateFiles
 from random import shuffle
 
 
-def convert(prompt_raw: PromptRaw, i: int, model: str, model_short: str) -> BatchRequest:
+def convert(prompt_raw: PromptRaw, i: int, model: str) -> BatchRequest:
     return {
-        "custom_id": f"request-tb-{i:04d}-{model_short}",
+        "custom_id": f"request-tb-{i:04d}",
         "method": "POST",
         "url": "/v1/chat/completions",
         "body": {
             "model": model,
             "messages": prompt_raw["messages"],
-            "temperature": 0.5,
+            "temperature": 0.7,
             "top_p": 0.95,
         },
     }
 
-batch_requests_1: list[BatchRequest] = []
-batch_requests_2: list[BatchRequest] = []
-batch_requests_3: list[BatchRequest] = []
+
+batch_requests: list[BatchRequest] = []
 with JsonlReader(IntermediateFiles.DatasetThinkingRaw) as fr:
     for i, prompt_raw in enumerate(fr):
-        batch_requests_1.append(convert(prompt_raw, i, "qwen-plus-latest", "qp"))
-        batch_requests_2.append(convert(prompt_raw, i, "qwen-long-latest", "ql"))
-        batch_requests_3.append(convert(prompt_raw, i, "deepseek-v3", "ds"))
+        batch_requests.append(convert(prompt_raw, i, "qwen-long-latest"))
 
-shuffle(batch_requests_1)
+shuffle(batch_requests)
 
-with JsonlWriter(IntermediateFiles.PromptDatasetThinking1) as fw:
-    for batch_request in batch_requests_1:
-        fw.write_line(batch_request)
-
-with JsonlWriter(IntermediateFiles.PromptDatasetThinking2) as fw:
-    for batch_request in batch_requests_2:
-        fw.write_line(batch_request)
-
-with JsonlWriter(IntermediateFiles.PromptDatasetThinking3) as fw:
-    for batch_request in batch_requests_3:
+with JsonlWriter(IntermediateFiles.PromptDatasetThinking) as fw:
+    for batch_request in batch_requests:
         fw.write_line(batch_request)

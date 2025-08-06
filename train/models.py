@@ -132,7 +132,7 @@ class AiSubject:
 
     async def get_flash_completion(self, pack: CompletionSourcePack) -> str:
         supplement_prompt = (
-            "不要输出除答案外的无关文字。" if "ft" not in self.model_code else ""
+            "请快速回答。不要输出除答案外的无关文字。" if "ft" not in self.model_code else ""
         )
         system_prompt = (
             SYSTEM_PROMPTS.FLASH
@@ -141,7 +141,7 @@ class AiSubject:
         )
         content = await self.get_ali_completion(
             system_prompt=system_prompt,
-            user_prompt=f"请解释古文“{pack.context}”中，“{pack.query}”的含义。请迅速回答。{supplement_prompt}",
+            user_prompt=f"请解释古文“{pack.context}”中，“{pack.query}”的含义。{supplement_prompt}",
             client=pack.client,
             cache_handler=pack.cache_handler,
         )

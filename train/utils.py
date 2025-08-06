@@ -45,6 +45,23 @@ E. 语义明显偏差，不可接受。示例回答：①吃饱。②水果。
 
     CLASSIFICATION = "你要判断一篇文章是不是一篇文言文（包括古诗文），主要依据为其中语言是否可能包含一些文言词汇，因此近代诗文可能也包含在内。你需要先简单思考判断，然后给出判断结果。以 json 格式输出：{'thought': string, 'is_ancient': boolean}，不要包含其它内容。"
 
+    PRE_FILTER = """你是一位高中语文助教，负责审核课文注解是否适合编入**文言词语释义**的题目中给学生作答。
+
+典型的不适合的注解如：
+
+1. 介绍出处、作者的注解
+2. 词牌名、人物字号等无意义注解
+3. 较冗长的翻译，不具有考察单个实词释义的意义。
+
+典型的适合的特征有：
+
+1. 词语与解释都短小精悍
+2. 从本义出发，或稍加引申。
+
+你最终需要输出的格式为：
+<think>思考内容</think>
+<answer>适合|不适合</answer>"""
+
 
 class IntermediateFiles:
     PassagesTextbook = "./train/result/textbook-passages.jsonl"
@@ -52,43 +69,26 @@ class IntermediateFiles:
     NotesTextbook = "./train/result/textbook-notes.jsonl"
     CSVModelTests = "./train/model-training-dataset/model-training-dataset.csv"
     NotesModelTests = "./train/result/model-tests-notes.jsonl"
+    NotesFiltered = "./train/result/notes-filtered.jsonl"
     StatFrequency = "./train/result/word-frequency.jsonl"
     DatasetFlash = "./train/result/dataset-flash.jsonl"
     DatasetThinking = "./train/result/dataset-thinking.jsonl"
     DatasetThinkingRaw = "./train/result/dataset-thinking-raw.jsonl"
     FinalRaw = "./train/result/final-raw.jsonl"
-    PromptDatasetThinking1 = "./train/result/dataset-thinking-prompt-qp.jsonl"
-    PromptDatasetThinking2 = "./train/result/dataset-thinking-prompt-ql.jsonl"
-    PromptDatasetThinking3 = "./train/result/dataset-thinking-prompt-ds.jsonl"
-    PromptEvaluationThinkingDataset1 = (
-        "./train/result/dataset-thinking-evaluation-prompt-1.jsonl"
+    PromptFilter = "./train/result/filter-prompt.jsonl"
+    PromptDatasetThinking = "./train/result/dataset-thinking-prompt.jsonl"
+    PromptEvaluationThinkingDataset = (
+        "./train/result/dataset-thinking-evaluation-prompt.jsonl"
     )
-    PromptEvaluationThinkingDataset2 = (
-        "./train/result/dataset-thinking-evaluation-prompt-2.jsonl"
-    )
-    PromptEvaluationFinal1 = "./train/result/final-evaluation-prompt-1.jsonl"
-    PromptEvaluationFinal2 = "./train/result/final-evaluation-prompt-2.jsonl"
-    CompletionBatchThinking1 = (
-        "./train/result/dataset-thinking-batch-completion-qp.jsonl"
-    )
-    CompletionBatchThinking2 = (
-        "./train/result/dataset-thinking-batch-completion-ql.jsonl"
-    )
-    CompletionBatchThinking3 = (
-        "./train/result/dataset-thinking-batch-completion-ds.jsonl"
-    )
-    CompletionBatchEvaluationThinking1 = (
-        "./train/result/dataset-evaluation-thinking-batch-completion-1.jsonl"
-    )
-    CompletionBatchEvaluationThinking2 = (
-        "./train/result/dataset-evaluation-thinking-batch-completion-2.jsonl"
+    PromptEvaluationFinal = "./train/result/final-evaluation-prompt.jsonl"
+    CompletionFilter = "./train/result/filter-completion.jsonl"
+    CompletionBatchThinking = "./train/result/dataset-thinking-batch-completion.jsonl"
+    CompletionBatchEvaluationThinking = (
+        "./train/result/dataset-evaluation-thinking-batch-completion.jsonl"
     )
     CompletionFinals = "./train/result/final-completion.jsonl"
-    CompletionBatchEvaluationFinal1 = (
-        "./train/result/final-evaluation-completion-1.jsonl"
-    )
-    CompletionBatchEvaluationFinal2 = (
-        "./train/result/final-evaluation-completion-2.jsonl"
+    CompletionBatchEvaluationFinal = (
+        "./train/result/final-evaluation-completion.jsonl"
     )
 
 

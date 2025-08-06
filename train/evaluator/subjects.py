@@ -13,12 +13,12 @@ class OnlineAiSubject(AiSubject):
 
 
 class EckFlashSubject(FlashAiSubject):
-    model_code = "qwen3-8b-ft-202508031744-1c46"
+    model_code = "qwen3-8b-ft-202508061056-4a88"
     model_name = "eck-flash"
 
 
 class EckThinkingSubject(OnlineAiSubject):
-    model_code = "qwen3-8b-ft-202508041131-e7d8"
+    model_code = "qwen3-8b-ft-202508061132-1695"
     model_name = "eck-thinking"
 
 
@@ -27,14 +27,21 @@ class AiTaiyanSubject(AiSubject):
     model_name = "taiyan"
 
     async def ask(self, pack: CompletionSourcePack) -> str:
+        text = f"{pack.context}@@@@@{pack.query}"
+        cache_key = f"TAIYAN@@{text}"
+        cached = pack.cache_handler.query_cache(cache_key)
+        if cached:
+            return cached
+
         content = await AsyncClient().post(
             "https://t.shenshen.wiki/shiyi",
             headers={
                 "Origin": "https://t.shenshen.wiki",
                 "Referer": "https://t.shenshen.wiki/",
             },
-            json={"mission": "shiyi", "text": f"{pack.context}@@@@@{pack.query}"},
+            json={"mission": "shiyi", "text": text},
         )
+        pack.cache_handler.save_cache(cache_key, content.text)
         return content.text
 
 
@@ -48,19 +55,19 @@ class Qwen8BFlashSubject(FlashAiSubject):
     model_name = "qwen3-8b-flash"
 
 
+class QwenFlashSubject(FlashAiSubject):
+    model_code = "qwen-flash"
+    model_name = "qwen-flash"
+
+
 class QwenLongSubject(OnlineAiSubject):
     model_code = "qwen-long-latest"
     model_name = "qwen-long"
 
 
-class QwenPlusSubject(OnlineAiSubject):
-    model_code = "qwen-plus-latest"
-    model_name = "qwen-plus"
-
-
-class QwenPlusFlashSubject(FlashAiSubject):
-    model_code = "qwen-plus-latest"
-    model_name = "qwen-plus-flash"
+class QwenLongFlashSubject(FlashAiSubject):
+    model_code = "qwen-long-latest"
+    model_name = "qwen-long-flash"
 
 
 class DeepSeekV3Subject(OnlineAiSubject):

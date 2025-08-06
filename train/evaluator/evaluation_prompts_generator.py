@@ -17,12 +17,12 @@ from train.evaluator.subjects import (
     AiTaiyanSubject,
     Qwen8BSubject,
     Qwen8BFlashSubject,
-    QwenPlusSubject,
-    QwenPlusFlashSubject,
+    QwenFlashSubject,
     QwenLongSubject,
+    QwenLongFlashSubject,
     DeepSeekV3Subject,
 )
-from train.evaluator.evaluators import QwenLongEvaluator, QwenPlusEvaluator
+from train.evaluator.evaluators import QwenLongEvaluator
 from train.models import (
     EvaluationData,
     AiEvaluator,
@@ -45,17 +45,17 @@ cache_handler = CacheHandler("train/result/cache")
 
 subjects: list[AiSubject] = [
     EckFlashSubject(),
-    EckThinkingSubject(),
+    Qwen8BFlashSubject(),
     AiTaiyanSubject(),
-    QwenPlusSubject(),
-    QwenPlusFlashSubject(),
+    QwenFlashSubject(),
+    QwenLongFlashSubject(),
+    EckThinkingSubject(),
+    Qwen8BSubject(),
     QwenLongSubject(),
     DeepSeekV3Subject(),
-    Qwen8BSubject(),
-    Qwen8BFlashSubject(),
 ]
 
-evaluators: list[AiEvaluator] = [QwenLongEvaluator(), QwenPlusEvaluator()]
+evaluators: list[AiEvaluator] = [QwenLongEvaluator()]
 
 
 async def subject_answer(
@@ -63,7 +63,7 @@ async def subject_answer(
     subject: AiSubject,
     zdic_prompt: str,
     index: int,
-    ff: JsonlWriter
+    ff: JsonlWriter,
 ) -> list[BatchRequest]:
     try:
         pack = CompletionSourcePack(
@@ -75,12 +75,14 @@ async def subject_answer(
         )
         subject_answer = (await subject.ask(pack)).strip().replace("\n", "")
         answer_hex = subject.answer_to_hex(subject_answer)
-        ff.write_line({
-            "index": index,
-            "answer": subject_answer,
-            "hex": answer_hex,
-            "model": subject.model_name,
-        })
+        ff.write_line(
+            {
+                "index": index,
+                "answer": subject_answer,
+                "hex": answer_hex,
+                "model": subject.model_name,
+            }
+        )
 
         result = [
             evaluator.get_request(
@@ -106,9 +108,9 @@ async def main():
         for row in reader:
             dataset.append(row)  # type: ignore
 
-    with JsonlWriter(IntermediateFiles.PromptEvaluationFinal1) as f1, JsonlWriter(
-        IntermediateFiles.PromptEvaluationFinal2
-    ) as f2, JsonlWriter(IntermediateFiles.CompletionFinals) as ff:
+    with JsonlWriter(IntermediateFiles.PromptEvaluationFinal) as f, JsonlWriter(
+        IntermediateFiles.CompletionFinals
+    ) as ff:
         for index, data in enumerate(tqdm(dataset)):
             query = data["query"]
             tasks: list[Coroutine[Any, Any, list[BatchRequest]]] = []
@@ -135,15 +137,8 @@ async def main():
                     if batch_request["custom_id"] in existing_ids:
                         duplicated_count += 1
                         continue
-                    model = batch_request["body"]["model"]
-                    if model == "qwen-plus-latest":
-                        f1.write_line(batch_request)
-                        existing_ids.add(batch_request["custom_id"])
-                    elif model == "qwen-long-latest":
-                        f2.write_line(batch_request)
-                        existing_ids.add(batch_request["custom_id"])
-                    else:
-                        raise ValueError(f"Unknown model: {model}")
+                    f.write_line(batch_request)
+                    existing_ids.add(batch_request["custom_id"])
             if duplicated_count != 0:
                 tqdm.write(
                     f"Saved {duplicated_count} duplicated requests in note {index:03d}"

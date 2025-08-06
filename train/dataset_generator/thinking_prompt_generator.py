@@ -11,7 +11,7 @@ from train.models import Note, PromptRaw
 from train.utils import SYSTEM_PROMPTS, IntermediateFiles, JsonlReader, JsonlWriter
 from random import shuffle
 
-(TEXTBOOK_SAMPLE_INTERVAL, TEXTBOOK_SAMPLE_START) = (5, 1)
+(TEXTBOOK_SAMPLE_INTERVAL, TEXTBOOK_SAMPLE_START) = (4, 1)
 CRAWL_INTERVAL = 10
 CRAWL_MIN_INTERVAL = 1
 
@@ -48,24 +48,18 @@ def get_completion(note: Note, i: int):
     return completion, cached
 
 
-with JsonlReader(IntermediateFiles.NotesTextbook) as f:
+with JsonlReader(IntermediateFiles.NotesFiltered) as f:
+    textbook_acc = TEXTBOOK_SAMPLE_INTERVAL
     for i, line in enumerate(f):
         note = Note.from_dict(line)
-        if i % TEXTBOOK_SAMPLE_INTERVAL != TEXTBOOK_SAMPLE_START:
-            continue
-        if (
-            note.is_short_note()
-            and not note.is_title_note()
-            and "\n" not in note.detail
-        ):
-            notes.append(note)
+        is_textbook = len(note.name_passage) >= 1
+        if is_textbook:
+            textbook_acc += 1
+            textbook_acc %= TEXTBOOK_SAMPLE_INTERVAL
+            if textbook_acc != TEXTBOOK_SAMPLE_START:
+                continue
+        notes.append(note)
 
-
-with JsonlReader(IntermediateFiles.NotesModelTests) as f:
-    for line in f:
-        note = Note.from_dict(line)
-        if note.is_short_note():
-            notes.append(note)
 
 shuffle(notes)
 

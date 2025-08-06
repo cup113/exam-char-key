@@ -2,23 +2,15 @@ from train.models import Note
 from train.utils import JsonlReader, JsonlWriter, SYSTEM_PROMPTS, IntermediateFiles
 from random import shuffle
 
-# 读取课本数据
-with JsonlReader(IntermediateFiles.NotesTextbook) as f:
+with JsonlReader(IntermediateFiles.NotesFiltered) as f:
     notes = [Note.from_dict(d) for d in f]
-
-with JsonlReader(IntermediateFiles.NotesModelTests) as f:
-    notes += [Note.from_dict(d) for d in f]
 
 shuffle(notes)
 
 with JsonlWriter(IntermediateFiles.DatasetFlash) as f:
     for i, note in enumerate(notes):
         original_text = note.get_original_text()
-        if original_text == note.context:
-            continue  # it's probably a note to the title
-        if len(note.core_detail) >= 15 or len(original_text) >= 4:
-            continue  # Too long
-        template = SYSTEM_PROMPTS.QUESTION_TEMPLATE + "请快速回答。"
+        template = SYSTEM_PROMPTS.QUESTION_TEMPLATE
         completion = {
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPTS.FLASH_SIMPLIFIED},

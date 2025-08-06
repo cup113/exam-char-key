@@ -9,17 +9,15 @@ def get_evaluation_prompt(
     answer_stu: str,
     note: Note,
     completion_custom_id: str,
-    model_index_id: int,
-    model: str,
 ) -> BatchRequest:
     user_prompt = f"题目：“{note.context}”中“{note.get_original_text()}”的含义。\n标准答案为：{note.core_detail}\n学生答案为：{answer_stu}\n请按要求评分并按格式输出。"
 
     return {
-        "custom_id": f"{completion_custom_id}-ev-{model_index_id}",
+        "custom_id": f"{completion_custom_id}-ev",
         "method": "POST",
         "url": "/v1/chat/completions",
         "body": {
-            "model": model,
+            "model": "qwen-long-latest",
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPTS.EVALUATION},
                 {"role": "user", "content": user_prompt},
@@ -37,13 +35,7 @@ with JsonlReader(IntermediateFiles.DatasetThinkingRaw) as reader:
     for i, line in enumerate(reader):
         prompt_raw: PromptRaw = line
         note = Note.from_dict(prompt_raw["note"])
-        raw_data.update(
-            [
-                (f"request-tb-{i:04d}-qp", note),
-                (f"request-tb-{i:04d}-ql", note),
-                (f"request-tb-{i:04d}-ds", note),
-            ]
-        )
+        raw_data.update([(f"request-tb-{i:04d}", note)])
 
 
 class EvaluationFiles(TypedDict):
@@ -51,49 +43,25 @@ class EvaluationFiles(TypedDict):
     model: str
 
 
-EVALUATION_FILES: list[EvaluationFiles] = [
-    {
-        "filename": IntermediateFiles.PromptEvaluationThinkingDataset1,
-        "model": "qwen-plus-latest",
-    },
-    {
-        "filename": IntermediateFiles.PromptEvaluationThinkingDataset2,
-        "model": "qwen-long-latest",
-    },
-]
+with JsonlWriter(IntermediateFiles.PromptEvaluationThinkingDataset) as writer:
+    with JsonlReader(IntermediateFiles.CompletionBatchThinking) as fr:
+        for i, line in enumerate(fr):
+            completion: CompletionApiResponse = line
+            raw_answer = completion["response"]["body"]["choices"][0]["message"][
+                "content"
+            ]
+            raw_match = match(r".*?\*\*答案\*\*[:：]\s*(.*)", raw_answer, DOTALL)
+            note = raw_data[completion["custom_id"]]
 
-BATCH_FILENAMES = [
-    IntermediateFiles.CompletionBatchThinking1,
-    IntermediateFiles.CompletionBatchThinking2,
-    IntermediateFiles.CompletionBatchThinking3,
-]
+            if raw_match is None:
+                warn(f"Answer to {note.to_dict()} unmatched: {raw_answer}")
+                continue
 
-
-for out_no, evaluation_file in enumerate(EVALUATION_FILES):
-    with JsonlWriter(evaluation_file["filename"]) as writer:
-        for filename in BATCH_FILENAMES:
-            with JsonlReader(filename) as fr:
-                for i, line in enumerate(fr):
-                    completion: CompletionApiResponse = line
-                    raw_answer = completion["response"]["body"]["choices"][0][
-                        "message"
-                    ]["content"]
-                    raw_match = match(
-                        r".*?\*\*答案\*\*[:：]\s*(.*)", raw_answer, DOTALL
-                    )
-                    note = raw_data[completion["custom_id"]]
-
-                    if raw_match is None:
-                        warn(f"Answer to {note.to_dict()} unmatched: {raw_answer}")
-                        continue
-
-                    answer = raw_match.group(1).strip()
-                    writer.write_line(
-                        get_evaluation_prompt(
-                            answer,
-                            note,
-                            completion["custom_id"],
-                            out_no,
-                            evaluation_file["model"],
-                        )
-                    )
+            answer = raw_match.group(1).strip()
+            writer.write_line(
+                get_evaluation_prompt(
+                    answer,
+                    note,
+                    completion["custom_id"],
+                )
+            )
