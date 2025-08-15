@@ -12,7 +12,7 @@ plt.rcParams["axes.unicode_minus"] = False
 
 # 定义模型分组颜色
 model_groups = {
-    "eck": "cyan",  # 课题成果模型
+    "eck": "skyblue",  # 课题成果模型
     "q8": "blue",  # 基座模型
     "ql": "brown",  # 高级模型
     "taiyan": "green",  # 太炎模型
@@ -47,22 +47,27 @@ models = list(model_scores.keys())
 scores = list(model_scores.values())
 colors = [model_groups[get_model_group(model)] for model in models]
 
-# 使用横向条形图
-bars = ax1.barh(models, scores, color=colors)
-ax1.set_title("文言文释义测评集总分（满分 750）", fontsize=14)
-ax1.set_xlabel("总分", fontsize=12)
-ax1.set_ylabel("模型", fontsize=12)
+# 反转顺序（从上到下显示）
+models.reverse()
+scores.reverse()
+colors.reverse()
+
+# 使用横向条形图并添加误差棒
+bars = ax1.barh(models, scores, color=colors, capsize=3)
+ax1.set_xlabel("总分", fontsize=14)
+ax1.set_ylabel("模型", fontsize=14)
 ax1.set_xlim(500, 750)
 
 # 添加数值标签
 for bar, score in zip(bars, scores):
     ax1.text(
-        bar.get_width() + 5,
+        bar.get_width() - 5,
         bar.get_y() + bar.get_height() / 2,
         f"{score:.1f}",
-        ha="left",
+        ha="right",
         va="center",
-        fontsize=9,
+        fontsize=12,
+        color="white",
     )
 
 # 添加图例
@@ -70,7 +75,7 @@ legend_elements = [
     plt.Rectangle((0, 0), 1, 1, color=model_groups[group], label=group)
     for group in model_groups.keys()
 ]
-ax1.legend(handles=legend_elements, title="模型类型", loc="lower right")
+ax1.legend(handles=legend_elements, title="模型类型", loc="upper right")
 
 plt.tight_layout()
 plt.savefig(
