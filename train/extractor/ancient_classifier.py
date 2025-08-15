@@ -43,6 +43,8 @@ for passage in tqdm(passages):
             {"role": "user", "content": prompt},
         ],
         response_format={"type": "json_object"},
+        temperature=0.3,
+        top_p=0.95,
     )
 
     completion_info = loads(completion.model_dump_json())
