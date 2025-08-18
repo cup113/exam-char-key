@@ -33,7 +33,7 @@ watch(() => queryStore.activeText, () => {
 
                 <div class="flex justify-around w-full">
                     <DialogClose>
-                        <button class="text-white bg-primary-600 px-4 py-2 rounded-md hover:bg-primary-700">确定</button>
+                        <button class="text-white bg-primary-600 px-4 py-2 rounded-md hover:bg-primary-700" @click="queryStore.activeText = inputText">确定</button>
                     </DialogClose>
                     <DialogClose>
                         <button

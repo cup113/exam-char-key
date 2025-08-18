@@ -12,11 +12,11 @@ plt.rcParams["axes.unicode_minus"] = False
 
 # 定义模型分组颜色
 model_groups = {
-    "eck": "skyblue",  # 课题成果模型
-    "q8": "blue",  # 基座模型
-    "ql": "brown",  # 高级模型
-    "taiyan": "green",  # 太炎模型
-    "other": "gray",  # 其他模型
+    "eck": "#00bab1",
+    "q8": "#0075bf",
+    "ql": "#39405E",
+    "taiyan": "#0a6409",
+    "ds": "#414036",
 }
 
 
@@ -29,14 +29,18 @@ def get_model_group(model_name: str):
         return "ql"
     elif model_name.startswith("taiyan"):
         return "taiyan"
+    elif model_name.startswith("ds"):
+        return "ds"
     else:
-        return "other"
+        raise ValueError(f"Invalid model name: {model_name}")
 
 
 # 图1: 当前标准下的总分（满分750）
 model_scores: dict[str, float] = {}
 for col in df.columns:
     if col in ["index", "type", "context", "query", "correct_answer", "AVG"]:
+        continue
+    if col == "qfF":
         continue
     if not "_answer" in col:
         model_scores[col] = df[col].sum()
