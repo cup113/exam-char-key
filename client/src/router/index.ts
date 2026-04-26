@@ -1,44 +1,8 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
-import AboutView from '@/views/AboutView.vue';
-import QueryView from '../views/QueryView.vue';
-import HistoryView from '@/views/HistoryView.vue';
-import SettingsView from '@/views/SettingsView.vue';
-import BatchView from '@/views/BatchView.vue';
+import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
-  history: createWebHashHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'Home',
-      redirect: '/about',
-    },
-    {
-      path: '/about',
-      name: 'About',
-      component: AboutView,
-    },
-    {
-      path: '/query',
-      name: 'query',
-      component: QueryView,
-    },
-    {
-      path: '/history',
-      name: 'history',
-      component: HistoryView,
-    },
-    {
-      path: '/settings',
-      name: 'settings',
-      component: SettingsView,
-    },
-    {
-      path: '/batch',
-      name: 'batch',
-      component: BatchView,
-    }
-  ],
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [],
 })
 
 export default router

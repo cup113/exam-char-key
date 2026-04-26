@@ -10,5 +10,4 @@ train/textbook*.json
 train/word-frequency.json
 train/*.jsonl
 
-db/pocketbase*
-db/pb_data
+db/*
