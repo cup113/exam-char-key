@@ -4,6 +4,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    GITHUB_CLIENT_ID: str = ""
+    GITHUB_CLIENT_SECRET: str = ""
+    GITEE_CLIENT_ID: str = ""
+    GITEE_CLIENT_SECRET: str = ""
+
     LLM_BASE_URL: str = "https://api.openai.com/v1"
     LLM_API_KEY: str | None = None
 

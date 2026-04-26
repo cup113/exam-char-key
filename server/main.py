@@ -6,7 +6,13 @@ from openai import AsyncOpenAI
 from time import time
 
 from config import settings
-from db_helper import init_db, check_and_decrease_quota
+from db_helper import (
+    init_db,
+    check_and_decrease_quota,
+    get_quota_usage,
+    save_query_history,
+    get_query_history,
+)
 from spider import get_dict_entry
 from auth import router as auth_router, decode_jwt
 
@@ -30,21 +36,20 @@ def startup():
     init_db()
 
 
-# --- 依赖注入：限流 ---
-def verify_quota(request: Request):
+def get_identifier_and_limit(request: Request):
     token = request.cookies.get("auth_token")
     if token:
         try:
             payload = decode_jwt(token)
-            identifier = f"user:{payload['sub']}"
-            limit = settings.QUOTA_USER_DAILY
+            return f"user:{payload['sub']}", settings.QUOTA_USER_DAILY, payload["sub"]
         except Exception:
-            identifier = f"ip:{request.client.host}"
-            limit = settings.QUOTA_GUEST_DAILY
-    else:
-        identifier = f"ip:{request.client.host}"
-        limit = settings.QUOTA_GUEST_DAILY
+            pass
+    return f"ip:{request.client.host}", settings.QUOTA_GUEST_DAILY, None
 
+
+# --- 依赖注入：限流 ---
+def verify_quota(request: Request):
+    identifier, limit, _ = get_identifier_and_limit(request)
     if not check_and_decrease_quota(identifier, limit):
         raise HTTPException(status_code=429, detail="今日额度已耗尽")
     return identifier
@@ -53,7 +58,6 @@ def verify_quota(request: Request):
 # --- SSE 流水线 ---
 async def query_pipeline(word: str, context: str, mode: str):
     try:
-        # 1. 快速回答
         yield f"data: {json.dumps({'step': 'quick_answer', 'status': 'start'})}\n\n"
         start = time()
         quick_stream = await client.chat.completions.create(
@@ -77,12 +81,10 @@ async def query_pipeline(word: str, context: str, mode: str):
                 yield f"data: {json.dumps({'step': 'quick_answer', 'chunk': content})}\n\n"
         print(f"快速查询延迟: {time() - start: .2f}s")
 
-        # 2. 字典查询
         yield f"data: {json.dumps({'step': 'dictionary', 'status': 'fetching'})}\n\n"
         dict_data = await get_dict_entry(word)
         yield f"data: {json.dumps({'step': 'dictionary', 'result': dict_data})}\n\n"
 
-        # 3. 深度思考 (仅 deep 模式)
         if mode == "deep":
             yield f"data: {json.dumps({'step': 'deep_think', 'status': 'start'})}\n\n"
             deep_stream = await client.chat.completions.create(
@@ -128,3 +130,42 @@ async def query_endpoint(
     return StreamingResponse(
         query_pipeline(word, context, mode), media_type="text/event-stream"
     )
+
+
+@app.get("/api/quota")
+async def get_quota(request: Request):
+    identifier, limit, user_id = get_identifier_and_limit(request)
+    used = get_quota_usage(identifier)
+    return {"used": used, "limit": limit, "remaining": limit - used}
+
+
+@app.get("/api/history")
+async def list_history(request: Request, limit: int = 50, offset: int = 0):
+    _, _, user_id = get_identifier_and_limit(request)
+    if not user_id:
+        raise HTTPException(401, "请先登录")
+    records = get_query_history(user_id, limit, offset)
+    return {"records": records}
+
+
+@app.post("/api/history")
+async def save_history(request: Request):
+    _, _, user_id = get_identifier_and_limit(request)
+    if not user_id:
+        raise HTTPException(401, "请先登录")
+
+    data = await request.json()
+    word = data.get("word")
+    if not word:
+        raise HTTPException(400, "word 不能为空")
+
+    history_id = save_query_history(
+        user_id=user_id,
+        word=word,
+        context=data.get("context", ""),
+        mode=data.get("mode", "quick"),
+        quick_answer=data.get("quick_answer", ""),
+        dict_result=data.get("dict_result", ""),
+        deep_think=data.get("deep_think", ""),
+    )
+    return {"id": history_id, "message": "保存成功"}

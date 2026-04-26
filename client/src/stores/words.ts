@@ -6,6 +6,7 @@ export interface TrackedWord {
   id: string
   word: string
   context: string
+  offset: number
   mode: 'quick' | 'deep'
   status: 'pending' | 'loading' | 'done' | 'error'
   quickAnswer: string
@@ -24,12 +25,13 @@ export const useWordsStore = defineStore('words', () => {
     trackedWords.value.find(w => w.id === activeWordId.value) || null
   )
 
-  function addWord(word: string, context: string, mode: 'quick' | 'deep') {
+  function addWord(word: string, context: string, mode: 'quick' | 'deep', offset: number) {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
     trackedWords.value.push({
       id,
       word,
       context,
+      offset,
       mode,
       status: 'pending',
       quickAnswer: '',
