@@ -13,6 +13,6 @@ RUN curl -L -o pocketbase.zip https://github.com/pocketbase/pocketbase/releases/
 
 WORKDIR /db
 
-EXPOSE 4123
+EXPOSE 8090
 
-CMD ["/db/pocketbase", "serve", "--http=0.0.0.0:4123"]
+CMD ["/db/pocketbase", "serve", "--http=0.0.0.0:8090"]

@@ -26,7 +26,7 @@ def start_backend():
         load_dotenv(dotenv_path=env_path)
     env = os.environ.copy()
     env.update({
-        "POCKETBASE_URL": "http://localhost:4123",
+        "POCKETBASE_URL": "http://localhost:8090",
     })
     return subprocess.Popen(
         ["uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "4122"],
@@ -44,7 +44,7 @@ def start_db():
     if not os.path.exists(pocketbase):
         raise FileNotFoundError("未找到 PocketBase 可执行文件路径。")
     return subprocess.Popen(
-        [pocketbase, "serve", "--http=0.0.0.0:4123"],
+        [pocketbase, "serve", "--http=0.0.0.0:8090"],
         cwd=db_path,
     )
 

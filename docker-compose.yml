@@ -12,7 +12,7 @@ services:
       - pocketbase
     environment:
       - APP_ENV=production
-      - POCKETBASE_URL=http://pocketbase:4123
+      - POCKETBASE_URL=http://pocketbase:8090
 
   pocketbase:
     build:
@@ -20,7 +20,7 @@ services:
       dockerfile: Dockerfile.pocketbase
     container_name: pocketbase
     ports:
-      - "4123:4123"
+      - "8090:8090"
     volumes:
       - pocketbase_data:/db/pb_data
     restart: always
