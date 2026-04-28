@@ -12,9 +12,10 @@ from db_helper import (
     get_quota_usage,
     save_query_history,
     get_query_history,
+    log_api_usage,
 )
 from spider import get_dict_entry
-from auth import router as auth_router, decode_jwt
+from auth import router as auth_router, callback_router, decode_jwt
 
 app = FastAPI()
 
@@ -26,7 +27,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router)
+app.include_router(auth_router, prefix="/api")
+app.include_router(callback_router, prefix="/api")
 
 client = AsyncOpenAI(api_key=settings.LLM_API_KEY, base_url=settings.LLM_BASE_URL)
 
@@ -44,7 +46,9 @@ def get_identifier_and_limit(request: Request):
             return f"user:{payload['sub']}", settings.QUOTA_USER_DAILY, payload["sub"]
         except Exception:
             pass
-    return f"ip:{request.client.host}", settings.QUOTA_GUEST_DAILY, None
+    forwarded = request.headers.get("X-Forwarded-For")
+    client_ip = forwarded.split(",")[0].strip() if forwarded else request.client.host
+    return f"ip:{client_ip}", settings.QUOTA_GUEST_DAILY, None
 
 
 # --- 依赖注入：限流 ---
@@ -52,6 +56,7 @@ def verify_quota(request: Request):
     identifier, limit, _ = get_identifier_and_limit(request)
     if not check_and_decrease_quota(identifier, limit):
         raise HTTPException(status_code=429, detail="今日额度已耗尽")
+    log_api_usage(identifier, request.url.path)
     return identifier
 
 

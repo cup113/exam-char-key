@@ -1,7 +1,9 @@
 import sqlite3
 from datetime import date
 
-DB_PATH = "../db/data.db"
+from config import settings
+
+DB_PATH = settings.DB_PATH
 
 
 def init_db():
@@ -39,6 +41,16 @@ def init_db():
             )
         """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS usage_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                identifier TEXT NOT NULL,
+                endpoint TEXT NOT NULL,
+                created_at TEXT DEFAULT (datetime('now','localtime'))
+            )
+        """
+        )
         conn.execute("PRAGMA journal_mode=WAL;")
 
 
@@ -47,27 +59,15 @@ def check_and_decrease_quota(identifier: str, limit: int) -> bool:
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT used_count FROM daily_usage WHERE identifier=? AND date=?",
-            (identifier, today),
+            """INSERT INTO daily_usage (identifier, date, used_count)
+               VALUES (?, ?, 1)
+               ON CONFLICT(identifier, date) DO UPDATE
+               SET used_count = used_count + 1
+               WHERE used_count < ?""",
+            (identifier, today, limit),
         )
-        row = cursor.fetchone()
-
-        used_count = row[0] if row else 0
-        if used_count >= limit:
-            return False
-
-        if row:
-            cursor.execute(
-                "UPDATE daily_usage SET used_count = used_count + 1 WHERE identifier=? AND date=?",
-                (identifier, today),
-            )
-        else:
-            cursor.execute(
-                "INSERT INTO daily_usage (identifier, date, used_count) VALUES (?, ?, ?)",
-                (identifier, today, 1),
-            )
         conn.commit()
-        return True
+        return cursor.rowcount > 0
 
 
 def get_quota_usage(identifier: str) -> int:
@@ -116,6 +116,14 @@ def save_query_history(
         )
         conn.commit()
         return cursor.lastrowid
+
+
+def log_api_usage(identifier: str, endpoint: str):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "INSERT INTO usage_log (identifier, endpoint) VALUES (?, ?)",
+            (identifier, endpoint),
+        )
 
 
 def get_query_history(user_id: str, limit: int = 50, offset: int = 0):

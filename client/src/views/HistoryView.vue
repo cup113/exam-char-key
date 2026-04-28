@@ -4,6 +4,17 @@ import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 
+interface DictEntry {
+  brief: string
+  english?: string
+  examples?: string[]
+}
+
+interface ParsedDict {
+  basic_explanation?: DictEntry[]
+  detailed_explanation?: DictEntry[]
+}
+
 interface HistoryRecord {
   id: number
   word: string
@@ -13,6 +24,7 @@ interface HistoryRecord {
   dict_result: string
   deep_think: string
   created_at: string
+  _parsedDict?: ParsedDict | null
 }
 
 const records = ref<HistoryRecord[]>([])
@@ -26,10 +38,14 @@ onMounted(async () => {
     return
   }
   try {
-    const resp = await fetch('http://localhost:8000/api/history', { credentials: 'include' })
+    const resp = await fetch('/api/history', { credentials: 'include' })
     if (resp.ok) {
       const data = await resp.json()
-      records.value = data.records
+      records.value = (data.records || []).map((r: any) => {
+        let parsed: ParsedDict | null = null
+        try { parsed = JSON.parse(r.dict_result) } catch {}
+        return { ...r, _parsedDict: parsed } as HistoryRecord
+      })
     }
   } catch {
     // ignore
@@ -55,9 +71,9 @@ function formatTime(iso: string) {
     <div v-if="!loading && !auth.user.logged_in" class="text-center text-gray-400 py-20">
       <p class="mb-4">请先登录</p>
       <div class="flex gap-3 justify-center">
-        <a href="http://localhost:8000/auth/github/login"
+        <a href="/api/auth/github/login"
           class="px-4 py-2 bg-gray-900 text-white rounded hover:bg-gray-700 text-sm">GitHub 登录</a>
-        <a href="http://localhost:8000/auth/gitee/login"
+        <a href="/api/auth/gitee/login"
           class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-500 text-sm">Gitee 登录</a>
       </div>
     </div>
@@ -88,7 +104,23 @@ function formatTime(iso: string) {
           </div>
           <div v-if="r.dict_result" class="p-3 bg-emerald-50 rounded-lg">
             <h4 class="text-xs font-bold text-emerald-700 mb-1">📖 汉典释义</h4>
-            <p class="text-sm whitespace-pre-wrap">{{ r.dict_result }}</p>
+            <template v-if="r._parsedDict">
+              <div v-if="r._parsedDict.basic_explanation?.length" class="mb-2">
+                <h5 class="text-xs font-semibold text-emerald-800 mb-1">基本解释</h5>
+                <div v-for="(item, i) in r._parsedDict.basic_explanation" :key="'b'+i" class="mb-1 last:mb-0">
+                  <p class="text-sm">{{ item.brief }}</p>
+                  <p v-if="item.examples?.length" class="text-xs text-emerald-600">{{ item.examples.join('、') }}</p>
+                </div>
+              </div>
+              <div v-if="r._parsedDict.detailed_explanation?.length">
+                <h5 class="text-xs font-semibold text-emerald-800 mb-1">详细解释</h5>
+                <div v-for="(item, i) in r._parsedDict.detailed_explanation" :key="'d'+i" class="mb-1 last:mb-0">
+                  <p class="text-sm">{{ item.brief }}<span v-if="item.english" class="text-xs text-gray-500 ml-1">[{{ item.english }}]</span></p>
+                  <p v-if="item.examples?.length" class="text-xs text-emerald-600">{{ item.examples.join('、') }}</p>
+                </div>
+              </div>
+            </template>
+            <p v-else class="text-sm whitespace-pre-wrap">{{ r.dict_result }}</p>
           </div>
           <div v-if="r.deep_think" class="p-3 bg-purple-50 rounded-lg">
             <h4 class="text-xs font-bold text-purple-700 mb-1">🧠 深度分析</h4>

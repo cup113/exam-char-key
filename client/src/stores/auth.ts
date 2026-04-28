@@ -7,7 +7,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function fetchUser() {
     try {
-      const resp = await fetch('http://localhost:8000/auth/me', { credentials: 'include' })
+      const resp = await fetch('/api/auth/me')
       user.value = await resp.json()
     } catch {
       user.value = { logged_in: false }
@@ -15,7 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
-    await fetch('http://localhost:8000/auth/logout', { method: 'POST', credentials: 'include' })
+    await fetch('/api/auth/logout', { method: 'POST' })
     user.value = { logged_in: false }
     location.reload()
   }

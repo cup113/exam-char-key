@@ -53,6 +53,27 @@ const textSegments = computed<TextSegment[]>(() => {
   return segments
 })
 
+interface DictEntry {
+  brief: string
+  english?: string
+  examples?: string[]
+}
+
+interface ParsedDict {
+  basic_explanation?: DictEntry[]
+  detailed_explanation?: DictEntry[]
+}
+
+const parsedDict = computed<ParsedDict | null>(() => {
+  const raw = wordsStore.activeWord?.dictResult
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+})
+
 const getContextAround = (offset: number, wordLen: number, windowSize = 80): string => {
   const start = Math.max(0, offset - windowSize)
   const end = Math.min(editableText.value.length, offset + wordLen + windowSize)
@@ -108,8 +129,8 @@ const handleMouseUp = (e: MouseEvent) => {
   selection.word = text
   selection.offset = offset
   selection.context = getContextAround(offset, text.length)
-  selection.x = e.pageX
-  selection.y = e.pageY - 50
+  selection.x = e.clientX
+  selection.y = e.clientY - 50
   selection.showTooltip = true
 }
 
@@ -120,7 +141,7 @@ const startQuery = (mode: 'quick' | 'deep') => {
 
   wordsStore.updateWord(wordId, { status: 'loading', statusText: '正在连接...' })
 
-  const url = new URL('http://localhost:8000/api/query')
+  const url = new URL(location.origin + '/api/query')
   url.searchParams.set('word', selection.word)
   url.searchParams.set('context', selection.context)
   url.searchParams.set('mode', mode)
@@ -227,7 +248,7 @@ const saveToHistory = async () => {
   const answer = savedAnswer.value.trim() || w.quickAnswer
 
   try {
-    const resp = await fetch('http://localhost:8000/api/history', {
+    const resp = await fetch('/api/history', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -309,6 +330,7 @@ const saveToHistory = async () => {
     <aside id="query-panel"
       class="fixed right-0 top-12 bottom-0 w-105 bg-white shadow-2xl border-l border-gray-200 flex flex-col transition-transform duration-300 z-30"
       :class="showPanel ? 'translate-x-0' : 'translate-x-full'">
+      <!--TODO Resize-->
       <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
         <div>
           <h2 class="text-lg font-bold">「{{ wordsStore.activeWord?.word }}」</h2>
@@ -341,7 +363,30 @@ const saveToHistory = async () => {
 
         <div v-if="wordsStore.activeWord?.dictResult" class="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
           <h3 class="text-xs font-bold text-emerald-700 mb-2 uppercase tracking-wide">📖 汉典释义</h3>
-          <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ wordsStore.activeWord.dictResult }}</p>
+          <template v-if="parsedDict">
+            <div v-if="parsedDict.basic_explanation?.length" class="mb-3">
+              <h4 class="text-xs font-semibold text-emerald-800 mb-1.5">基本解释</h4>
+              <div v-for="(item, i) in parsedDict.basic_explanation" :key="'b'+i" class="mb-1.5 last:mb-0">
+                <p class="text-sm">{{ item.brief }}</p>
+                <p v-if="item.examples?.length" class="text-xs text-emerald-600 mt-0.5">
+                  {{ item.examples.join('、') }}
+                </p>
+              </div>
+            </div>
+            <div v-if="parsedDict.detailed_explanation?.length">
+              <h4 class="text-xs font-semibold text-emerald-800 mb-1.5">详细解释</h4>
+              <div v-for="(item, i) in parsedDict.detailed_explanation" :key="'d'+i" class="mb-1.5 last:mb-0">
+                <p class="text-sm">
+                  {{ item.brief }}
+                  <span v-if="item.english" class="text-xs text-gray-500 ml-1">[{{ item.english }}]</span>
+                </p>
+                <p v-if="item.examples?.length" class="text-xs text-emerald-600 mt-0.5">
+                  {{ item.examples.join('、') }}
+                </p>
+              </div>
+            </div>
+          </template>
+          <p v-else class="text-sm leading-relaxed whitespace-pre-wrap">{{ wordsStore.activeWord.dictResult }}</p>
         </div>
 
         <div v-if="wordsStore.activeWord?.deepThink" class="p-4 bg-purple-50 rounded-xl border border-purple-100">

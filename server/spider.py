@@ -42,7 +42,7 @@ async def structure_dict_data(word: str, raw_text: str) -> str:
                     "  \"basic_explanation\": [{\"brief\": string, \"examples\": string[]}],\n"
                     "  \"detailed_explanation\": [{\"brief\": string, \"english\": string, \"examples\": string[]}]\n"
                     "}\n"
-                    "“基本解释”放到 `basic_explanation` 中，“详细解释”和“词语解释”放到 `detailed_explanation`中。若无，直接置空对应项。请直接输出JSON，不要其他文字。"
+                    "“基本解释”放到 `basic_explanation` 中，“详细解释”和“词语解释”放到 `detailed_explanation`中。若无，直接置空对应项。请直接输出JSON，不要其他文字。" # TODO few shots
                 ),
             },
             {"role": "user", "content": f"词语：{word}\n原始文本：{raw_text}"},

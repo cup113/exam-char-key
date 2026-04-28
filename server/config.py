@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     MODEL_QUICK_ANSWER: str = "gpt-3.5-turbo"
     MODEL_DEEP_THINK: str = "gpt-4o"
 
+    JWT_SECRET: str = ""
+    DB_PATH: str = "../db/data.db"
+
     QUOTA_USER_DAILY: int = 50
     QUOTA_GUEST_DAILY: int = 10
 

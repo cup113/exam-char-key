@@ -22,9 +22,9 @@ onMounted(() => auth.fetchUser())
       </div>
       <div class="flex items-center gap-4 text-sm">
         <span v-if="auth.user.logged_in" class="text-gray-500">{{ auth.user.user_id }}</span>
-        <a v-if="!auth.user.logged_in" href="http://localhost:8000/auth/github/login"
+        <a v-if="!auth.user.logged_in" href="/api/auth/github/login"
           class="px-3 py-1 bg-gray-900 text-white rounded hover:bg-gray-700">GitHub 登录</a>
-        <a v-if="!auth.user.logged_in" href="http://localhost:8000/auth/gitee/login"
+        <a v-if="!auth.user.logged_in" href="/api/auth/gitee/login"
           class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-500">Gitee 登录</a>
         <button v-if="auth.user.logged_in" @click="auth.logout" class="text-gray-400 hover:text-red-500">退出</button>
       </div>
