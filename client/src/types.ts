@@ -24,8 +24,14 @@ export interface SSEPayload {
   error?: string
 }
 
+import type { TrackedWord } from '@/stores/words'
+
 export interface UserInfo {
   logged_in: boolean
   user_id?: string
   provider?: string
 }
+
+export type TextSegment =
+  | { type: 'text'; content: string }
+  | { type: 'word'; word: TrackedWord }

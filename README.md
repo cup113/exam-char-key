@@ -125,8 +125,6 @@ The application uses Alibaba Cloud's DashScope API (Qwen models). Configure your
 
 - **Base URL**: `https://dashscope.aliyuncs.com/compatible-mode/v1`
 - **Models Available**:
-  - `qwen-plus`: General purpose model
-  - `qwen-turbo`: Fast response model
   - `qwen3-8b-ft-202508031744-1c46`: Specialized ancient Chinese model in flash responding
   - `qwen3-8b-ft-202508041131-e7d8`: Specialized ancient Chinese model in thinking responding
 
@@ -144,53 +142,7 @@ The application uses Alibaba Cloud's DashScope API (Qwen models). Configure your
 
 ### Project Structure
 
-```text
-exam-char-key/
-├── client/                 # Vue.js frontend
-│   ├── src/
-│   │   ├── components/     # Vue components
-│   │   ├── views/          # Page views
-│   │   ├── stores/         # Pinia stores
-│   │   └── router/         # Vue Router configuration
-├── server/                 # FastAPI backend
-│   ├── main.py            # API endpoints
-│   ├── requirements.txt   # Python dependencies
-│   └── textbook.json     # Educational content
-├── train/                 # ML training scripts
-│   ├── ancient_classifier.py
-│   └── dataset_generator.py
-└── scripts/               # Utility scripts
-```
-
-### Development Scripts
-
-#### Frontend Development
-
-```bash
-cd client
-pnpm run dev     # Start development server
-pnpm run build   # Build for production
-pnpm run preview # Preview production build
-```
-
-#### Backend Development
-
-```bash
-uvicorn server.main:app --host 0.0.0.0 --port 4122 --reload
-```
-
-#### Run Both (Development)
-
-```bash
-python run_dev.py
-```
-
-### API Endpoints
-
-- `GET /` - Serve frontend application
-- `POST /api/flash` - Flash AI response
-- `POST /api/query/thinking` - Deep Thinking AI response & ZDIC lookup
-- `GET /api/zdic` - Direct ZDIC dictionary lookups
+TODO change
 
 ## Training & AI Models
 

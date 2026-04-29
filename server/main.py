@@ -39,6 +39,7 @@ def startup():
 
 
 def get_identifier_and_limit(request: Request):
+    #TODO quota system
     token = request.cookies.get("auth_token")
     if token:
         try:

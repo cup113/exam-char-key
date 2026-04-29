@@ -13,7 +13,7 @@ onMounted(() => auth.fetchUser())
     <header
       class="fixed top-0 left-0 right-0 h-12 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-40">
       <div class="flex items-center gap-6">
-        <a href="/" class="font-bold text-lg">📖 划词查询</a>
+        <a href="/" class="font-bold text-lg">Exam Char Key - 文言释义</a>
         <nav class="flex gap-4 text-sm">
           <a href="/" class="text-gray-500 hover:text-gray-800">阅读</a>
           <a href="/history" class="text-gray-500 hover:text-gray-800">历史记录</a>
