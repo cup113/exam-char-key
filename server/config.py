@@ -22,8 +22,8 @@ class Settings(BaseSettings):
     QUOTA_USER_DAILY: int = 50
     QUOTA_GUEST_DAILY: int = 10
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
         if not self.LLM_API_KEY:
             raise ValueError("API_KEY must be set in .env")
 

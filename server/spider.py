@@ -1,10 +1,11 @@
 import httpx
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup  # pyright: ignore[reportMissingTypeStubs]
 from openai import AsyncOpenAI
 from config import settings
 from db_helper import get_dict_cache, set_dict_cache
 
 client = AsyncOpenAI(api_key=settings.LLM_API_KEY, base_url=settings.LLM_BASE_URL)
+
 
 async def scrape_zdic(word: str) -> str:
     """爬取汉典页面，提取文言文字词释义"""
@@ -19,10 +20,10 @@ async def scrape_zdic(word: str) -> str:
     soup = BeautifulSoup(resp.text, "html.parser")
 
     # 提取主要内容区域
-    sections = []
+    sections: list[str] = []
     for selector in [".content.definitions.jnr", "#xxjs", ".nr-box.nr-box-shiyi.jbjs"]:
-        for el in soup.select(selector):
-            sections.append(el.get_text(strip=True))
+        for el in soup.select(selector):  # pyright: ignore
+            sections.append(el.get_text(strip=True))  # type: ignore
 
     return "\n".join(sections) if sections else f"未找到「{word}」的释义"
 
@@ -39,16 +40,16 @@ async def structure_dict_data(word: str, raw_text: str) -> str:
                     "请将用户提供的汉典原始文本整理为结构化JSON格式。"
                     "输出格式（必须为有效JSON）：\n"
                     "{\n"
-                    "  \"basic_explanation\": [{\"brief\": string, \"examples\": string[]}],\n"
-                    "  \"detailed_explanation\": [{\"brief\": string, \"english\": string, \"examples\": string[]}]\n"
+                    '  "basic_explanation": [{"brief": string, "examples": string[]}],\n'
+                    '  "detailed_explanation": [{"brief": string, "english": string, "examples": string[]}]\n'
                     "}\n"
-                    "“基本解释”放到 `basic_explanation` 中，“详细解释”和“词语解释”放到 `detailed_explanation`中。若无，直接置空对应项。请直接输出JSON，不要其他文字。" # TODO few shots
+                    "“基本解释”放到 `basic_explanation` 中，“详细解释”和“词语解释”放到 `detailed_explanation`中。若无，直接置空对应项。请直接输出JSON，不要其他文字。"  # TODO few shots
                 ),
             },
             {"role": "user", "content": f"词语：{word}\n原始文本：{raw_text}"},
         ],
-        response_format={ "type": "json_object" },
-        reasoning_effort="low"
+        response_format={"type": "json_object"},
+        reasoning_effort="low",
     )
     return response.choices[0].message.content or "结构化失败"
 

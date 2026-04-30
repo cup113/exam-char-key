@@ -4,6 +4,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from openai import AsyncOpenAI
 from time import time
+from contextlib import asynccontextmanager
 
 from config import settings
 from db_helper import (
@@ -17,7 +18,14 @@ from db_helper import (
 from spider import get_dict_entry
 from auth import router as auth_router, callback_router, decode_jwt
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,13 +41,8 @@ app.include_router(callback_router, prefix="/api")
 client = AsyncOpenAI(api_key=settings.LLM_API_KEY, base_url=settings.LLM_BASE_URL)
 
 
-@app.on_event("startup")
-def startup():
-    init_db()
-
-
 def get_identifier_and_limit(request: Request):
-    #TODO quota system
+    # TODO quota system
     token = request.cookies.get("auth_token")
     if token:
         try:
@@ -48,7 +51,11 @@ def get_identifier_and_limit(request: Request):
         except Exception:
             pass
     forwarded = request.headers.get("X-Forwarded-For")
-    client_ip = forwarded.split(",")[0].strip() if forwarded else request.client.host
+    client_ip = (
+        forwarded.split(",")[0].strip()
+        if forwarded
+        else (request.client.host if request.client else "127.0.0.2")
+    )  # TODO check
     return f"ip:{client_ip}", settings.QUOTA_GUEST_DAILY, None
 
 
@@ -71,7 +78,7 @@ async def query_pipeline(word: str, context: str, mode: str):
             messages=[
                 {
                     "role": "system",
-                    "content": "你是一个高中文言文学习助手。根据语境简要解释词语含义，直接给出答案，不要废话。",
+                    "content": "你是一个高中文言文学习助手。根据语境简要解释词语含义，直接给出答案，不要废话。",  # TODO check
                 },
                 {
                     "role": "user",
@@ -102,7 +109,7 @@ async def query_pipeline(word: str, context: str, mode: str):
                             "你是一个深度语言分析助手。"
                             "根据提供的语境、词语和字典释义，给出：\n"
                             "1. 该词在语境中的精确含义\n"
-                            "2. 整段语境的翻译"
+                            "2. 整段语境的翻译"  # TODO check
                         ),
                     },
                     {
@@ -116,7 +123,7 @@ async def query_pipeline(word: str, context: str, mode: str):
                     },
                 ],
                 stream=True,
-                reasoning_effort="low"
+                reasoning_effort="low",
             )
             async for chunk in deep_stream:
                 content = chunk.choices[0].delta.content
@@ -140,7 +147,7 @@ async def query_endpoint(
 
 @app.get("/api/quota")
 async def get_quota(request: Request):
-    identifier, limit, user_id = get_identifier_and_limit(request)
+    identifier, limit, _ = get_identifier_and_limit(request)
     used = get_quota_usage(identifier)
     return {"used": used, "limit": limit, "remaining": limit - used}
 
@@ -155,7 +162,7 @@ async def list_history(request: Request, limit: int = 50, offset: int = 0):
 
 
 @app.post("/api/history")
-async def save_history(request: Request):
+async def save_history(request: Request) -> dict[str, int | str]:
     _, _, user_id = get_identifier_and_limit(request)
     if not user_id:
         raise HTTPException(401, "请先登录")

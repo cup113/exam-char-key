@@ -172,7 +172,7 @@ const saveToHistory = async () => {
 <template>
   <div class="flex" @mouseup="handleMouseUp">
     <main class="flex-1 min-w-0 p-10 transition-all duration-300"
-      :class="showPanel ? 'lg:mr-[26.25rem]' : ''">
+      :class="showPanel ? 'lg:mr-108' : ''">
       <div class="max-w-3xl mx-auto">
         <TextContent
           :editableText="editableText"

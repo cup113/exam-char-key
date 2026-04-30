@@ -42,7 +42,7 @@ const parsedDict = computed<ParsedDict | null>(() => {
   <aside id="query-panel"
     class="flex flex-col bg-white border-l border-gray-200 shadow-2xl"
     :class="[
-      'lg:fixed lg:right-0 lg:top-12 lg:bottom-0 lg:w-[26.25rem] lg:transition-transform lg:duration-300 lg:z-30',
+      'lg:fixed lg:right-0 lg:top-12 lg:bottom-0 lg:w-108 lg:transition-transform lg:duration-300 lg:z-30',
       show ? 'lg:translate-x-0' : 'lg:translate-x-full',
       'max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:max-h-[80vh] max-lg:rounded-t-2xl max-lg:shadow-[0_-8px_30px_rgba(0,0,0,0.15)] max-lg:z-30',
       show ? 'max-lg:translate-y-0' : 'max-lg:translate-y-full',
@@ -79,6 +79,8 @@ const parsedDict = computed<ParsedDict | null>(() => {
       </div>
 
       <div v-if="activeWord?.dictResult" class="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+        <!-- TODO merge with HistoryView -->
+        <!-- TODO aesthetic layout -->
         <h3 class="text-xs font-bold text-emerald-700 mb-2 uppercase tracking-wide">📖 汉典释义</h3>
         <template v-if="parsedDict">
           <div v-if="parsedDict.basic_explanation?.length" class="mb-3">

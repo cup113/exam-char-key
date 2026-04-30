@@ -4,6 +4,7 @@ import httpx
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
 from config import settings
+from typing import Any
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 callback_router = APIRouter()
@@ -14,7 +15,8 @@ JWT_EXPIRE_SECONDS = 86400 * 7  # 7 天
 
 
 def create_jwt(user_id: str, provider: str) -> str:
-    payload = {
+    assert JWT_SECRET is not None
+    payload: dict[str, Any] = {
         "sub": user_id,
         "provider": provider,
         "exp": int(time.time()) + JWT_EXPIRE_SECONDS,
@@ -22,7 +24,8 @@ def create_jwt(user_id: str, provider: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def decode_jwt(token: str) -> dict:
+def decode_jwt(token: str) -> dict[str, Any]:
+    assert JWT_SECRET is not None
     try:
         return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
     except jwt.ExpiredSignatureError:
@@ -31,13 +34,12 @@ def decode_jwt(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Token 无效")
 
 
-# ---------- GitHub OAuth ----------
 @router.get("/github/login")
 async def github_login():
     return RedirectResponse(
         f"https://github.com/login/oauth/authorize"
         f"?client_id={settings.GITHUB_CLIENT_ID}"
-        f"&redirect_uri=http://localhost:5173/api/oauth2-redirect"
+        f"&redirect_uri=http://localhost:5173/api/oauth2-redirect"  # TODO redirect url
         f"&state=github&scope=read:user"
     )
 
@@ -52,7 +54,6 @@ async def gitee_login():
     )
 
 
-# ---------- OAuth2 统一回调 ----------
 @callback_router.get("/oauth2-redirect")
 async def oauth2_redirect(code: str, state: str = "github"):
     async with httpx.AsyncClient() as http:
@@ -102,7 +103,9 @@ async def oauth2_redirect(code: str, state: str = "github"):
 
     token = create_jwt(user_id, provider)
     response = RedirectResponse(url="http://localhost:5173/")
-    response.set_cookie("auth_token", token, httponly=True, max_age=JWT_EXPIRE_SECONDS, samesite="lax")
+    response.set_cookie(
+        "auth_token", token, httponly=True, max_age=JWT_EXPIRE_SECONDS, samesite="lax"
+    )
     return response
 
 
@@ -113,7 +116,9 @@ async def get_me(request: Request):
     if not token:
         return JSONResponse({"logged_in": False})
     payload = decode_jwt(token)
-    return JSONResponse({"logged_in": True, "user_id": payload["sub"], "provider": payload["provider"]})
+    return JSONResponse(
+        {"logged_in": True, "user_id": payload["sub"], "provider": payload["provider"]}
+    )
 
 
 @router.post("/logout")
