@@ -8,6 +8,12 @@ import TextContent from '@/components/TextContent.vue'
 import SelectionTooltip from '@/components/SelectionTooltip.vue'
 import QueryPanel from '@/components/QueryPanel.vue'
 
+interface QuotaInfo {
+  used: number
+  limit: number
+  remaining: number
+}
+
 const wordsStore = useWordsStore()
 const auth = useAuthStore()
 
@@ -22,6 +28,15 @@ const selection = reactive({
   showTooltip: false,
   x: 0,
   y: 0,
+})
+
+const quota = ref<QuotaInfo | null>(null)
+const quotaPromptDismissed = ref(false)
+const showQuotaPrompt = computed(() => {
+  if (quotaPromptDismissed.value) return false
+  if (auth.user.logged_in) return false
+  if (!quota.value) return false
+  return quota.value.remaining <= 15
 })
 
 const showPanel = ref(false)
@@ -53,7 +68,7 @@ const textSegments = computed<TextSegment[]>(() => {
   return segments
 })
 
-const getContextAround = (offset: number, wordLen: number, windowSize = 80): string => {
+const getContextAround = (offset: number, wordLen: number, windowSize = 30): string => {
   const start = Math.max(0, offset - windowSize)
   const end = Math.min(editableText.value.length, offset + wordLen + windowSize)
   let result = editableText.value.slice(start, end)
@@ -62,8 +77,14 @@ const getContextAround = (offset: number, wordLen: number, windowSize = 80): str
   return result
 }
 
-onMounted(() => {
-  auth.fetchUser()
+onMounted(async () => {
+  await auth.fetchUser()
+  try {
+    const resp = await fetch('/api/quota', { credentials: 'include' })
+    if (resp.ok) {
+      quota.value = await resp.json()
+    }
+  } catch { /* ignore */ }
 })
 
 onUnmounted(() => {
@@ -117,6 +138,10 @@ const startQuery = (mode: 'quick' | 'deep') => {
 
 const wordClick = (id: string) => {
   wordsStore.activeWordId = id
+}
+
+const dismissQuotaPrompt = () => {
+  quotaPromptDismissed.value = true
 }
 
 const closePanel = () => {
@@ -174,6 +199,21 @@ const saveToHistory = async () => {
     <main class="flex-1 min-w-0 p-10 transition-all duration-300"
       :class="showPanel ? 'lg:mr-108' : ''">
       <div class="max-w-3xl mx-auto">
+        <div v-if="showQuotaPrompt"
+          class="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm flex items-center justify-between gap-4">
+          <span>
+            今日免费查询剩余 <strong>{{ quota!.remaining }}</strong> 次，
+            注册获取更多免费次数。
+          </span>
+          <span class="flex items-center gap-2 shrink-0">
+            <a href="/api/auth/github/login"
+              class="px-3 py-1.5 bg-gray-900 text-white rounded hover:bg-gray-700 text-xs whitespace-nowrap">GitHub 登录</a>
+            <a href="/api/auth/gitee/login"
+              class="px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-500 text-xs whitespace-nowrap">Gitee 登录</a>
+            <button @click="dismissQuotaPrompt"
+              class="text-gray-400 hover:text-gray-600 text-lg leading-none ml-1">&times;</button>
+          </span>
+        </div>
         <TextContent
           :editableText="editableText"
           :editing="editing"

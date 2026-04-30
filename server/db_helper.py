@@ -5,6 +5,7 @@ from config import settings
 
 DB_PATH = settings.DB_PATH
 
+# TODO: textbook, model test, user query table
 
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
@@ -54,17 +55,17 @@ def init_db():
         conn.execute("PRAGMA journal_mode=WAL;")
 
 
-def check_and_decrease_quota(identifier: str, limit: int) -> bool:
+def check_and_decrease_quota(identifier: str, limit: int, count: int = 1) -> bool:
     today = date.today().isoformat()
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute(
             """INSERT INTO daily_usage (identifier, date, used_count)
-               VALUES (?, ?, 1)
+               VALUES (?, ?, ?)
                ON CONFLICT(identifier, date) DO UPDATE
-               SET used_count = used_count + 1
-               WHERE used_count < ?""",
-            (identifier, today, limit),
+               SET used_count = used_count + ?
+               WHERE used_count + ? <= ?""",
+            (identifier, today, count, count, count, limit),
         )
         conn.commit()
         return cursor.rowcount > 0
@@ -115,6 +116,7 @@ def save_query_history(
             (user_id, word, context, mode, quick_answer, dict_result, deep_think),
         )
         conn.commit()
+        assert cursor.lastrowid is not None
         return cursor.lastrowid
 
 

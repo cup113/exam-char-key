@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import DictDisplay from '@/components/DictDisplay.vue'
 import type { TrackedWord } from '@/stores/words'
 
 const props = defineProps<{
@@ -15,27 +15,6 @@ const emit = defineEmits<{
   'update:savedAnswer': [value: string]
   save: []
 }>()
-
-interface DictEntry {
-  brief: string
-  english?: string
-  examples?: string[]
-}
-
-interface ParsedDict {
-  basic_explanation?: DictEntry[]
-  detailed_explanation?: DictEntry[]
-}
-
-const parsedDict = computed<ParsedDict | null>(() => {
-  const raw = props.activeWord?.dictResult
-  if (!raw) return null
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return null
-  }
-})
 </script>
 
 <template>
@@ -79,33 +58,8 @@ const parsedDict = computed<ParsedDict | null>(() => {
       </div>
 
       <div v-if="activeWord?.dictResult" class="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-        <!-- TODO merge with HistoryView -->
-        <!-- TODO aesthetic layout -->
         <h3 class="text-xs font-bold text-emerald-700 mb-2 uppercase tracking-wide">📖 汉典释义</h3>
-        <template v-if="parsedDict">
-          <div v-if="parsedDict.basic_explanation?.length" class="mb-3">
-            <h4 class="text-xs font-semibold text-emerald-800 mb-1.5">基本解释</h4>
-            <div v-for="(item, i) in parsedDict.basic_explanation" :key="'b'+i" class="mb-1.5 last:mb-0">
-              <p class="text-sm">{{ item.brief }}</p>
-              <p v-if="item.examples?.length" class="text-xs text-emerald-600 mt-0.5">
-                {{ item.examples.join('、') }}
-              </p>
-            </div>
-          </div>
-          <div v-if="parsedDict.detailed_explanation?.length">
-            <h4 class="text-xs font-semibold text-emerald-800 mb-1.5">详细解释</h4>
-            <div v-for="(item, i) in parsedDict.detailed_explanation" :key="'d'+i" class="mb-1.5 last:mb-0">
-              <p class="text-sm">
-                {{ item.brief }}
-                <span v-if="item.english" class="text-xs text-gray-500 ml-1">[{{ item.english }}]</span>
-              </p>
-              <p v-if="item.examples?.length" class="text-xs text-emerald-600 mt-0.5">
-                {{ item.examples.join('、') }}
-              </p>
-            </div>
-          </div>
-        </template>
-        <p v-else class="text-sm leading-relaxed whitespace-pre-wrap">{{ activeWord.dictResult }}</p>
+        <DictDisplay :dict-result="activeWord.dictResult" />
       </div>
 
       <div v-if="activeWord?.deepThink" class="p-4 bg-purple-50 rounded-xl border border-purple-100">

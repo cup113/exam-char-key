@@ -62,7 +62,9 @@ def get_identifier_and_limit(request: Request):
 # --- 依赖注入：限流 ---
 def verify_quota(request: Request):
     identifier, limit, _ = get_identifier_and_limit(request)
-    if not check_and_decrease_quota(identifier, limit):
+    mode = request.query_params.get("mode", "quick")
+    count = 3 if mode == "deep" else 1
+    if not check_and_decrease_quota(identifier, limit, count):
         raise HTTPException(status_code=429, detail="今日额度已耗尽")
     log_api_usage(identifier, request.url.path)
     return identifier

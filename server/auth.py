@@ -39,7 +39,7 @@ async def github_login():
     return RedirectResponse(
         f"https://github.com/login/oauth/authorize"
         f"?client_id={settings.GITHUB_CLIENT_ID}"
-        f"&redirect_uri=http://localhost:5173/api/oauth2-redirect"  # TODO redirect url
+        f"&redirect_uri={settings.APP_BASE_URL}/api/oauth2-redirect"
         f"&state=github&scope=read:user"
     )
 
@@ -49,7 +49,7 @@ async def gitee_login():
     return RedirectResponse(
         f"https://gitee.com/oauth/authorize"
         f"?client_id={settings.GITEE_CLIENT_ID}"
-        f"&redirect_uri=http://localhost:5173/api/oauth2-redirect"
+        f"&redirect_uri={settings.APP_BASE_URL}/api/oauth2-redirect"
         f"&state=gitee&response_type=code"
     )
 
@@ -85,7 +85,7 @@ async def oauth2_redirect(code: str, state: str = "github"):
                     "code": code,
                     "client_id": settings.GITEE_CLIENT_ID,
                     "client_secret": settings.GITEE_CLIENT_SECRET,
-                    "redirect_uri": "http://localhost:5173/api/oauth2-redirect",
+                    "redirect_uri": f"{settings.APP_BASE_URL}/api/oauth2-redirect",
                 },
             )
             access_token = token_resp.json().get("access_token")
@@ -102,7 +102,7 @@ async def oauth2_redirect(code: str, state: str = "github"):
             raise HTTPException(400, "不支持的 OAuth 提供商")
 
     token = create_jwt(user_id, provider)
-    response = RedirectResponse(url="http://localhost:5173/")
+    response = RedirectResponse(url=f"{settings.APP_BASE_URL}/")
     response.set_cookie(
         "auth_token", token, httponly=True, max_age=JWT_EXPIRE_SECONDS, samesite="lax"
     )

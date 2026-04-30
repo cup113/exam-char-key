@@ -40,7 +40,7 @@ const getTrackedWordClass = (w: TrackedWord) => {
 
 <template>
   <div class="flex items-center justify-between mb-4">
-    <h1 class="text-3xl font-bold">论语·为政</h1>
+    <h1 class="text-3xl font-bold">古文文本</h1>
     <div class="flex gap-2 text-sm">
       <button v-if="!editing && wordsStore.trackedWords.length > 0" @click="wordsStore.clearAll"
         class="text-gray-400 hover:text-red-500">清空追踪</button>
