@@ -16,12 +16,35 @@ export interface QueryState {
   loading: boolean
 }
 
+export interface CorpusEntry {
+  id: number
+  type: string
+  context: string
+  word: string
+  answer: string
+}
+
 export interface SSEPayload {
-  step?: 'quick_answer' | 'dictionary' | 'deep_think' | 'done'
+  step?: 'quick_answer' | 'corpus' | 'dictionary' | 'deep_think' | 'done'
   status?: string
   chunk?: string
   result?: string
+  entries?: CorpusEntry[]
   error?: string
+}
+
+export interface ECHistoryEntry {
+  id: string
+  level: string
+  front: string
+  back: string
+  additions: string[]
+  createdAt: string
+}
+
+export interface ExportResponse {
+  docx_filename?: string
+  apkg_filename?: string
 }
 
 import type { TrackedWord } from '@/stores/words'

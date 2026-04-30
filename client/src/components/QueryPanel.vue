@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import DictDisplay from '@/components/DictDisplay.vue'
+import { useWordsStore } from '@/stores/words'
 import type { TrackedWord } from '@/stores/words'
+
+const wordsStore = useWordsStore()
 
 const props = defineProps<{
   show: boolean
@@ -15,6 +18,18 @@ const emit = defineEmits<{
   'update:savedAnswer': [value: string]
   save: []
 }>()
+
+const handleCancel = () => {
+  if (props.activeWord) {
+    wordsStore.removeWord(props.activeWord.id)
+  }
+}
+
+const handleRetry = () => {
+  if (props.activeWord) {
+    wordsStore.retryWord(props.activeWord.id)
+  }
+}
 </script>
 
 <template>
@@ -49,12 +64,33 @@ const emit = defineEmits<{
         'text-red-600': activeWord.status === 'error',
         'text-gray-600': activeWord.status === 'pending'
       }">{{ activeWord.statusText }}</span>
+      <button v-if="activeWord.status === 'loading' || activeWord.status === 'pending'"
+        @click="handleCancel"
+        class="ml-auto px-2 py-1 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors">
+        取消
+      </button>
+      <button v-if="activeWord.status === 'error'"
+        @click="handleRetry"
+        class="ml-auto px-2 py-1 text-xs text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors">
+        重试
+      </button>
     </div>
 
     <div class="flex-1 overflow-y-auto p-5 space-y-4">
       <div v-if="activeWord?.quickAnswer" class="p-4 bg-blue-50 rounded-xl border border-blue-100">
         <h3 class="text-xs font-bold text-blue-700 mb-2 uppercase tracking-wide">⚡ 快速回答</h3>
         <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ activeWord.quickAnswer }}</p>
+      </div>
+
+      <div v-if="activeWord?.corpusEntries?.length" class="p-4 bg-amber-50 rounded-xl border border-amber-100">
+        <h3 class="text-xs font-bold text-amber-700 mb-2 uppercase tracking-wide">📚 语料库参考</h3>
+        <div v-for="entry in activeWord.corpusEntries" :key="entry.id"
+          class="mb-3 pb-3 border-b border-amber-100 last:border-b-0 last:mb-0 last:pb-0">
+          <p class="text-xs text-amber-600 mb-1">
+            <span class="font-semibold">语境：</span>「{{ entry.context }}」
+          </p>
+          <p class="text-sm leading-relaxed">{{ entry.answer }}</p>
+        </div>
       </div>
 
       <div v-if="activeWord?.dictResult" class="p-4 bg-emerald-50 rounded-xl border border-emerald-100">

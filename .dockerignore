@@ -1,0 +1,12 @@
+node_modules
+__pycache__
+*.pyc
+.env
+.git
+*.db
+train/
+.vscode/
+.gitignore
+README.md
+run_dev.py
+scripts/

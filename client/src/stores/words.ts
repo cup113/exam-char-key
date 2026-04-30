@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { useStorage } from '@vueuse/core'
+import { useLocalStorage } from '@vueuse/core'
+import type { CorpusEntry } from '@/types'
 
 export interface TrackedWord {
   id: string
@@ -12,12 +13,13 @@ export interface TrackedWord {
   quickAnswer: string
   dictResult: string
   deepThink: string
+  corpusEntries: CorpusEntry[]
   statusText: string
   startTime: number
 }
 
 export const useWordsStore = defineStore('words', () => {
-  const trackedWords = useStorage<TrackedWord[]>('tracked-words', [])
+  const trackedWords = useLocalStorage<TrackedWord[]>('ECK_tracked-words', [])
 
   const activeWordId = ref<string | null>(null)
 
@@ -26,6 +28,28 @@ export const useWordsStore = defineStore('words', () => {
   )
 
   const activeEventSources = new Map<string, EventSource>()
+
+  const editableText = useLocalStorage('ECK_editable-text', `子曰："为政以德，譬如北辰，居其所而众星共之。"
+子曰："诗三百，一言以蔽之，曰：'思无邪'。"
+孟懿子问孝。子曰："无违。"樊迟御，子告之曰："孟孙问孝于我，我对曰'无违'。"樊迟曰："何谓也？"子曰："生，事之以礼；死，葬之以礼，祭之以礼。"`)
+
+  const editing = ref(false)
+  const editText = ref('')
+
+  function startEditing() {
+    editText.value = editableText.value
+    editing.value = true
+  }
+
+  function saveEditing() {
+    editableText.value = editText.value
+    editing.value = false
+    clearAll()
+  }
+
+  function cancelEditing() {
+    editing.value = false
+  }
 
   function addWord(word: string, context: string, mode: 'quick' | 'deep', offset: number) {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -39,6 +63,7 @@ export const useWordsStore = defineStore('words', () => {
       quickAnswer: '',
       dictResult: '',
       deepThink: '',
+      corpusEntries: [],
       statusText: '等待中...',
       startTime: Date.now(),
     })
@@ -80,11 +105,7 @@ export const useWordsStore = defineStore('words', () => {
     activeEventSources.clear()
   }
 
-  function queryWord(word: string, context: string, mode: 'quick' | 'deep', offset: number): string {
-    const wordId = addWord(word, context, mode, offset)
-    activeWordId.value = wordId
-    updateWord(wordId, { status: 'loading', statusText: '正在连接...' })
-
+  function connectSSE(wordId: string, word: string, context: string, mode: 'quick' | 'deep') {
     const url = new URL(location.origin + '/api/query')
     url.searchParams.set('word', word)
     url.searchParams.set('context', context)
@@ -109,6 +130,12 @@ export const useWordsStore = defineStore('words', () => {
           if (data.chunk) {
             const current = trackedWords.value.find(w => w.id === wordId)
             updateWord(wordId, { quickAnswer: (current?.quickAnswer || '') + data.chunk })
+          }
+          break
+        case 'corpus':
+          if (data.status === 'fetching') updateWord(wordId, { statusText: '正在查询语料库...' })
+          if (data.entries) {
+            updateWord(wordId, { corpusEntries: data.entries })
           }
           break
         case 'dictionary':
@@ -143,19 +170,53 @@ export const useWordsStore = defineStore('words', () => {
       es.close()
       activeEventSources.delete(wordId)
     }
+  }
 
+  function queryWord(word: string, context: string, mode: 'quick' | 'deep', offset: number): string {
+    const wordId = addWord(word, context, mode, offset)
+    activeWordId.value = wordId
+    updateWord(wordId, { status: 'loading', statusText: '正在连接...' })
+    connectSSE(wordId, word, context, mode)
     return wordId
+  }
+
+  function retryWord(id: string) {
+    const word = trackedWords.value.find(w => w.id === id)
+    if (!word) return
+
+    const es = activeEventSources.get(id)
+    if (es) {
+      es.close()
+      activeEventSources.delete(id)
+    }
+
+    word.status = 'loading'
+    word.statusText = '正在连接...'
+    word.quickAnswer = ''
+    word.dictResult = ''
+    word.deepThink = ''
+    word.corpusEntries = []
+    word.startTime = Date.now()
+
+    connectSSE(id, word.word, word.context, word.mode)
   }
 
   return {
     trackedWords,
     activeWordId,
     activeWord,
+    editableText,
+    editing,
+    editText,
     addWord,
     updateWord,
     removeWord,
     clearAll,
     cleanupSSE,
     queryWord,
+    retryWord,
+    startEditing,
+    saveEditing,
+    cancelEditing,
   }
 })

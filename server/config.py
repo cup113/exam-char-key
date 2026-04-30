@@ -21,11 +21,12 @@ class Settings(BaseSettings):
     DB_PATH: str = "../db/data.db"
 
     QUOTA_USER_DAILY: int = 50
-    QUOTA_GUEST_DAILY: int = 10
+    QUOTA_GUEST_DAILY: int = 50  # Total Pool
 
     def __init__(self):
         super().__init__()
         if not self.LLM_API_KEY:
             raise ValueError("API_KEY must be set in .env")
+
 
 settings = Settings()

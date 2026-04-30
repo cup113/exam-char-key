@@ -5,8 +5,6 @@ from config import settings
 
 DB_PATH = settings.DB_PATH
 
-# TODO: textbook, model test, user query table
-
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
@@ -52,6 +50,18 @@ def init_db():
             )
         """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS corpus (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                type TEXT NOT NULL,
+                context TEXT DEFAULT '',
+                word TEXT NOT NULL,
+                answer TEXT DEFAULT ''
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_corpus_word ON corpus(word)")
         conn.execute("PRAGMA journal_mode=WAL;")
 
 
@@ -107,14 +117,23 @@ def save_query_history(
     quick_answer: str = "",
     dict_result: str = "",
     deep_think: str = "",
+    created_at: str | None = None,
 ) -> int:
     with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.execute(
-            """INSERT INTO query_history
-               (user_id, word, context, mode, quick_answer, dict_result, deep_think)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (user_id, word, context, mode, quick_answer, dict_result, deep_think),
-        )
+        if created_at:
+            cursor = conn.execute(
+                """INSERT INTO query_history
+                   (user_id, word, context, mode, quick_answer, dict_result, deep_think, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (user_id, word, context, mode, quick_answer, dict_result, deep_think, created_at),
+            )
+        else:
+            cursor = conn.execute(
+                """INSERT INTO query_history
+                   (user_id, word, context, mode, quick_answer, dict_result, deep_think)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (user_id, word, context, mode, quick_answer, dict_result, deep_think),
+            )
         conn.commit()
         assert cursor.lastrowid is not None
         return cursor.lastrowid
@@ -135,5 +154,36 @@ def get_query_history(user_id: str, limit: int = 50, offset: int = 0):
             """SELECT * FROM query_history WHERE user_id = ?
                ORDER BY created_at DESC LIMIT ? OFFSET ?""",
             (user_id, limit, offset),
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
+
+def get_all_query_history(user_id: str):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.execute(
+            """SELECT * FROM query_history WHERE user_id = ?
+               ORDER BY created_at DESC""",
+            (user_id,),
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
+
+def save_corpus(type_: str, context: str, word: str, answer: str) -> int:
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.execute(
+            "INSERT INTO corpus (type, context, word, answer) VALUES (?, ?, ?, ?)",
+            (type_, context, word, answer),
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+
+def get_corpus_by_word(word: str):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.execute(
+            "SELECT * FROM corpus WHERE word LIKE '%' || ? || '%' ORDER BY id",
+            (word,),
         )
         return [dict(row) for row in cursor.fetchall()]

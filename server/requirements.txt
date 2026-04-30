@@ -1,7 +1,7 @@
-fastapi
-uvicorn[standard]
-openai
-httpx
-beautifulsoup4
-pydantic-settings
-PyJWT
+fastapi==0.136.1
+uvicorn[standard]==0.40.0
+openai==2.32.0
+httpx==0.28.1
+beautifulsoup4==4.12.2
+pydantic-settings==2.13.1
+PyJWT==2.12.1

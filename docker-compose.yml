@@ -1,0 +1,21 @@
+services:
+  app:
+    build: .
+    ports:
+      - "5173:8000"
+    volumes:
+      - app-db:/app/db
+    env_file:
+      - ./server/.env
+    environment:
+      - DB_PATH=/app/db/data.db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; exit(0) if urllib.request.urlopen('http://localhost:8000/health').status==200 else exit(1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  app-db:

@@ -8,18 +8,8 @@ import TextContent from '@/components/TextContent.vue'
 import SelectionTooltip from '@/components/SelectionTooltip.vue'
 import QueryPanel from '@/components/QueryPanel.vue'
 
-interface QuotaInfo {
-  used: number
-  limit: number
-  remaining: number
-}
-
 const wordsStore = useWordsStore()
 const auth = useAuthStore()
-
-const editableText = ref(`子曰："为政以德，譬如北辰，居其所而众星共之。"
-子曰："诗三百，一言以蔽之，曰：'思无邪'。"
-孟懿子问孝。子曰："无违。"樊迟御，子告之曰："孟孙问孝于我，我对曰'无违'。"樊迟曰："何谓也？"子曰："生，事之以礼；死，葬之以礼，祭之以礼。"`)
 
 const selection = reactive({
   word: '',
@@ -30,24 +20,13 @@ const selection = reactive({
   y: 0,
 })
 
-const quota = ref<QuotaInfo | null>(null)
-const quotaPromptDismissed = ref(false)
-const showQuotaPrompt = computed(() => {
-  if (quotaPromptDismissed.value) return false
-  if (auth.user.logged_in) return false
-  if (!quota.value) return false
-  return quota.value.remaining <= 15
-})
-
 const showPanel = ref(false)
-const editing = ref(false)
-const editText = ref('')
 const savedAnswer = ref('')
 const saveSuccess = ref(false)
 
 const textSegments = computed<TextSegment[]>(() => {
-  if (editing.value) return []
-  const text = editableText.value
+  if (wordsStore.editing) return []
+  const text = wordsStore.editableText
   const words = [...wordsStore.trackedWords]
     .filter(w => text.indexOf(w.word, w.offset) === w.offset)
     .sort((a, b) => a.offset - b.offset)
@@ -70,21 +49,16 @@ const textSegments = computed<TextSegment[]>(() => {
 
 const getContextAround = (offset: number, wordLen: number, windowSize = 30): string => {
   const start = Math.max(0, offset - windowSize)
-  const end = Math.min(editableText.value.length, offset + wordLen + windowSize)
-  let result = editableText.value.slice(start, end)
+  const end = Math.min(wordsStore.editableText.length, offset + wordLen + windowSize)
+  let result = wordsStore.editableText.slice(start, end)
   if (start > 0) result = '...' + result
-  if (end < editableText.value.length) result = result + '...'
+  if (end < wordsStore.editableText.length) result = result + '...'
   return result
 }
 
 onMounted(async () => {
   await auth.fetchUser()
-  try {
-    const resp = await fetch('/api/quota', { credentials: 'include' })
-    if (resp.ok) {
-      quota.value = await resp.json()
-    }
-  } catch { /* ignore */ }
+  auth.fetchQuota()
 })
 
 onUnmounted(() => {
@@ -101,7 +75,7 @@ watch(() => wordsStore.activeWordId, (id) => {
 })
 
 const handleMouseUp = (e: MouseEvent) => {
-  if (editing.value) return
+  if (wordsStore.editing) return
   const target = e.target as HTMLElement
   if (target.closest('#query-panel') || target.closest('.tracked-word')) return
 
@@ -117,7 +91,7 @@ const handleMouseUp = (e: MouseEvent) => {
     return
   }
 
-  const offset = editableText.value.indexOf(text)
+  const offset = wordsStore.editableText.indexOf(text)
   if (offset === -1) {
     selection.showTooltip = false
     return
@@ -140,28 +114,9 @@ const wordClick = (id: string) => {
   wordsStore.activeWordId = id
 }
 
-const dismissQuotaPrompt = () => {
-  quotaPromptDismissed.value = true
-}
-
 const closePanel = () => {
   showPanel.value = false
   wordsStore.activeWordId = null
-}
-
-const startEditing = () => {
-  editText.value = editableText.value
-  editing.value = true
-}
-
-const saveEditing = () => {
-  editableText.value = editText.value
-  editing.value = false
-  wordsStore.clearAll()
-}
-
-const cancelEditing = () => {
-  editing.value = false
 }
 
 const saveToHistory = async () => {
@@ -199,10 +154,10 @@ const saveToHistory = async () => {
     <main class="flex-1 min-w-0 p-10 transition-all duration-300"
       :class="showPanel ? 'lg:mr-108' : ''">
       <div class="max-w-3xl mx-auto">
-        <div v-if="showQuotaPrompt"
+        <div v-if="auth.showQuotaPrompt"
           class="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm flex items-center justify-between gap-4">
           <span>
-            今日免费查询剩余 <strong>{{ quota!.remaining }}</strong> 次，
+            今日免费查询剩余 <strong>{{ auth.quota!.remaining }}</strong> 次，
             注册获取更多免费次数。
           </span>
           <span class="flex items-center gap-2 shrink-0">
@@ -210,19 +165,19 @@ const saveToHistory = async () => {
               class="px-3 py-1.5 bg-gray-900 text-white rounded hover:bg-gray-700 text-xs whitespace-nowrap">GitHub 登录</a>
             <a href="/api/auth/gitee/login"
               class="px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-500 text-xs whitespace-nowrap">Gitee 登录</a>
-            <button @click="dismissQuotaPrompt"
+            <button @click="auth.dismissQuotaPrompt"
               class="text-gray-400 hover:text-gray-600 text-lg leading-none ml-1">&times;</button>
           </span>
         </div>
         <TextContent
-          :editableText="editableText"
-          :editing="editing"
-          :editText="editText"
+          :editableText="wordsStore.editableText"
+          :editing="wordsStore.editing"
+          :editText="wordsStore.editText"
           :textSegments="textSegments"
-          @startEditing="startEditing"
-          @saveEditing="saveEditing"
-          @cancelEditing="cancelEditing"
-          @update:editText="editText = $event"
+          @startEditing="wordsStore.startEditing"
+          @saveEditing="wordsStore.saveEditing"
+          @cancelEditing="wordsStore.cancelEditing"
+          @update:editText="wordsStore.editText = $event"
           @wordClick="wordClick" />
       </div>
     </main>

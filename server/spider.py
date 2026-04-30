@@ -3,6 +3,10 @@ from bs4 import BeautifulSoup  # pyright: ignore[reportMissingTypeStubs]
 from openai import AsyncOpenAI
 from config import settings
 from db_helper import get_dict_cache, set_dict_cache
+from log_helper import get_logger
+from prompt import ZDIC_STRUCTURE_PROMPT
+
+logger = get_logger("spider")
 
 client = AsyncOpenAI(api_key=settings.LLM_API_KEY, base_url=settings.LLM_BASE_URL)
 
@@ -13,9 +17,11 @@ async def scrape_zdic(word: str) -> str:
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
+    logger.info("爬取汉典 | word=%s", word)
     async with httpx.AsyncClient(follow_redirects=True, timeout=15) as http:
         resp = await http.get(url, headers=headers)
         resp.raise_for_status()
+    logger.debug("爬取成功 | word=%s | status=%d | size=%d", word, resp.status_code, len(resp.text))
 
     soup = BeautifulSoup(resp.text, "html.parser")
 
@@ -35,18 +41,9 @@ async def structure_dict_data(word: str, raw_text: str) -> str:
         messages=[
             {
                 "role": "system",
-                "content": (
-                    "你是一个文言文学习数据结构化助手。"
-                    "请将用户提供的汉典原始文本整理为结构化JSON格式。"
-                    "输出格式（必须为有效JSON）：\n"
-                    "{\n"
-                    '  "basic_explanation": [{"brief": string, "examples": string[]}],\n'
-                    '  "detailed_explanation": [{"brief": string, "english": string, "examples": string[]}]\n'
-                    "}\n"
-                    "“基本解释”放到 `basic_explanation` 中，“详细解释”和“词语解释”放到 `detailed_explanation`中。若无，直接置空对应项。请直接输出JSON，不要其他文字。"  # TODO few shots
-                ),
+                "content": ZDIC_STRUCTURE_PROMPT,
             },
-            {"role": "user", "content": f"词语：{word}\n原始文本：{raw_text}"},
+            {"role": "user", "content": raw_text},
         ],
         response_format={"type": "json_object"},
         reasoning_effort="low",
@@ -58,10 +55,13 @@ async def get_dict_entry(word: str) -> str:
     """完整流程：查缓存 → 爬取 → 结构化 → 写缓存"""
     cached = get_dict_cache(word)
     if cached:
+        logger.debug("字典缓存命中 | word=%s", word)
         return cached
 
+    logger.info("字典缓存未命中，开始爬取 | word=%s", word)
     raw = await scrape_zdic(word)
-    print(raw)
+    logger.info("爬取原始数据 | word=%s | raw=%s", word, raw)
     structured = await structure_dict_data(word, raw)
     set_dict_cache(word, structured)
+    logger.info("字典数据已缓存 | word=%s | data_len=%d", word, len(structured))
     return structured
