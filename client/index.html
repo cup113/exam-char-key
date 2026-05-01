@@ -21,6 +21,19 @@
   <meta name="robots" content="index, follow">
   <meta name="theme-color" content="#FFBF00">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script>
+    // 清理旧版 PWA Service Worker 及其缓存，避免用户卡在旧界面
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (rs) {
+        rs.forEach(function (r) { r.unregister() })
+      })
+    }
+    if ('caches' in window) {
+      caches.keys().then(function (ks) {
+        ks.forEach(function (k) { caches.delete(k) })
+      })
+    }
+  </script>
 </head>
 
 <body>

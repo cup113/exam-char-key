@@ -2,6 +2,7 @@
 import DictDisplay from '@/components/DictDisplay.vue'
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import LoginButtons from '@/components/LoginButtons.vue'
 
 const auth = useAuthStore()
 
@@ -56,10 +57,7 @@ function formatTime(iso: string) {
     <div v-if="!loading && !auth.user.logged_in" class="text-center text-gray-400 py-20">
       <p class="mb-4">请先登录</p>
       <div class="flex gap-3 justify-center">
-        <a href="/api/auth/github/login"
-          class="px-4 py-2 bg-gray-900 text-white rounded hover:bg-gray-700 text-sm">GitHub 登录</a>
-        <a href="/api/auth/gitee/login"
-          class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-500 text-sm">Gitee 登录</a>
+        <LoginButtons size="md" />
       </div>
     </div>
 

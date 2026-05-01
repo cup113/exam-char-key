@@ -89,7 +89,9 @@ def verify_quota(count: int = 1):
 
 
 # --- SSE 流式辅助 ---
-async def stream_llm_sse(llm_coro: Coroutine[Any, Any, AsyncStream[ChatCompletionChunk]]):
+async def stream_llm_sse(
+    llm_coro: Coroutine[Any, Any, AsyncStream[ChatCompletionChunk]],
+):
     """将 LLM 流式输出包装为 SSE data chunk 事件"""
     try:
         stream = await llm_coro
@@ -147,7 +149,7 @@ async def query_dictionary(word: str, request: Request) -> dict[str, Any]:
 
 
 @app.get("/api/query/deep")
-async def query_deep(word: str, context: str, _: str = Depends(verify_quota(1))):
+async def query_deep(word: str, context: str, _: str = Depends(verify_quota(2))):
     dict_data = get_dict_cache(word)
     if not dict_data:
         raise HTTPException(status_code=400, detail="请先查询汉典释义")
@@ -354,6 +356,30 @@ async def export_history(request: Request):
             )
 
     raise HTTPException(400, f"不支持的导出格式: {fmt}")
+
+
+# --- 旧版 PWA 自注销（vite-plugin-pwa 默认路径 /sw.js）---
+# 当旧 Service Worker 检查更新时拉取此脚本，会立即激活、清除缓存、注销自身，并刷新页面
+SW_SELF_DESTRUCT = (
+    "self.addEventListener('install',()=>self.skipWaiting());"
+    "self.addEventListener('activate',e=>{"
+    "e.waitUntil("
+    "caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))))"
+    ".then(()=>self.registration.unregister())"
+    ".then(()=>clients.matchAll({type:'window'}))"
+    ".then(cl=>cl.forEach(c=>c.navigate(c.url)))"
+    ")})"
+)
+
+
+@app.get("/sw.js")
+@app.get("/service-worker.js")
+async def sw_self_destruct():
+    return Response(
+        content=SW_SELF_DESTRUCT,
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-cache, must-revalidate"},
+    )
 
 
 STATIC_DIR = Path(__file__).parent / "static"

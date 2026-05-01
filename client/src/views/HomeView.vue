@@ -7,6 +7,7 @@ import type { TextSegment } from '@/types'
 import TextContent from '@/components/TextContent.vue'
 import SelectionTooltip from '@/components/SelectionTooltip.vue'
 import QueryPanel from '@/components/QueryPanel.vue'
+import LoginButtons from '@/components/LoginButtons.vue'
 
 const wordsStore = useWordsStore()
 const auth = useAuthStore()
@@ -85,6 +86,31 @@ const getSelectionPosition = () => {
   return null
 }
 
+const getTextOffsetFromSelection = (): number => {
+  const sel = window.getSelection()
+  if (!sel || !sel.rangeCount) return -1
+  const range = sel.getRangeAt(0)
+  const node = range.startContainer
+  const offset = range.startOffset
+
+  const el = node.nodeType === Node.TEXT_NODE
+    ? (node.parentNode as Element)?.closest('[data-offset]')
+    : (node as Element).closest('[data-offset]')
+  if (!el) return -1
+
+  const baseOffset = parseInt(el.getAttribute('data-offset') || '', 10)
+  if (isNaN(baseOffset)) return -1
+
+  let localOffset = 0
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+  while (walker.nextNode()) {
+    const tn = walker.currentNode as Text
+    if (tn === node) return baseOffset + localOffset + offset
+    localOffset += (tn.textContent || '').length
+  }
+  return baseOffset + localOffset
+}
+
 const handlePointerUp = (e: PointerEvent) => {
   if (wordsStore.editing) return
   const target = e.target as HTMLElement
@@ -102,7 +128,7 @@ const handlePointerUp = (e: PointerEvent) => {
     return
   }
 
-  const offset = wordsStore.editableText.indexOf(text)
+  const offset = getTextOffsetFromSelection()
   if (offset === -1) {
     selection.showTooltip = false
     return
@@ -174,10 +200,7 @@ const saveToHistory = async () => {
             注册获取更多免费次数。
           </span>
           <span class="flex items-center gap-2 shrink-0">
-            <a href="/api/auth/github/login"
-              class="px-3 py-1.5 bg-gray-900 text-white rounded hover:bg-gray-700 text-xs whitespace-nowrap">GitHub 登录</a>
-            <a href="/api/auth/gitee/login"
-              class="px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-500 text-xs whitespace-nowrap">Gitee 登录</a>
+            <LoginButtons size="sm" />
             <button @click="auth.dismissQuotaPrompt"
               class="text-gray-400 hover:text-gray-600 text-lg leading-none ml-1">&times;</button>
           </span>
