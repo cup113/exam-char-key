@@ -280,6 +280,34 @@ export const useWordsStore = defineStore('words', () => {
     runQuery(id, word.word, word.context, word.mode)
   }
 
+  function upgradeToDeep(id: string) {
+    const word = trackedWords.value.find(w => w.id === id)
+    if (!word) return
+
+    const controller = new AbortController()
+    activeControllers.set(id, controller)
+    const signal = controller.signal
+
+    word.mode = 'deep'
+    word.status = 'loading'
+    word.statusText = '正在准备深度分析...'
+
+    fetchDeep(id, word.word, word.context, signal)
+      .then(() => {
+        if (!signal.aborted) {
+          updateWord(id, { status: 'done', statusText: '查询完成' })
+        }
+      })
+      .catch(err => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        const message = err instanceof Error ? err.message : '未知错误'
+        updateWord(id, { status: 'error', statusText: `错误: ${message}` })
+      })
+      .finally(() => {
+        activeControllers.delete(id)
+      })
+  }
+
   return {
     trackedWords,
     activeWordId,
@@ -294,6 +322,7 @@ export const useWordsStore = defineStore('words', () => {
     abortAll,
     queryWord,
     retryWord,
+    upgradeToDeep,
     startEditing,
     saveEditing,
     cancelEditing,

@@ -70,6 +70,12 @@ const handleRetry = () => {
     wordsStore.retryWord(props.activeWord.id)
   }
 }
+
+const handleUpgrade = () => {
+  if (props.activeWord) {
+    wordsStore.upgradeToDeep(props.activeWord.id)
+  }
+}
 </script>
 
 <template>
@@ -87,7 +93,7 @@ const handleRetry = () => {
         <h2 class="text-lg font-bold">「{{ activeWord?.word }}」</h2>
         <span class="text-xs text-gray-400">{{ activeWord?.mode === 'deep' ? '深度查询' : '快速确认' }}</span>
       </div>
-      <button @click="emit('close')" class="text-gray-400 hover:text-gray-800 text-lg">✕</button>
+      <button @click="emit('close')" class="text-gray-400 hover:text-gray-800 text-lg"  data-umami-event="home-panel-close">✕</button>
     </div>
 
     <div v-if="activeWord" class="px-5 py-3 text-sm flex items-center gap-2 border-b border-gray-50">
@@ -104,16 +110,32 @@ const handleRetry = () => {
         'text-red-600': activeWord.status === 'error',
         'text-gray-600': activeWord.status === 'pending'
       }">{{ activeWord.statusText }}</span>
-      <button v-if="activeWord.status === 'loading' || activeWord.status === 'pending'"
+      <button v-if="activeWord.status === 'pending' || activeWord.status === 'loading'"
         @click="handleCancel"
-        class="ml-auto px-2 py-1 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors">
+        class="ml-auto px-2 py-1 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors" data-umami-event="home-panel-cancel">
         取消
       </button>
-      <button v-if="activeWord.status === 'error'"
-        @click="handleRetry"
-        class="ml-auto px-2 py-1 text-xs text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors">
-        重试
-      </button>
+      <div v-else-if="activeWord.status === 'error'" class="ml-auto flex items-center gap-2">
+        <button @click="handleRetry"
+          class="px-2 py-1 text-xs text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors" data-umami-event="home-panel-retry">
+          重试
+        </button>
+        <button @click="handleCancel"
+          class="px-2 py-1 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" data-umami-event="home-panel-clear">
+          清除
+        </button>
+      </div>
+      <div v-else-if="activeWord.status === 'done'" class="ml-auto flex items-center gap-2">
+        <button v-if="activeWord.mode === 'quick'"
+          @click="handleUpgrade"
+          class="px-2 py-1 text-xs text-purple-600 border border-purple-200 rounded hover:bg-purple-50 transition-colors" data-umami-event="home-panel-upgrade">
+          升级深度思考
+        </button>
+        <button @click="handleCancel"
+          class="px-2 py-1 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors" data-umami-event="home-panel-clear">
+          清除
+        </button>
+      </div>
     </div>
 
     <div class="flex-1 overflow-y-auto p-5 space-y-4">
@@ -189,7 +211,7 @@ const handleRetry = () => {
 
     <div v-if="show"
       class="max-lg:flex lg:hidden items-center justify-center py-2 border-t border-gray-100 cursor-pointer"
-      @click="emit('close')">
+      @click="emit('close')" data-umami-event="home-panel-close">
       <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
     </div>
   </aside>

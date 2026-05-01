@@ -68,7 +68,7 @@ function formatTime(iso: string) {
     <div v-if="!loading && auth.user.logged_in" class="space-y-3">
       <div v-for="r in records" :key="r.id"
         class="bg-white rounded-xl border border-gray-200 overflow-hidden transition-shadow hover:shadow-sm">
-        <div class="flex items-center justify-between px-5 py-3 cursor-pointer" @click="toggleExpand(r.id)">
+        <div class="flex items-center justify-between px-5 py-3 cursor-pointer" @click="toggleExpand(r.id)" data-umami-event="history-item-toggle">
           <div class="flex items-center gap-3">
             <span class="text-lg font-bold text-blue-700">「{{ r.word }}」</span>
             <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">

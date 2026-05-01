@@ -56,12 +56,12 @@ const getTrackedWordClass = (w: TrackedWord) => {
 
 <template>
   <div class="flex items-center justify-between mb-4">
-    <h1 class="text-3xl font-bold">古文文本</h1>
+    <h1 class="text-2xl font-bold">划词阅读</h1>
     <div class="flex gap-2 text-sm">
       <button v-if="!editing && wordsStore.trackedWords.length > 0" @click="wordsStore.clearAll"
-        class="text-gray-400 hover:text-red-500">清空追踪</button>
+        class="text-gray-400 hover:text-red-500" data-umami-event="home-text-untrack">清空追踪</button>
       <button v-if="!editing" @click="emit('startEditing')"
-        class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100">编辑文本</button>
+        class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100" data-umami-event="home-text-edit">编辑文本</button>
     </div>
   </div>
 
@@ -71,9 +71,9 @@ const getTrackedWordClass = (w: TrackedWord) => {
       class="w-full min-h-48 p-4 border border-gray-200 rounded-lg text-lg leading-loose resize-y focus:outline-none focus:ring-2 focus:ring-blue-300 font-sans"></textarea>
     <div class="flex gap-2 justify-end">
       <button @click="emit('cancelEditing')"
-        class="px-4 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-100">取消</button>
+        class="px-4 py-1.5 border border-gray-300 rounded text-sm hover:bg-gray-100" data-umami-event="home-text-cancel">取消</button>
       <button @click="emit('saveEditing')"
-        class="px-4 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-500">保存</button>
+        class="px-4 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-500" data-umami-event="home-text-save">保存</button>
     </div>
   </div>
 

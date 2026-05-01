@@ -275,10 +275,5 @@ const saveToHistory = async () => {
       @close="closePanel"
       @update:savedAnswer="savedAnswer = $event"
       @save="saveToHistory" />
-
-    <div v-if="showPanel"
-      class="max-lg:fixed max-lg:inset-0 max-lg:bg-black/30 max-lg:z-20 transition-opacity duration-300"
-      @click="closePanel">
-    </div>
   </div>
 </template>

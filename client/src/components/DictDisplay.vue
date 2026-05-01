@@ -61,10 +61,10 @@ function computeScores(entries: DictEntry[] | undefined): EntryScore[] {
   } else {
     answers = [props.aiAnswer]
   }
-  const fw = props.queryWord || ''
+  const fw = (props.queryWord || '') + "，。、：（）"
   return entries.map(e => ({
     score: Math.max(...answers.map(ans => charJaccard(e.brief, ans, fw))),
-    exampleScores: (e.examples || []).map(ex => charJaccard(ex, props.context || '', fw + "，。、：（）")),
+    exampleScores: (e.examples || []).map(ex => charJaccard(ex, props.context || '', fw)),
   }))
 }
 

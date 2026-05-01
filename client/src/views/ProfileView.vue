@@ -118,7 +118,7 @@ async function handleExport(format: 'json' | 'word' | 'apkg') {
           检测到 {{ legacyData.length }} 条旧版数据（EC_history），迁移到服务器后可进行导出等操作。
         </p>
         <button v-if="!migrateDone" @click="handleMigrate" :disabled="migrating"
-          class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-500 disabled:opacity-50 transition-colors">
+          class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-500 disabled:opacity-50 transition-colors" data-umami-event="history-item-toggle">
           {{ migrating ? '迁移中...' : '迁移到服务器' }}
         </button>
         <p v-if="migrateDone" class="text-green-600 text-sm">✅ 迁移完成</p>
