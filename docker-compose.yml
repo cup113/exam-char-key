@@ -7,14 +7,14 @@ services:
       - app-db:/app/db
     environment:
       - DB_PATH=/app/db/data.db
-      - APP_BASE_URL=http://localhost:5173
-      - LLM_BASE_URL=https://openrouter.ai/api/v1
+      - APP_BASE_URL=${APP_BASE_URL:-}
+      - LLM_BASE_URL=${LLM_BASE_URL:-}
       - LLM_API_KEY=${LLM_API_KEY:-}
-      - MODEL_DICT_PREPROCESS=xiaomi/mimo-v2.5
-      - MODEL_QUICK_ANSWER=xiaomi/mimo-v2.5
-      - MODEL_DEEP_THINK=xiaomi/mimo-v2.5
-      - QUOTA_USER_DAILY=50
-      - QUOTA_GUEST_DAILY=50
+      - MODEL_DICT_PREPROCESS=${MODEL_DICT_PREPROCESS:-}
+      - MODEL_QUICK_ANSWER=${MODEL_QUICK_ANSWER:-}
+      - MODEL_DEEP_THINK=${MODEL_DEEP_THINK:-}
+      - QUOTA_USER_DAILY=${QUOTA_USER_DAILY:-}
+      - QUOTA_GUEST_DAILY=${QUOTA_GUEST_DAILY:-}
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
       - GITEE_CLIENT_ID=${GITEE_CLIENT_ID:-}
