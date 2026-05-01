@@ -13,12 +13,19 @@ client (Vite + Vue 3 + Pinia + TypeScript + Tailwind CSS v4)
       └─ router/     路由配置
 
 server (FastAPI + SQLite + OpenAI SDK)
+  ├─ .env.example   示例环境变量（此文件可读，.env 不允许读取）
   ├─ main.py        FastAPI 应用入口，路由定义
   ├─ spider.py      汉典爬虫 + LLM 结构化 + dict 格式化
   ├─ db_helper.py   SQLite 数据库操作（缓存、配额、历史记录）
   ├─ auth.py        GitHub/Gitee OAuth + JWT
   ├─ config.py      配置
   └─ prompt.py      LLM 提示词模板
+
+train (Fine-tuning on DashScope, inactive now)
+
+docker-compose.yml, Dockerfile (Linux Coolify Deployment)
+
+run_dev.py (Windows Local Development)
 ```
 
 ## 数据流转

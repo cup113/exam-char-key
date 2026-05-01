@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import DictDisplay from '@/components/DictDisplay.vue'
+import DeepAnalysisSplit from '@/components/DeepAnalysisSplit.vue'
 import { useWordsStore } from '@/stores/words'
 import type { TrackedWord } from '@/stores/words'
 
@@ -18,6 +20,44 @@ const emit = defineEmits<{
   'update:savedAnswer': [value: string]
   save: []
 }>()
+
+const deepMeaning = computed(() => {
+  if (!props.activeWord?.deepThink) return ''
+  for (const line of props.activeWord.deepThink.split('\n')) {
+    const trimmed = line.trim()
+    const match = trimmed.match(/^\[词义\]\s*(.*)$/)
+    if (match) return match[1]
+  }
+  return ''
+})
+
+const aiAnswerForDict = computed(() => {
+  const answers: string[] = []
+  if (props.activeWord?.quickAnswer) answers.push(props.activeWord.quickAnswer)
+  if (deepMeaning.value) answers.push(deepMeaning.value)
+  return answers.length > 0 ? answers : ''
+})
+
+const hasAiContent = computed(() =>
+  !!(props.activeWord?.quickAnswer || deepMeaning.value)
+)
+
+const showEmpty = computed(() =>
+  !hasAiContent.value &&
+  !props.activeWord?.deepThink &&
+  !props.activeWord?.corpusEntries?.length &&
+  !props.activeWord?.dictResult &&
+  props.activeWord?.status !== 'loading'
+)
+
+function typeLabel(type: string): string {
+  const map: Record<string, string> = {
+    textbook: '教材',
+    mock_exam: '模考',
+    user_query: '用户查询',
+  }
+  return map[type] || type
+}
 
 const handleCancel = () => {
   if (props.activeWord) {
@@ -77,33 +117,56 @@ const handleRetry = () => {
     </div>
 
     <div class="flex-1 overflow-y-auto p-5 space-y-4">
-      <div v-if="activeWord?.quickAnswer" class="p-4 bg-blue-50 rounded-xl border border-blue-100">
-        <h3 class="text-xs font-bold text-blue-700 mb-2 uppercase tracking-wide">⚡ 快速回答</h3>
-        <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ activeWord.quickAnswer }}</p>
-      </div>
-
-      <div v-if="activeWord?.corpusEntries?.length" class="p-4 bg-amber-50 rounded-xl border border-amber-100">
-        <h3 class="text-xs font-bold text-amber-700 mb-2 uppercase tracking-wide">📚 语料库参考</h3>
-        <div v-for="entry in activeWord.corpusEntries" :key="entry.id"
-          class="mb-3 pb-3 border-b border-amber-100 last:border-b-0 last:mb-0 last:pb-0">
-          <p class="text-xs text-amber-600 mb-1">
-            <span class="font-semibold">语境：</span>「{{ entry.context }}」
-          </p>
-          <p class="text-sm leading-relaxed">{{ entry.answer }}</p>
+      <div v-if="hasAiContent"
+        class="rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div class="px-4 py-2 border-b border-gray-100">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI 解答</span>
+        </div>
+        <div class="px-4 py-3 space-y-2">
+          <div v-if="activeWord?.quickAnswer" class="flex items-start gap-2">
+            <span class="text-base shrink-0 mt-0.5">⚡</span>
+            <p class="text-base font-bold leading-relaxed">{{ activeWord.quickAnswer }}</p>
+          </div>
+          <div v-if="deepMeaning" class="flex items-start gap-2">
+            <span class="text-base shrink-0 mt-0.5">🧠</span>
+            <p class="text-base font-bold leading-relaxed">{{ deepMeaning }}</p>
+          </div>
         </div>
       </div>
 
-      <div v-if="activeWord?.dictResult" class="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-        <h3 class="text-xs font-bold text-emerald-700 mb-2 uppercase tracking-wide">📖 汉典释义</h3>
-        <DictDisplay :dict-result="activeWord.dictResult" />
+      <DeepAnalysisSplit v-if="activeWord?.deepThink" :deep-think="activeWord.deepThink" />
+
+      <div v-if="activeWord?.dictResult"
+        class="rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div class="px-4 py-2 border-b border-gray-100">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">📖 汉典释义</span>
+        </div>
+        <div class="px-4 py-3">
+          <DictDisplay
+            :dict-result="activeWord.dictResult"
+            :ai-answer="aiAnswerForDict"
+            :context="activeWord.context"
+            :query-word="activeWord.word" />
+        </div>
+      </div>
+      <div v-if="activeWord?.corpusEntries?.length"
+        class="rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div class="px-4 py-2 border-b border-gray-100">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">📚 语料库参考</span>
+        </div>
+        <div class="px-4 py-3 space-y-3">
+          <div v-for="entry in activeWord.corpusEntries" :key="entry.id"
+            class="pb-3 border-b border-gray-100 last:border-b-0 last:pb-0">
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">{{ typeLabel(entry.type) }}</span>
+              <span class="text-sm text-gray-600">「{{ entry.context }}」</span>
+            </div>
+            <p class="text-sm leading-relaxed text-gray-700">{{ entry.answer }}</p>
+          </div>
+        </div>
       </div>
 
-      <div v-if="activeWord?.deepThink" class="p-4 bg-purple-50 rounded-xl border border-purple-100">
-        <h3 class="text-xs font-bold text-purple-700 mb-2 uppercase tracking-wide">🧠 深度分析</h3>
-        <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ activeWord.deepThink }}</p>
-      </div>
-
-      <div v-if="!activeWord?.quickAnswer && !activeWord?.dictResult && !activeWord?.deepThink && activeWord?.status !== 'loading'"
+      <div v-if="showEmpty"
         class="text-center text-gray-400 text-sm mt-20">
         选中词语后点击查询
       </div>

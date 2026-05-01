@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useWordsStore, type TrackedWord } from '@/stores/words'
 import type { TextSegment } from '@/types'
 
@@ -18,6 +19,21 @@ const emit = defineEmits<{
 }>()
 
 const wordsStore = useWordsStore()
+
+const segmentOffsets = computed(() => {
+  const offsets: number[] = []
+  let cursor = 0
+  for (const seg of props.textSegments) {
+    if (seg.type === 'text') {
+      offsets.push(cursor)
+      cursor += seg.content.length
+    } else {
+      offsets.push(seg.word.offset)
+      cursor = seg.word.offset + seg.word.word.length
+    }
+  }
+  return offsets
+})
 
 const getTrackedWordClass = (w: TrackedWord) => {
   const isActive = w.id === wordsStore.activeWordId
@@ -64,12 +80,12 @@ const getTrackedWordClass = (w: TrackedWord) => {
   <div v-else
     class="min-h-48 p-4 border border-gray-200 rounded-lg text-lg leading-loose whitespace-pre-wrap select-text">
     <template v-if="textSegments.length === 0">
-      {{ editableText }}
+      <span data-offset="0">{{ editableText }}</span>
     </template>
     <template v-else>
       <span v-for="(seg, i) in textSegments" :key="i">
-        <span v-if="seg.type === 'text'">{{ seg.content }}</span>
-        <span v-else :class="getTrackedWordClass(seg.word)" @click.stop="emit('wordClick', seg.word.id)">
+        <span v-if="seg.type === 'text'" :data-offset="segmentOffsets[i]">{{ seg.content }}</span>
+        <span v-else :data-offset="segmentOffsets[i]" :class="getTrackedWordClass(seg.word)" @click.stop="emit('wordClick', seg.word.id)">
           {{ seg.word.word }}
           <span v-if="seg.word.quickAnswer.length > 0" class="text-sm text-yellow-800">({{ seg.word.quickAnswer }})</span>
           <span v-if="seg.word.status === 'loading'" class="ml-0.5">
