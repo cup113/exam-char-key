@@ -3,7 +3,7 @@ WORKDIR /app
 COPY client/package.json client/pnpm-lock.yaml ./client/
 RUN corepack enable && pnpm install --frozen-lockfile --prefix client
 COPY client/ client/
-RUN pnpm --prefix client build
+RUN pnpm run build --prefix client
 
 FROM python:3.12-slim
 WORKDIR /app
