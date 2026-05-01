@@ -9,6 +9,8 @@ import SelectionTooltip from '@/components/SelectionTooltip.vue'
 import QueryPanel from '@/components/QueryPanel.vue'
 import LoginButtons from '@/components/LoginButtons.vue'
 
+let hideTimer: ReturnType<typeof setTimeout> | null = null
+
 const wordsStore = useWordsStore()
 const auth = useAuthStore()
 
@@ -60,10 +62,13 @@ const getContextAround = (offset: number, wordLen: number, windowSize = 30): str
 onMounted(async () => {
   await auth.fetchUser()
   auth.fetchQuota()
+  document.addEventListener('selectionchange', onSelectionChange)
 })
 
 onUnmounted(() => {
   wordsStore.abortAll()
+  document.removeEventListener('selectionchange', onSelectionChange)
+  if (hideTimer) clearTimeout(hideTimer)
 })
 
 watch(() => wordsStore.activeWordId, (id) => {
@@ -117,31 +122,67 @@ const handlePointerUp = (e: PointerEvent) => {
   if (target.closest('#query-panel') || target.closest('.tracked-word')) return
 
   const sel = window.getSelection()
+  if (!sel || sel.isCollapsed) return
+
+  showTooltipFromSelection(sel)
+}
+
+const onSelectionChange = () => {
+  if (wordsStore.editing) return
+  const sel = window.getSelection()
   if (!sel || sel.isCollapsed) {
-    setTimeout(() => { selection.showTooltip = false }, 200)
+    scheduleHide()
     return
   }
 
-  const text = sel.toString().trim()
-  if (!text || text.length > 20) {
-    selection.showTooltip = false
+  let node = sel.anchorNode
+  if (!node) return
+  if (node.nodeType === Node.TEXT_NODE) node = node.parentNode as Node
+  const el = node instanceof Element ? node : node.parentElement
+  if (!el || !el.closest('[data-offset]')) {
+    scheduleHide()
     return
   }
+
+  showTooltipFromSelection(sel)
+}
+
+function scheduleHide() {
+  if (hideTimer) return
+  hideTimer = setTimeout(() => {
+    selection.showTooltip = false
+    hideTimer = null
+  }, 300)
+}
+
+function showTooltipFromSelection(sel: Selection) {
+  const text = sel.toString().trim()
+  if (!text || text.length > 20) return
 
   const offset = getTextOffsetFromSelection()
-  if (offset === -1) {
-    selection.showTooltip = false
-    return
-  }
+  if (offset === -1) return
 
-  const pos = getSelectionPosition() ?? { x: e.clientX, y: e.clientY }
+  const pos = getSelectionPosition()
+  if (!pos) return
+
+  const gap = 8
+  const tooltipWidth = 180
+  const clampedX = Math.max(
+    tooltipWidth / 2 + gap,
+    Math.min(pos.x, window.innerWidth - tooltipWidth / 2 - gap)
+  )
 
   selection.word = text
   selection.offset = offset
   selection.context = getContextAround(offset, text.length)
-  selection.x = pos.x
-  selection.y = pos.y - 50
+  selection.x = clampedX
+  selection.y = Math.max(10, pos.y - 50)
   selection.showTooltip = true
+
+  if (hideTimer) {
+    clearTimeout(hideTimer)
+    hideTimer = null
+  }
 }
 
 const startQuery = (mode: 'quick' | 'deep') => {

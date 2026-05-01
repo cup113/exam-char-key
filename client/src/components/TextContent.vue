@@ -78,7 +78,8 @@ const getTrackedWordClass = (w: TrackedWord) => {
   </div>
 
   <div v-else
-    class="min-h-48 p-4 border border-gray-200 rounded-lg text-lg leading-loose whitespace-pre-wrap select-text">
+    class="min-h-48 p-4 border border-gray-200 rounded-lg text-lg leading-loose whitespace-pre-wrap select-text"
+    style="-webkit-touch-callout:none" @contextmenu.prevent>
     <template v-if="textSegments.length === 0">
       <span data-offset="0">{{ editableText }}</span>
     </template>
