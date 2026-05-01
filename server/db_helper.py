@@ -5,6 +5,7 @@ from config import settings
 
 DB_PATH = settings.DB_PATH
 
+
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
@@ -125,7 +126,16 @@ def save_query_history(
                 """INSERT INTO query_history
                    (user_id, word, context, mode, quick_answer, dict_result, deep_think, created_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                (user_id, word, context, mode, quick_answer, dict_result, deep_think, created_at),
+                (
+                    user_id,
+                    word,
+                    context,
+                    mode,
+                    quick_answer,
+                    dict_result,
+                    deep_think,
+                    created_at,
+                ),
             )
         else:
             cursor = conn.execute(

@@ -80,7 +80,7 @@ const getTrackedWordClass = (w: TrackedWord) => {
     </template>
   </div>
 
-  <p class="text-sm text-gray-400 mt-4">💡 提示：用鼠标选中任意词语，即可触发查询。</p>
+  <p class="text-sm text-gray-400 mt-4">💡 提示：选中任意词语，即可触发查询。</p>
 </template>
 
 <style scoped>

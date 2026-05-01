@@ -24,15 +24,6 @@ export interface CorpusEntry {
   answer: string
 }
 
-export interface SSEPayload {
-  step?: 'quick_answer' | 'corpus' | 'dictionary' | 'deep_think' | 'done'
-  status?: string
-  chunk?: string
-  result?: string
-  entries?: CorpusEntry[]
-  error?: string
-}
-
 export interface ECHistoryEntry {
   id: string
   level: string

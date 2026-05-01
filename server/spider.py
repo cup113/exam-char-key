@@ -1,3 +1,4 @@
+import json
 import httpx
 from bs4 import BeautifulSoup  # pyright: ignore[reportMissingTypeStubs]
 from openai import AsyncOpenAI
@@ -21,7 +22,12 @@ async def scrape_zdic(word: str) -> str:
     async with httpx.AsyncClient(follow_redirects=True, timeout=15) as http:
         resp = await http.get(url, headers=headers)
         resp.raise_for_status()
-    logger.debug("爬取成功 | word=%s | status=%d | size=%d", word, resp.status_code, len(resp.text))
+    logger.debug(
+        "爬取成功 | word=%s | status=%d | size=%d",
+        word,
+        resp.status_code,
+        len(resp.text),
+    )
 
     soup = BeautifulSoup(resp.text, "html.parser")
 
@@ -65,3 +71,39 @@ async def get_dict_entry(word: str) -> str:
     set_dict_cache(word, structured)
     logger.info("字典数据已缓存 | word=%s | data_len=%d", word, len(structured))
     return structured
+
+
+def format_dict_for_prompt(dict_data_json: str) -> str:
+    """将结构化的JSON字典数据转换为LLM易读的文本格式"""
+    try:
+        data = json.loads(dict_data_json)
+    except json.JSONDecodeError:
+        return dict_data_json
+
+    lines: list[str] = []
+    basic = data.get("basic_explanation", [])
+    if basic:
+        lines.append("【基本解释】")
+        for item in basic:
+            brief = item.get("brief", "")
+            examples = item.get("examples", [])
+            if examples:
+                lines.append(f"  {brief}（例：{'；'.join(examples)}）")
+            else:
+                lines.append(f"  {brief}")
+
+    detailed = data.get("detailed_explanation", [])
+    if detailed:
+        lines.append("【详细解释】")
+        for item in detailed:
+            brief = item.get("brief", "")
+            english = item.get("english", "")
+            examples = item.get("examples", [])
+            parts = [f"  {brief}"]
+            if english:
+                parts.append(f"[{english}]")
+            if examples:
+                parts.append(f"例：{'；'.join(examples)}")
+            lines.append(" ".join(parts))
+
+    return "\n".join(lines)

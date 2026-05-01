@@ -62,7 +62,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  wordsStore.cleanupSSE()
+  wordsStore.abortAll()
 })
 
 watch(() => wordsStore.activeWordId, (id) => {
@@ -74,7 +74,18 @@ watch(() => wordsStore.activeWordId, (id) => {
   }
 })
 
-const handleMouseUp = (e: MouseEvent) => {
+const getSelectionPosition = () => {
+  const sel = window.getSelection()
+  if (sel && sel.rangeCount > 0) {
+    const rect = sel.getRangeAt(0).getBoundingClientRect()
+    if (rect.width > 0 || rect.height > 0) {
+      return { x: rect.left + rect.width / 2, y: rect.top - 10 }
+    }
+  }
+  return null
+}
+
+const handlePointerUp = (e: PointerEvent) => {
   if (wordsStore.editing) return
   const target = e.target as HTMLElement
   if (target.closest('#query-panel') || target.closest('.tracked-word')) return
@@ -97,11 +108,13 @@ const handleMouseUp = (e: MouseEvent) => {
     return
   }
 
+  const pos = getSelectionPosition() ?? { x: e.clientX, y: e.clientY }
+
   selection.word = text
   selection.offset = offset
   selection.context = getContextAround(offset, text.length)
-  selection.x = e.clientX
-  selection.y = e.clientY - 50
+  selection.x = pos.x
+  selection.y = pos.y - 50
   selection.showTooltip = true
 }
 
@@ -150,7 +163,7 @@ const saveToHistory = async () => {
 </script>
 
 <template>
-  <div class="flex" @mouseup="handleMouseUp">
+  <div class="flex" @pointerup="handlePointerUp">
     <main class="flex-1 min-w-0 p-10 transition-all duration-300"
       :class="showPanel ? 'lg:mr-108' : ''">
       <div class="max-w-3xl mx-auto">

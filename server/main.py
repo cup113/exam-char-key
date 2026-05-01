@@ -6,17 +6,15 @@ from fastapi.responses import StreamingResponse, JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import httpx
-from openai import AsyncOpenAI
-from time import time
+from openai import AsyncOpenAI, AsyncStream
+from openai.types.chat import ChatCompletionChunk
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any, Coroutine
 
 from config import settings
 from log_helper import get_logger
 from prompt import QUICK_PROMPT, DEEP_PROMPT
-from typing import Any
-
-logger = get_logger("main")
 from db_helper import (
     init_db,
     check_and_decrease_quota,
@@ -27,9 +25,12 @@ from db_helper import (
     get_all_query_history,
     get_corpus_by_word,
     log_api_usage,
+    get_dict_cache,
 )
-from spider import get_dict_entry
+from spider import get_dict_entry, format_dict_for_prompt
 from auth import router as auth_router, callback_router, decode_jwt
+
+logger = get_logger("main")
 
 
 @asynccontextmanager
@@ -70,94 +71,103 @@ def get_identifier_and_limit(request: Request):
             return f"user:{payload['sub']}", settings.QUOTA_USER_DAILY, payload["sub"]
         except Exception:
             pass
-    return f"ip:guest", settings.QUOTA_GUEST_DAILY, None
+    return "ip:guest", settings.QUOTA_GUEST_DAILY, None
 
 
-# --- 依赖注入：限流 ---
-def verify_quota(request: Request):
-    identifier, limit, _ = get_identifier_and_limit(request)
-    mode = request.query_params.get("mode", "quick")
-    count = 3 if mode == "deep" else 1
-    if not check_and_decrease_quota(identifier, limit, count):
-        logger.warning("额度耗尽 | %s | mode=%s", identifier, mode)
-        raise HTTPException(status_code=429, detail="今日额度已耗尽")
-    log_api_usage(identifier, request.url.path)
-    logger.debug("额度扣除成功 | %s | mode=%s | count=%d", identifier, mode, count)
-    return identifier
+# --- 依赖注入：限流（count 可指定）---
+def verify_quota(count: int = 1):
+    def _verify(request: Request):
+        identifier, limit, _ = get_identifier_and_limit(request)
+        if not check_and_decrease_quota(identifier, limit, count):
+            logger.warning("额度耗尽 | %s", identifier)
+            raise HTTPException(status_code=429, detail="今日额度已耗尽")
+        log_api_usage(identifier, request.url.path)
+        logger.debug("额度扣除成功 | %s | count=%d", identifier, count)
+        return identifier
+
+    return _verify
 
 
-# --- SSE 流水线 ---
-async def query_pipeline(word: str, context: str, mode: str):
-    logger.info(
-        "查询开始 | word=%s | mode=%s | context_len=%d", word, mode, len(context)
-    )
+# --- SSE 流式辅助 ---
+async def stream_llm_sse(llm_coro: Coroutine[Any, Any, AsyncStream[ChatCompletionChunk]]):
+    """将 LLM 流式输出包装为 SSE data chunk 事件"""
     try:
-        yield f"data: {json.dumps({'step': 'quick_answer', 'status': 'start'})}\n\n"
-        start = time()
-        quick_stream = await client.chat.completions.create(
-            model=settings.MODEL_QUICK_ANSWER,
-            messages=[
-                {
-                    "role": "system",
-                    "content": QUICK_PROMPT,
-                },
-                {
-                    "role": "user",
-                    "content": f"“{context}”，中，【{word}】是什么意思？",
-                },
-            ],
-            reasoning_effort="none",
-            stream=True,
-        )
-        async for chunk in quick_stream:
+        stream = await llm_coro
+        async for chunk in stream:
             content = chunk.choices[0].delta.content
             if content:
-                yield f"data: {json.dumps({'step': 'quick_answer', 'chunk': content})}\n\n"
-        logger.info("快速查询延迟: %.2fs", time() - start)
-
-        yield f"data: {json.dumps({'step': 'corpus', 'status': 'fetching'})}\n\n"
-        corpus_entries = get_corpus_by_word(word)
-        yield f"data: {json.dumps({'step': 'corpus', 'entries': corpus_entries})}\n\n"
-        logger.info("语料库查询完成 | word=%s | count=%d", word, len(corpus_entries))
-
-        yield f"data: {json.dumps({'step': 'dictionary', 'status': 'fetching'})}\n\n"
-        dict_data = await get_dict_entry(word)
-        logger.info("字典数据获取完成 | word=%s | data_len=%d", word, len(dict_data))
-        yield f"data: {json.dumps({'step': 'dictionary', 'result': dict_data})}\n\n"
-
-        if mode == "deep":
-            logger.info("深度分析开始 | word=%s", word)
-            yield f"data: {json.dumps({'step': 'deep_think', 'status': 'start'})}\n\n"
-            deep_stream = await client.chat.completions.create(
-                model=settings.MODEL_DEEP_THINK,
-                messages=[
-                    {"role": "system", "content": DEEP_PROMPT},
-                    {
-                        "role": "user",
-                        "content": f"“【字典数据】\n{dict_data}\n\n“{context}”中，【{word}】是什么意思？",
-                    },
-                ],
-                stream=True,
-                reasoning_effort="low",
-            )
-            async for chunk in deep_stream:
-                content = chunk.choices[0].delta.content
-                if content:
-                    yield f"data: {json.dumps({'step': 'deep_think', 'chunk': content})}\n\n"
-
-        yield f"data: {json.dumps({'step': 'done'})}\n\n"
-
+                yield f"data: {json.dumps({'chunk': content})}\n\n"
     except Exception:
-        logger.exception("查询流水线异常 | word=%s | mode=%s", word, mode)
+        logger.exception("LLM 流式异常")
+    finally:
+        yield "data: [DONE]\n\n"
 
 
-@app.get("/api/query")
-async def query_endpoint(
-    word: str, context: str, mode: str = "quick", _: str = Depends(verify_quota)
-):
-    return StreamingResponse(
-        query_pipeline(word, context, mode), media_type="text/event-stream"
+# --- 分拆为独立端点 ---
+
+
+@app.get("/api/query/quick")
+async def query_quick(word: str, context: str, _: str = Depends(verify_quota(1))):
+    logger.info("快速查询 | word=%s | context_len=%d", word, len(context))
+    llm_coro = client.chat.completions.create(
+        model=settings.MODEL_QUICK_ANSWER,
+        messages=[
+            {"role": "system", "content": QUICK_PROMPT},
+            {"role": "user", "content": f"“{context}”中，【{word}】是什么意思？"},
+        ],
+        reasoning_effort="none",
+        stream=True,
     )
+    return StreamingResponse(stream_llm_sse(llm_coro), media_type="text/event-stream")
+
+
+@app.get("/api/query/corpus")
+async def query_corpus(word: str):
+    entries = get_corpus_by_word(word)
+    logger.debug("语料库查询 | word=%s | count=%d", word, len(entries))
+    return {"entries": entries}
+
+
+@app.get("/api/query/dictionary")
+async def query_dictionary(word: str, request: Request) -> dict[str, Any]:
+    cached = get_dict_cache(word)
+    if cached:
+        logger.debug("字典缓存命中 | word=%s", word)
+        return {"result": cached, "cached": True}
+
+    identifier, limit, _ = get_identifier_and_limit(request)
+    if not check_and_decrease_quota(identifier, limit, 1):
+        logger.warning("额度耗尽 | %s | dictionary", identifier)
+        raise HTTPException(status_code=429, detail="今日额度已耗尽")
+    log_api_usage(identifier, request.url.path)
+
+    result = await get_dict_entry(word)
+    logger.info("字典查询完成 | word=%s | data_len=%d", word, len(result))
+    return {"result": result, "cached": False}
+
+
+@app.get("/api/query/deep")
+async def query_deep(word: str, context: str, _: str = Depends(verify_quota(1))):
+    dict_data = get_dict_cache(word)
+    if not dict_data:
+        raise HTTPException(status_code=400, detail="请先查询汉典释义")
+
+    formatted = format_dict_for_prompt(dict_data)
+    logger.info("深度分析 | word=%s | context_len=%d", word, len(context))
+
+    llm_coro = client.chat.completions.create(
+        model=settings.MODEL_DEEP_THINK,
+        messages=[
+            {"role": "system", "content": DEEP_PROMPT},
+            {
+                "role": "user",
+                "content": f"【字典数据】\n{formatted}\n\n“{context}”中，【{word}】是什么意思？",
+            },
+        ],
+        stream=True,
+        reasoning_effort="low",
+    )
+    return StreamingResponse(stream_llm_sse(llm_coro), media_type="text/event-stream")
 
 
 @app.get("/api/quota")
