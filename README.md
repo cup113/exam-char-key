@@ -162,6 +162,20 @@ The application supports any OpenAI-compatible API service. Configure via `serve
 | `MODEL_QUICK_ANSWER` | Model for fast inline character explanations | `qwen3-8b-ft-202508031744-1c46` |
 | `MODEL_DEEP_THINK` | Model for comprehensive deep analysis | `qwen3-8b-ft-202508031744-1c46`, `gpt-4o` |
 
+### JWT Secret
+
+`JWT_SECRET` is used to sign authentication tokens. Generate a secure random value:
+
+```bash
+# Option 1: openssl (Linux/macOS/Git Bash)
+openssl rand -hex 32
+
+# Option 2: Python (cross-platform)
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Copy the output and set it as `JWT_SECRET` in your `server/.env` or Coolify environment variables. If left empty, the server will fall back to `LLM_API_KEY` as the JWT secret.
+
 ### OAuth Configuration
 
 To enable GitHub/Gitee login, register OAuth applications and set the corresponding `*_CLIENT_ID` and `*_CLIENT_SECRET` environment variables. The callback URL should be `{APP_BASE_URL}/api/oauth2-redirect`.
