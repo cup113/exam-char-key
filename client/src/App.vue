@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { RouterView } from 'vue-router'
+import { RouterView, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LoginButtons from '@/components/LoginButtons.vue'
 
@@ -14,12 +14,12 @@ onMounted(() => auth.fetchUser())
   <div class="min-h-screen bg-gray-50 text-gray-800 font-sans flex flex-col">
     <header
       class="fixed top-0 left-0 right-0 h-12 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-40">
-      <a href="/" class="font-bold text-lg">Exam Char Key - 文言释义</a>
+      <RouterLink to="/" class="font-bold text-lg">Exam Char Key - 文言释义</RouterLink>
       <div class="hidden lg:flex items-center gap-4 text-sm">
         <nav class="flex gap-4 mr-2">
-          <a href="/" class="text-gray-500 hover:text-gray-800">阅读</a>
-          <a href="/history" class="text-gray-500 hover:text-gray-800">历史记录</a>
-          <a href="/profile" class="text-gray-500 hover:text-gray-800">个人</a>
+          <RouterLink to="/" class="text-gray-500 hover:text-gray-800">阅读</RouterLink>
+          <RouterLink to="/history" class="text-gray-500 hover:text-gray-800">历史记录</RouterLink>
+          <RouterLink to="/profile" class="text-gray-500 hover:text-gray-800">个人</RouterLink>
         </nav>
         <span v-if="auth.user.logged_in" class="text-gray-500">{{ auth.user.user_id }}</span>
         <LoginButtons v-if="!auth.user.logged_in" size="sm" />
@@ -42,9 +42,9 @@ onMounted(() => auth.fetchUser())
       class="fixed top-12 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-lg lg:hidden">
       <div class="px-6 py-4">
         <nav class="flex flex-col gap-1 text-sm">
-          <a href="/" class="text-gray-600 hover:text-gray-800 py-1.5" @click="mobileMenuOpen = false">阅读</a>
-          <a href="/history" class="text-gray-600 hover:text-gray-800 py-1.5" @click="mobileMenuOpen = false">历史记录</a>
-          <a href="/profile" class="text-gray-600 hover:text-gray-800 py-1.5" @click="mobileMenuOpen = false">个人</a>
+          <RouterLink to="/" class="text-gray-600 hover:text-gray-800 py-1.5" @click="mobileMenuOpen = false">阅读</RouterLink>
+          <RouterLink to="/history" class="text-gray-600 hover:text-gray-800 py-1.5" @click="mobileMenuOpen = false">历史记录</RouterLink>
+          <RouterLink to="/profile" class="text-gray-600 hover:text-gray-800 py-1.5" @click="mobileMenuOpen = false">个人</RouterLink>
         </nav>
         <div v-if="!auth.user.logged_in" class="flex gap-2 pt-3 border-t border-gray-100 mt-2">
           <LoginButtons size="sm" />

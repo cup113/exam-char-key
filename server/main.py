@@ -5,6 +5,8 @@ from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.types import Scope
 import httpx
 from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletionChunk
@@ -382,6 +384,18 @@ async def sw_self_destruct():
     )
 
 
+class SPAStaticFiles(StaticFiles):
+    """SPA fallback: 对于 404 文件请求，返回 index.html（支持 Vue Router 的 history 模式）"""
+
+    async def get_response(self, path: str, scope: Scope):
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as e:
+            if e.status_code == 404:
+                return await super().get_response("index.html", scope)
+            raise
+
+
 STATIC_DIR = Path(__file__).parent / "static"
 if STATIC_DIR.exists():
-    app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")
+    app.mount("/", SPAStaticFiles(directory=str(STATIC_DIR), html=True), name="static")
