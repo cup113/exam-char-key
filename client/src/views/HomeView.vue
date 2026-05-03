@@ -235,7 +235,7 @@ const saveToHistory = async () => {
       :class="showPanel ? 'lg:mr-108' : ''">
       <div class="max-w-3xl mx-auto">
         <div v-if="auth.showQuotaPrompt"
-          class="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm flex items-center justify-between gap-4">
+          class="mb-4 px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-sm flex items-center justify-between gap-4">
           <span>
             今日免费查询剩余 <strong>{{ auth.quota!.remaining }}</strong> 次，
             注册获取更多免费次数。
@@ -243,7 +243,7 @@ const saveToHistory = async () => {
           <span class="flex items-center gap-2 shrink-0">
             <LoginButtons size="sm" />
             <button @click="auth.dismissQuotaPrompt"
-              class="text-gray-400 hover:text-gray-600 text-lg leading-none ml-1">&times;</button>
+              class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-lg leading-none ml-1">&times;</button>
           </span>
         </div>
         <TextContent

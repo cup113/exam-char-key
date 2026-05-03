@@ -25,11 +25,11 @@ const fallbackText = computed(() => {
 </script>
 
 <template>
-  <div v-if="contextText" class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-    <p class="text-xs text-gray-500 mb-1">📝 语境分析</p>
-    <p class="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap">{{ contextText }}</p>
+  <div v-if="contextText" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3">
+    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">📝 语境分析</p>
+    <p class="text-sm leading-relaxed text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{{ contextText }}</p>
   </div>
-  <div v-else-if="fallbackText" class="rounded-xl border border-purple-100 bg-purple-50 px-4 py-3">
+  <div v-else-if="fallbackText" class="rounded-xl border border-purple-100 dark:border-purple-900 bg-purple-50 dark:bg-purple-950/30 px-4 py-3">
     <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ fallbackText }}</p>
   </div>
 </template>
