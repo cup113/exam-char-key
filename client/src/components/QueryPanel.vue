@@ -38,17 +38,15 @@ const aiAnswerForDict = computed(() => {
   return answers.length > 0 ? answers : ''
 })
 
-const hasAiContent = computed(() =>
-  !!(props.activeWord?.quickAnswer || deepMeaning.value)
-)
-
-const showEmpty = computed(() =>
-  !hasAiContent.value &&
-  !props.activeWord?.deepThink &&
-  !props.activeWord?.corpusEntries?.length &&
-  !props.activeWord?.dictResult &&
-  props.activeWord?.status !== 'loading'
-)
+const showEmpty = computed(() => {
+  if (!props.activeWord) return true
+  return (
+    props.activeWord.quickStatus === 'idle' &&
+    props.activeWord.corpusStatus === 'idle' &&
+    props.activeWord.dictStatus === 'idle' &&
+    props.activeWord.deepStatus === 'idle'
+  )
+})
 
 function typeLabel(type: string): string {
   const map: Record<string, string> = {
@@ -104,12 +102,6 @@ const handleUpgrade = () => {
       <span v-else-if="activeWord.status === 'done'" class="h-2.5 w-2.5 rounded-full bg-green-400"></span>
       <span v-else-if="activeWord.status === 'error'" class="h-2.5 w-2.5 rounded-full bg-red-400"></span>
       <span v-else class="h-2.5 w-2.5 rounded-full bg-gray-400"></span>
-      <span :class="{
-        'text-blue-600 dark:text-blue-400': activeWord.status === 'loading',
-        'text-green-600 dark:text-green-400': activeWord.status === 'done',
-        'text-red-600 dark:text-red-400': activeWord.status === 'error',
-        'text-gray-600 dark:text-gray-300': activeWord.status === 'pending'
-      }">{{ activeWord.statusText }}</span>
       <button v-if="activeWord.status === 'pending' || activeWord.status === 'loading'"
         @click="handleCancel"
         class="ml-auto px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors" data-umami-event="home-panel-cancel">
@@ -139,16 +131,24 @@ const handleUpgrade = () => {
     </div>
 
     <div class="flex-1 overflow-y-auto p-5 space-y-4">
-      <div v-if="hasAiContent"
+      <div v-if="activeWord && (activeWord.quickStatus !== 'idle' || activeWord.deepStatus !== 'idle')"
         class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
         <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
           <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">AI 解答</span>
         </div>
         <div class="px-4 py-3 space-y-2">
+          <div v-if="activeWord?.quickStatus === 'loading' && !activeWord?.quickAnswer"
+            class="animate-pulse h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div v-if="activeWord?.quickStatus === 'error' && !activeWord?.quickAnswer"
+            class="text-sm text-red-500">快速查询失败</div>
           <div v-if="activeWord?.quickAnswer" class="flex items-start gap-2">
             <span class="text-base shrink-0 mt-0.5">⚡</span>
             <p class="text-base font-bold leading-relaxed">{{ activeWord.quickAnswer }}</p>
           </div>
+          <div v-if="activeWord?.deepStatus === 'loading' && !deepMeaning"
+            class="animate-pulse h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div v-if="activeWord?.deepStatus === 'error' && !deepMeaning"
+            class="text-sm text-red-500">深度分析失败</div>
           <div v-if="deepMeaning" class="flex items-start gap-2">
             <span class="text-base shrink-0 mt-0.5">🧠</span>
             <p class="text-base font-bold leading-relaxed">{{ deepMeaning }}</p>
@@ -156,27 +156,49 @@ const handleUpgrade = () => {
         </div>
       </div>
 
-      <DeepAnalysisSplit v-if="activeWord?.deepThink" :deep-think="activeWord.deepThink" />
+      <template v-if="activeWord && activeWord.deepStatus !== 'idle'">
+        <DeepAnalysisSplit v-if="activeWord?.deepThink" :deep-think="activeWord.deepThink" />
+        <div v-else-if="activeWord?.deepStatus === 'loading'"
+          class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm p-4">
+          <div class="animate-pulse space-y-2">
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+          </div>
+        </div>
+        <div v-else-if="activeWord?.deepStatus === 'error'"
+          class="rounded-xl border border-red-200 dark:border-red-800 bg-white dark:bg-gray-900 shadow-sm p-4 text-sm text-red-500">
+          深度分析失败
+        </div>
+      </template>
 
-      <div v-if="activeWord?.dictResult"
+      <div v-if="activeWord && activeWord.dictStatus !== 'idle'"
         class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
         <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
           <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">📖 汉典释义</span>
         </div>
         <div class="px-4 py-3">
-          <DictDisplay
+          <div v-if="activeWord?.dictStatus === 'loading' && !activeWord?.dictResult"
+            class="animate-pulse h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div v-if="activeWord?.dictStatus === 'error' && !activeWord?.dictResult"
+            class="text-sm text-red-500">汉典查询失败</div>
+          <DictDisplay v-if="activeWord?.dictResult"
             :dict-result="activeWord.dictResult"
             :ai-answer="aiAnswerForDict"
             :context="activeWord.context"
             :query-word="activeWord.word" />
         </div>
       </div>
-      <div v-if="activeWord?.corpusEntries?.length"
+      <div v-if="activeWord && activeWord.corpusStatus !== 'idle'"
         class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
         <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
           <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">📚 语料库参考</span>
         </div>
         <div class="px-4 py-3 space-y-3">
+          <div v-if="activeWord?.corpusStatus === 'loading' && !activeWord?.corpusEntries?.length"
+            class="animate-pulse h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div v-if="activeWord?.corpusStatus === 'error' && !activeWord?.corpusEntries?.length"
+            class="text-sm text-red-500">语料库查询失败</div>
           <div v-for="entry in activeWord.corpusEntries" :key="entry.id"
             class="pb-3 border-b border-gray-100 dark:border-gray-800 last:border-b-0 last:pb-0">
             <div class="flex items-center gap-1.5 mb-1">

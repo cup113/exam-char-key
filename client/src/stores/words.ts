@@ -14,7 +14,10 @@ export interface TrackedWord {
   dictResult: string
   deepThink: string
   corpusEntries: CorpusEntry[]
-  statusText: string
+  quickStatus: 'idle' | 'loading' | 'done' | 'error'
+  corpusStatus: 'idle' | 'loading' | 'done' | 'error'
+  dictStatus: 'idle' | 'loading' | 'done' | 'error'
+  deepStatus: 'idle' | 'loading' | 'done' | 'error'
   startTime: number
 }
 
@@ -101,7 +104,10 @@ export const useWordsStore = defineStore('words', () => {
       dictResult: '',
       deepThink: '',
       corpusEntries: [],
-      statusText: '等待中...',
+      quickStatus: 'idle',
+      corpusStatus: 'idle',
+      dictStatus: 'idle',
+      deepStatus: 'idle',
       startTime: Date.now(),
     })
     return id
@@ -132,7 +138,7 @@ export const useWordsStore = defineStore('words', () => {
   // --- 各端点请求 ---
 
   async function fetchQuick(wordId: string, word: string, context: string, signal: AbortSignal) {
-    updateWord(wordId, { statusText: '正在快速解答...' })
+    updateWord(wordId, { quickStatus: 'loading' })
     const url = new URL('/api/query/quick', location.origin)
     url.searchParams.set('word', word)
     url.searchParams.set('context', context)
@@ -147,11 +153,11 @@ export const useWordsStore = defineStore('words', () => {
       const current = trackedWords.value.find(w => w.id === wordId)
       updateWord(wordId, { quickAnswer: (current?.quickAnswer || '') + chunk })
     })
-    updateWord(wordId, { statusText: '快速查询完成' })
+    updateWord(wordId, { quickStatus: 'done' })
   }
 
   async function fetchCorpus(wordId: string, word: string, signal: AbortSignal) {
-    updateWord(wordId, { statusText: '正在查询语料库...' })
+    updateWord(wordId, { corpusStatus: 'loading' })
     const url = new URL('/api/query/corpus', location.origin)
     url.searchParams.set('word', word)
 
@@ -162,11 +168,11 @@ export const useWordsStore = defineStore('words', () => {
     }
 
     const data = await resp.json()
-    updateWord(wordId, { corpusEntries: data.entries })
+    updateWord(wordId, { corpusEntries: data.entries, corpusStatus: 'done' })
   }
 
   async function fetchDictionary(wordId: string, word: string, signal: AbortSignal) {
-    updateWord(wordId, { statusText: '正在查阅汉典...' })
+    updateWord(wordId, { dictStatus: 'loading' })
     const url = new URL('/api/query/dictionary', location.origin)
     url.searchParams.set('word', word)
 
@@ -177,11 +183,11 @@ export const useWordsStore = defineStore('words', () => {
     }
 
     const data = await resp.json()
-    updateWord(wordId, { dictResult: data.result })
+    updateWord(wordId, { dictResult: data.result, dictStatus: 'done' })
   }
 
   async function fetchDeep(wordId: string, word: string, context: string, signal: AbortSignal) {
-    updateWord(wordId, { statusText: '正在深度思考...' })
+    updateWord(wordId, { deepStatus: 'loading' })
     const url = new URL('/api/query/deep', location.origin)
     url.searchParams.set('word', word)
     url.searchParams.set('context', context)
@@ -196,6 +202,7 @@ export const useWordsStore = defineStore('words', () => {
       const current = trackedWords.value.find(w => w.id === wordId)
       updateWord(wordId, { deepThink: (current?.deepThink || '') + chunk })
     })
+    updateWord(wordId, { deepStatus: 'done' })
   }
 
   // --- 核心编排 ---
@@ -209,15 +216,17 @@ export const useWordsStore = defineStore('words', () => {
       const quickP = fetchQuick(wordId, word, context, signal).catch(err => {
         if (err instanceof DOMException && err.name === 'AbortError') throw err
         console.error('quick failed', err)
-        updateWord(wordId, { statusText: `快速查询失败` })
+        updateWord(wordId, { quickStatus: 'error' })
       })
       const corpusP = fetchCorpus(wordId, word, signal).catch(err => {
         if (err instanceof DOMException && err.name === 'AbortError') throw err
         console.error('corpus failed', err)
+        updateWord(wordId, { corpusStatus: 'error' })
       })
       const dictP = fetchDictionary(wordId, word, signal).catch(err => {
         if (err instanceof DOMException && err.name === 'AbortError') throw err
         console.error('dictionary failed', err)
+        updateWord(wordId, { dictStatus: 'error' })
       })
 
       await Promise.all([quickP, corpusP, dictP])
@@ -225,17 +234,16 @@ export const useWordsStore = defineStore('words', () => {
       if (signal.aborted) return
 
       if (mode === 'deep') {
-        updateWord(wordId, { statusText: '正在准备深度分析...' })
         await fetchDeep(wordId, word, context, signal)
       }
 
       if (!signal.aborted) {
-        updateWord(wordId, { status: 'done', statusText: '查询完成' })
+        updateWord(wordId, { status: 'done' })
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
       const message = err instanceof Error ? err.message : '未知错误'
-      updateWord(wordId, { status: 'error', statusText: `错误: ${message}` })
+      updateWord(wordId, { status: 'error' })
     } finally {
       activeControllers.delete(wordId)
     }
@@ -244,7 +252,12 @@ export const useWordsStore = defineStore('words', () => {
   function queryWord(word: string, context: string, mode: 'quick' | 'deep', offset: number): string {
     const wordId = addWord(word, context, mode, offset)
     activeWordId.value = wordId
-    updateWord(wordId, { status: 'loading', statusText: '正在连接...' })
+    updateWord(wordId, {
+      status: 'loading',
+      quickStatus: 'loading',
+      corpusStatus: 'loading',
+      dictStatus: 'loading',
+    })
     runQuery(wordId, word, context, mode)
     return wordId
   }
@@ -270,11 +283,14 @@ export const useWordsStore = defineStore('words', () => {
     abortWord(id)
 
     word.status = 'loading'
-    word.statusText = '正在连接...'
     word.quickAnswer = ''
     word.dictResult = ''
     word.deepThink = ''
     word.corpusEntries = []
+    word.quickStatus = 'loading'
+    word.corpusStatus = 'loading'
+    word.dictStatus = 'loading'
+    word.deepStatus = 'idle'
     word.startTime = Date.now()
 
     runQuery(id, word.word, word.context, word.mode)
@@ -290,18 +306,18 @@ export const useWordsStore = defineStore('words', () => {
 
     word.mode = 'deep'
     word.status = 'loading'
-    word.statusText = '正在准备深度分析...'
+    word.deepStatus = 'loading'
 
     fetchDeep(id, word.word, word.context, signal)
       .then(() => {
         if (!signal.aborted) {
-          updateWord(id, { status: 'done', statusText: '查询完成' })
+          updateWord(id, { status: 'done' })
         }
       })
       .catch(err => {
         if (err instanceof DOMException && err.name === 'AbortError') return
         const message = err instanceof Error ? err.message : '未知错误'
-        updateWord(id, { status: 'error', statusText: `错误: ${message}` })
+        updateWord(id, { status: 'error', deepStatus: 'error' })
       })
       .finally(() => {
         activeControllers.delete(id)

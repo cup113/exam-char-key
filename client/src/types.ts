@@ -6,16 +6,6 @@ export interface SelectionState {
   y: number
 }
 
-export interface QueryState {
-  isOpen: boolean
-  mode: 'quick' | 'deep'
-  quickAnswer: string
-  dictResult: string
-  deepThink: string
-  statusText: string
-  loading: boolean
-}
-
 export interface CorpusEntry {
   id: number
   type: string
