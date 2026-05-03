@@ -6,3 +6,4 @@ beautifulsoup4==4.12.2
 pydantic-settings==2.13.1
 PyJWT==2.12.1
 sqladmin==0.25.0
+itsdangerous==2.2.0
