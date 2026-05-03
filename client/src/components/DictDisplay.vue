@@ -44,11 +44,18 @@ function charJaccard(a: string, b: string, filterChars: string = ''): number {
   return intersection.size / union.size
 }
 
-function scoreBg(score: number): string {
-  if (score >= 0.35) return 'bg-amber-200'
-  if (score >= 0.15) return 'bg-amber-100'
-  if (score > 0) return 'bg-amber-50'
-  return ''
+function scoreStyle(score: number): string {
+  if (score >= 0.5) return 'font-bold underline decoration-2 underline-offset-2 decoration-blue-400/50'
+  if (score >= 0.25) return 'font-semibold'
+  if (score > 0.1) return ''
+  return 'text-gray-400 dark:text-gray-500'
+}
+
+function badgeClass(score: number): string {
+  if (score >= 0.5) return 'bg-blue-500 text-white'
+  if (score >= 0.25) return 'bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300'
+  if (score > 0.1) return 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+  return 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
 }
 
 function computeScores(entries: DictEntry[] | undefined): EntryScore[] {
@@ -80,20 +87,20 @@ const sections = computed(() => [
       <div v-if="si > 0" class="mt-3"></div>
       <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{{ sec.title }}</h4>
       <div v-for="(item, i) in sec.entries" :key="sec.key + i"
-        class="mb-2 last:mb-0 flex gap-2 px-2 py-1.5 -mx-2 rounded-lg transition-colors"
-        :class="scoreBg(sec.scores[i]?.score || 0)">
+        class="mb-2 last:mb-0 flex gap-2 px-2 py-1.5 -mx-2 rounded-lg">
         <span
-          class="shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold">
+          class="shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold transition-colors"
+          :class="badgeClass(sec.scores[i]?.score || 0)">
           {{ i + 1 }}
         </span>
         <div class="min-w-0">
-          <p class="text-sm">
+          <p class="text-sm" :class="scoreStyle(sec.scores[i]?.score || 0)">
             {{ item.brief }}
             <span v-if="sec.showEnglish && item.english" class="text-xs text-gray-400 dark:text-gray-500 ml-1">[{{ item.english }}]</span>
           </p>
           <p v-if="item.examples?.length" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 space-x-1">
             <span v-for="(ex, ei) in item.examples" :key="ei" class="inline-block"
-              :class="(sec.scores[i]?.exampleScores?.[ei] || 0) > 0 ? 'bg-amber-100 dark:bg-amber-900/50 mr-0.5 rounded' : ''">
+              :class="(sec.scores[i]?.exampleScores?.[ei] || 0) > 0.1 ? 'font-medium' : 'text-gray-400 dark:text-gray-500'">
               ({{ ei + 1 }}) {{ ex }}
             </span>
           </p>

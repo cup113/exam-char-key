@@ -51,6 +51,12 @@ onMounted(() => auth.fetchUser())
           <RouterLink to="/history" class="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white py-1.5" @click="mobileMenuOpen = false" data-umami-event="header-page-switch-history">历史记录</RouterLink>
           <RouterLink to="/profile" class="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white py-1.5" @click="mobileMenuOpen = false" data-umami-event="header-page-switch-account">个人</RouterLink>
         </nav>
+        <div class="pt-3 border-t border-gray-100 dark:border-gray-800 mt-2">
+          <button @click="theme.toggle" class="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white text-sm py-1" title="切换暗黑模式">
+            <span class="text-base">{{ theme.isDark ? '☀️' : '🌙' }}</span>
+            <span>{{ theme.isDark ? '浅色模式' : '深色模式' }}</span>
+          </button>
+        </div>
         <div v-if="!auth.user.logged_in" class="flex gap-2 pt-3 border-t border-gray-100 dark:border-gray-800 mt-2">
           <LoginButtons size="sm" />
         </div>

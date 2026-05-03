@@ -25,12 +25,16 @@ from db_helper import (
     save_corpus,
     get_query_history,
     get_all_query_history,
+    get_query_history_by_ids,
+    delete_query_history,
+    delete_query_history_batch,
     get_corpus_by_word,
     log_api_usage,
     get_dict_cache,
 )
 from spider import get_dict_entry, format_dict_for_prompt
 from auth import router as auth_router, callback_router, decode_jwt
+from admin import setup_admin
 
 logger = get_logger("main")
 
@@ -53,6 +57,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+setup_admin(app)
 
 app.include_router(auth_router, prefix="/api")
 app.include_router(callback_router, prefix="/api")
@@ -220,6 +226,29 @@ async def save_history(request: Request) -> dict[str, int | str]:
     return {"id": history_id, "message": "保存成功"}
 
 
+@app.delete("/api/history/{record_id}")
+async def delete_history(record_id: int, request: Request):
+    _, _, user_id = get_identifier_and_limit(request)
+    if not user_id:
+        raise HTTPException(401, "请先登录")
+    if not delete_query_history(user_id, record_id):
+        raise HTTPException(404, "记录不存在")
+    return {"message": "删除成功"}
+
+
+@app.post("/api/history/delete")
+async def delete_history_batch(request: Request):
+    _, _, user_id = get_identifier_and_limit(request)
+    if not user_id:
+        raise HTTPException(401, "请先登录")
+    body = await request.json()
+    ids = body.get("ids", [])
+    if not ids:
+        raise HTTPException(400, "ids 不能为空")
+    delete_query_history_batch(user_id, ids)
+    return {"message": f"已删除 {len(ids)} 条记录"}
+
+
 # --- 数据迁移（旧版 localStorage EC_history → query_history）---
 @app.post("/api/migrate")
 async def migrate_legacy_data(request: Request) -> dict[str, Any]:
@@ -311,8 +340,12 @@ async def export_history(request: Request):
 
     body = await request.json()
     fmt = body.get("format", "json")
+    ids = body.get("ids")
 
-    records = get_all_query_history(user_id)
+    if ids:
+        records = get_query_history_by_ids(user_id, ids)
+    else:
+        records = get_all_query_history(user_id)
     if not records:
         raise HTTPException(400, "暂无历史记录可导出")
 

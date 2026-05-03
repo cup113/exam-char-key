@@ -179,6 +179,37 @@ def get_all_query_history(user_id: str):
         return [dict(row) for row in cursor.fetchall()]
 
 
+def get_query_history_by_ids(user_id: str, ids: list[int]):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        placeholders = ",".join("?" for _ in ids)
+        cursor = conn.execute(
+            f"SELECT * FROM query_history WHERE id IN ({placeholders}) AND user_id = ? ORDER BY created_at DESC",
+            (*ids, user_id),
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
+
+def delete_query_history(user_id: str, record_id: int) -> bool:
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.execute(
+            "DELETE FROM query_history WHERE id = ? AND user_id = ?",
+            (record_id, user_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def delete_query_history_batch(user_id: str, ids: list[int]):
+    with sqlite3.connect(DB_PATH) as conn:
+        placeholders = ",".join("?" for _ in ids)
+        conn.execute(
+            f"DELETE FROM query_history WHERE id IN ({placeholders}) AND user_id = ?",
+            (*ids, user_id),
+        )
+        conn.commit()
+
+
 def save_corpus(type_: str, context: str, word: str, answer: str) -> int:
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.execute(

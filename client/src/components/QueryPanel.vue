@@ -86,48 +86,40 @@ const handleUpgrade = () => {
       show ? 'max-lg:translate-y-0' : 'max-lg:translate-y-full',
       'transition-transform duration-300',
     ]">
-    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+    <div class="flex items-start justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
       <div>
         <h2 class="text-lg font-bold">「{{ activeWord?.word }}」</h2>
-        <span class="text-xs text-gray-400 dark:text-gray-500">{{ activeWord?.mode === 'deep' ? '深度查询' : '快速确认' }}</span>
+        <div v-if="activeWord" class="flex items-center gap-2 mt-0.5">
+          <span class="text-xs text-gray-400 dark:text-gray-500">{{ activeWord.mode === 'deep' ? '深度查询' : '快速确认' }}</span>
+          <button v-if="activeWord.status === 'pending' || activeWord.status === 'loading'"
+            @click="handleCancel"
+            class="text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded px-1.5 py-0.5 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors" data-umami-event="home-panel-cancel">
+            取消
+          </button>
+          <template v-else-if="activeWord.status === 'error'">
+            <button @click="handleRetry"
+              class="text-xs text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded px-1.5 py-0.5 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors" data-umami-event="home-panel-retry">
+              重试
+            </button>
+            <button @click="handleCancel"
+              class="text-xs text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" data-umami-event="home-panel-clear">
+              清除
+            </button>
+          </template>
+          <template v-else-if="activeWord.status === 'done'">
+            <button v-if="activeWord.mode === 'quick'"
+              @click="handleUpgrade"
+              class="text-xs text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 rounded px-1.5 py-0.5 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-colors" data-umami-event="home-panel-upgrade">
+              升级深度思考
+            </button>
+            <button @click="handleCancel"
+              class="text-xs text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" data-umami-event="home-panel-clear">
+              清除
+            </button>
+          </template>
+        </div>
       </div>
-      <button @click="emit('close')" class="text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-white text-lg"  data-umami-event="home-panel-close">✕</button>
-    </div>
-
-    <div v-if="activeWord" class="px-5 py-3 text-sm flex items-center gap-2 border-b border-gray-50 dark:border-gray-800">
-      <span v-if="activeWord.status === 'loading'" class="relative flex h-2.5 w-2.5">
-        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
-      </span>
-      <span v-else-if="activeWord.status === 'done'" class="h-2.5 w-2.5 rounded-full bg-green-400"></span>
-      <span v-else-if="activeWord.status === 'error'" class="h-2.5 w-2.5 rounded-full bg-red-400"></span>
-      <span v-else class="h-2.5 w-2.5 rounded-full bg-gray-400"></span>
-      <button v-if="activeWord.status === 'pending' || activeWord.status === 'loading'"
-        @click="handleCancel"
-        class="ml-auto px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors" data-umami-event="home-panel-cancel">
-        取消
-      </button>
-      <div v-else-if="activeWord.status === 'error'" class="ml-auto flex items-center gap-2">
-        <button @click="handleRetry"
-          class="px-2 py-1 text-xs text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors" data-umami-event="home-panel-retry">
-          重试
-        </button>
-        <button @click="handleCancel"
-          class="px-2 py-1 text-xs text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" data-umami-event="home-panel-clear">
-          清除
-        </button>
-      </div>
-      <div v-else-if="activeWord.status === 'done'" class="ml-auto flex items-center gap-2">
-        <button v-if="activeWord.mode === 'quick'"
-          @click="handleUpgrade"
-          class="px-2 py-1 text-xs text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 rounded hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-colors" data-umami-event="home-panel-upgrade">
-          升级深度思考
-        </button>
-        <button @click="handleCancel"
-          class="px-2 py-1 text-xs text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" data-umami-event="home-panel-clear">
-          清除
-        </button>
-      </div>
+      <button @click="emit('close')" class="text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-white text-lg mt-0.5"  data-umami-event="home-panel-close">✕</button>
     </div>
 
     <div class="flex-1 overflow-y-auto p-5 space-y-4">
