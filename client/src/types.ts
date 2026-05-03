@@ -34,6 +34,7 @@ export interface UserInfo {
   logged_in: boolean
   user_id?: string
   provider?: string
+  is_admin?: boolean
 }
 
 export type TextSegment =

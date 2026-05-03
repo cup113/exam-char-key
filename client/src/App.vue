@@ -22,6 +22,7 @@ onMounted(() => auth.fetchUser())
           <RouterLink to="/" class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white">阅读</RouterLink>
           <RouterLink to="/history" class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white" data-umami-event="header-page-switch-history">历史记录</RouterLink>
           <RouterLink to="/profile" class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white" data-umami-event="header-page-switch-account">个人</RouterLink>
+          <RouterLink v-if="auth.user.is_admin" to="/admin" class="text-orange-500 hover:text-orange-400 font-medium" data-umami-event="header-page-switch-admin">管理</RouterLink>
         </nav>
         <button @click="theme.toggle" class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white text-base p-0.5" title="切换暗黑模式">
           {{ theme.isDark ? '☀️' : '🌙' }}
@@ -50,6 +51,7 @@ onMounted(() => auth.fetchUser())
           <RouterLink to="/" class="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white py-1.5" @click="mobileMenuOpen = false">阅读</RouterLink>
           <RouterLink to="/history" class="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white py-1.5" @click="mobileMenuOpen = false" data-umami-event="header-page-switch-history">历史记录</RouterLink>
           <RouterLink to="/profile" class="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white py-1.5" @click="mobileMenuOpen = false" data-umami-event="header-page-switch-account">个人</RouterLink>
+          <RouterLink v-if="auth.user.is_admin" to="/admin" class="text-orange-500 hover:text-orange-400 font-medium py-1.5" @click="mobileMenuOpen = false" data-umami-event="header-page-switch-admin">管理</RouterLink>
         </nav>
         <div class="pt-3 border-t border-gray-100 dark:border-gray-800 mt-2">
           <button @click="theme.toggle" class="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white text-sm py-1" title="切换暗黑模式">

@@ -18,6 +18,7 @@ class Settings(BaseSettings):
 
     APP_BASE_URL: str = "http://localhost:5173"
     JWT_SECRET: str = ""
+    ADMIN_USERS: str = "gitee:modify_me"
     DB_PATH: str = "../db/data.db"
 
     QUOTA_USER_DAILY: int = 50
@@ -30,3 +31,7 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def get_admin_users() -> set[str]:
+    return set(u.strip() for u in settings.ADMIN_USERS.split(",") if u.strip())

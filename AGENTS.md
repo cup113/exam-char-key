@@ -16,10 +16,16 @@ server (FastAPI + SQLite + OpenAI SDK)
   ├─ .env.example   示例环境变量（此文件可读，.env 不允许读取）
   ├─ main.py        FastAPI 应用入口，路由定义
   ├─ spider.py      汉典爬虫 + LLM 结构化 + dict 格式化
-  ├─ db_helper.py   SQLite 数据库操作（缓存、配额、历史记录）
+  ├─ db_helper.py   Database 类（缓存、配额、历史记录）+ 模块级默认实例
   ├─ auth.py        GitHub/Gitee OAuth + JWT
-  ├─ config.py      配置
-  └─ prompt.py      LLM 提示词模板
+  ├─ config.py      配置（含 ADMIN_USERS 白名单）
+  ├─ admin.py       SQLAdmin 后台（ModelView + JWT 鉴权）
+  ├─ prompt.py      LLM 提示词模板
+  ├─ tests/
+  │   ├── conftest.py              测试环境（临时 DB + JWT fixture）
+  │   ├── test_admin.py            14 个用例（鉴权、模型列表、admin API、导入语料）
+  │   └── test_db_helper.py        30 个用例（Database 类全覆盖 — 表创建、配额、缓存、历史记录、语料、隔离性）
+  └─ pytest.ini     配置 (pythonpath = .)
 
 train (Fine-tuning on DashScope, inactive now)
 
@@ -57,4 +63,5 @@ pnpm type-check   # TypeScript 类型检查
 ruff check .      # 代码检查
 ruff format .     # 代码格式化
 python ../run_dev.py  # 启动开发服务器
+pytest            # 运行服务端测试
 ```

@@ -35,6 +35,7 @@ from db_helper import (
 from spider import get_dict_entry, format_dict_for_prompt
 from auth import router as auth_router, callback_router, decode_jwt
 from admin import setup_admin
+from config import get_admin_users
 
 logger = get_logger("main")
 
@@ -391,6 +392,63 @@ async def export_history(request: Request):
             )
 
     raise HTTPException(400, f"不支持的导出格式: {fmt}")
+
+
+# --- 管理员接口 ---
+
+def verify_admin(request: Request):
+    token = request.cookies.get("auth_token")
+    if not token:
+        raise HTTPException(401, "未登录")
+    payload = decode_jwt(token)
+    if payload["sub"] not in get_admin_users():
+        raise HTTPException(403, "非管理员")
+    return payload["sub"]
+
+
+@app.get("/api/admin/check")
+async def admin_check(request: Request):
+    try:
+        verify_admin(request)
+        return {"admin": True}
+    except HTTPException:
+        return {"admin": False}
+
+
+@app.post("/api/admin/import-corpus")
+async def admin_import_corpus(request: Request):
+    verify_admin(request)
+    form = await request.form()
+    file = form.get("file")
+    if not file or not file.filename:
+        raise HTTPException(400, "请选择 JSONL 文件")
+    try:
+        content = (await file.read()).decode("utf-8")
+    except Exception:
+        raise HTTPException(400, "文件读取失败")
+
+    count = 0
+    for line in content.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        word = entry.get("word", "")
+        for note in entry.get("notes", []):
+            name_passage = note.get("name_passage", "").strip()
+            type_ = "textbook" if name_passage else "mock_exam"
+            save_corpus(
+                type_=type_,
+                context=note.get("context", ""),
+                word=word,
+                answer=note.get("detail", ""),
+            )
+            count += 1
+
+    return {"success": True, "count": count, "filename": file.filename}
 
 
 # --- 旧版 PWA 自注销（vite-plugin-pwa 默认路径 /sw.js）---

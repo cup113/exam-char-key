@@ -3,7 +3,7 @@ import jwt
 import httpx
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
-from config import settings
+from config import settings, get_admin_users
 from typing import Any
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -117,7 +117,12 @@ async def get_me(request: Request):
         return JSONResponse({"logged_in": False})
     payload = decode_jwt(token)
     return JSONResponse(
-        {"logged_in": True, "user_id": payload["sub"], "provider": payload["provider"]}
+        {
+            "logged_in": True,
+            "user_id": payload["sub"],
+            "provider": payload["provider"],
+            "is_admin": payload["sub"] in get_admin_users(),
+        }
     )
 
 
