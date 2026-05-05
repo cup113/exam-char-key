@@ -20,6 +20,7 @@ services:
       - GITEE_CLIENT_ID=${GITEE_CLIENT_ID:-}
       - GITEE_CLIENT_SECRET=${GITEE_CLIENT_SECRET:-}
       - JWT_SECRET=${JWT_SECRET:-}
+      - ZDIC_TIMEOUT=${ZDIC_TIMEOUT:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; exit(0) if urllib.request.urlopen('http://localhost:8000/health').status==200 else exit(1)"]
       interval: 30s

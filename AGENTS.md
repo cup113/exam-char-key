@@ -27,12 +27,27 @@ server (FastAPI + SQLite + OpenAI SDK)
   │   └── test_db_helper.py        30 个用例（Database 类全覆盖 — 表创建、配额、缓存、历史记录、语料、隔离性）
   └─ pytest.ini     配置 (pythonpath = .)
 
+```
+
+## 环境变量配置流程
+
+新增环境变量需同步更新以下 **5 个位置**，缺一不可：
+
+| # | 文件 | 操作 |
+|---|------|------|
+| 1 | `server/config.py` | `Settings` 类中声明字段 + 默认值（例：`ZDIC_TIMEOUT: int = 30`） |
+| 2 | 使用该变量的 `.py` 文件 | 通过 `settings.XXX` 调用，禁止硬编码 |
+| 3 | `server/.env.example` | 添加示例值，供开发/部署参考 |
+| 4 | `docker-compose.yml` | `environment` 块添加 `- XXX=${XXX:-}`，确保容器内可用 |
+| 5 | `server/tests/conftest.py` | 若变量影响未 mock 的逻辑，需覆盖测试值 |
+
+现有完整环境变量列表见 `server/.env.example`（共 15 项），此文件可公开读取，`.env` 禁止读取。
+
 train (Fine-tuning on DashScope, inactive now)
 
 docker-compose.yml, Dockerfile (Linux Coolify Deployment)
 
 run_dev.py (Windows Local Development)
-```
 
 ## 数据流转
 

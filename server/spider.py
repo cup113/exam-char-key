@@ -19,7 +19,7 @@ async def scrape_zdic(word: str) -> str:
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
     logger.info("爬取汉典 | word=%s", word)
-    async with httpx.AsyncClient(follow_redirects=True, timeout=15) as http:
+    async with httpx.AsyncClient(follow_redirects=True, timeout=settings.ZDIC_TIMEOUT) as http:
         resp = await http.get(url, headers=headers)
         resp.raise_for_status()
     logger.debug(

@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     JWT_SECRET: str = ""
     ADMIN_USERS: str = "gitee:modify_me"
     DB_PATH: str = "../db/data.db"
+    ZDIC_TIMEOUT: int = 30
 
     QUOTA_USER_DAILY: int = 50
     QUOTA_GUEST_DAILY: int = 50  # Total Pool
