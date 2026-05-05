@@ -319,4 +319,5 @@ For support, questions, or feature requests: create an issue on GitHub, or conta
 - **ZDIC** for comprehensive Chinese character dictionary
 - **Vue.js** and **FastAPI** communities for excellent frameworks
 - **[Leximory](https://github.com/NarixHine/leximory)** for UI/UX & system design inspiration
+- **中国哲学书电子化计划 ([ctext.org](https://ctext.org))**, **识典古籍 ([shidianguji.com](https://www.shidianguji.com))**, and **古文岛 ([guwendao.net](https://www.guwendao.net))** for providing extensive classical Chinese text repositories
 - Contributors to the Chinese language learning community

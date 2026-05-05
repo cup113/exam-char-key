@@ -125,6 +125,16 @@ const handlePointerUp = (e: PointerEvent) => {
   if (!sel || sel.isCollapsed) return
 
   showTooltipFromSelection(sel)
+
+  if (selection.showTooltip && sel.rangeCount > 0) {
+    const range = sel.getRangeAt(0)
+    sel.removeAllRanges()
+    requestAnimationFrame(() => {
+      if (selection.showTooltip) {
+        sel.addRange(range)
+      }
+    })
+  }
 }
 
 const onSelectionChange = () => {
@@ -235,27 +245,10 @@ const saveToHistory = async () => {
       :class="showPanel ? 'lg:mr-108' : ''">
       <div class="max-w-3xl mx-auto">
         <div v-if="auth.showQuotaPrompt"
-          class="mb-4 px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-          <span>
-            今日免费查询剩余 <strong>{{ auth.quota!.remaining }}</strong> 次，
-            注册获取更多免费次数。
-          </span>
-          <span class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-            <LoginButtons size="sm" />
-            <button @click="auth.dismissQuotaPrompt"
-              class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-lg leading-none ml-1">&times;</button>
-          </span>
-        </div>
-        <div v-if="auth.quota && auth.user.logged_in"
-          class="mb-3 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-2">
-          <span>💡 今日额度：已用 {{ auth.quota.used }}/{{ auth.quota.limit }}</span>
-          <span class="flex-1 max-w-24 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <span class="block h-full rounded-full transition-all duration-300"
-              :class="auth.quota.remaining < 5 ? 'bg-red-400' : 'bg-blue-400'"
-              :style="{ width: (auth.quota.used / auth.quota.limit * 100) + '%' }">
-            </span>
-          </span>
-          <span :class="auth.quota.remaining < 5 ? 'text-red-500' : ''">剩余 {{ auth.quota.remaining }} 次</span>
+          class="mb-3 px-3 py-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-xs flex items-center justify-between gap-2">
+          <span>免费剩余 <strong>{{ auth.quota!.remaining }}</strong> 次 · <LoginButtons size="sm" /></span>
+          <button @click="auth.dismissQuotaPrompt"
+            class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-lg leading-none">&times;</button>
         </div>
         <TextContent
           :editableText="wordsStore.editableText"
