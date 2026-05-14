@@ -13,6 +13,9 @@ A comprehensive Chinese language learning platform that specializes in **ancient
 - **Character Dictionary Integration**: Real-time character explanations and definitions from ZDIC
 - **Textbook Integration**: Verbatim related character definitions in textbook
 - **Frequency Analysis**: Statistical analysis of character usage across different contexts
+- **External Text Search**: Search external repositories (ctext, 识典古籍, 古文岛) for classical Chinese passages
+- **Per-endpoint Status**: Independent real-time status indicators for each query step (quick, corpus, dictionary, deep)
+- **Admin Panel**: SQLAdmin-based management interface for model overview and corpus import
 
 ### 🤖 AI Capabilities
 
@@ -20,12 +23,18 @@ A comprehensive Chinese language learning platform that specializes in **ancient
 - **Provider Agnostic**: Supports any OpenAI-compatible API (Qwen via DashScope, OpenRouter, OpenAI, etc.)
 - **Contextual Understanding**: AI models trained specifically for Chinese language nuances
 - **Real-time Processing**: Streaming SSE responses for better user experience
+- **Configurable Dictionary Timeout**: Adjustable timeout for ZDIC dictionary scraping via `ZDIC_TIMEOUT`
 
 ### 🔐 Authentication & Quota
 
 - **OAuth Login**: Sign in with GitHub or Gitee
 - **Daily Quota**: Configurable query limits for authenticated users and guests
 - **History Sync**: Per-user query history backed by SQLite
+
+### 🎨 User Experience
+
+- **Dark Mode**: System-aware dark mode with manual toggle and persisted preference
+- **Umami Analytics**: Privacy-focused event tracking for usage insights
 
 ### 📚 Educational Tools
 
@@ -148,6 +157,8 @@ GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 GITEE_CLIENT_ID=
 GITEE_CLIENT_SECRET=
+ADMIN_USERS=gitee:modify_me
+ZDIC_TIMEOUT=30
 ```
 
 ### API Configuration
@@ -155,12 +166,14 @@ GITEE_CLIENT_SECRET=
 The application supports any OpenAI-compatible API service. Configure via `server/.env`:
 
 | Variable | Description | Example |
-|---|---|---|
+|---|---|---|---|
 | `LLM_BASE_URL` | API endpoint base URL | `https://dashscope.aliyuncs.com/compatible-mode/v1` (Qwen), `https://openrouter.ai/api/v1` |
 | `LLM_API_KEY` | Your API key | `sk-...` |
 | `MODEL_DICT_PREPROCESS` | Model for structuring raw dictionary data into JSON | `qwen-turbo`, `gpt-3.5-turbo` |
 | `MODEL_QUICK_ANSWER` | Model for fast inline character explanations | `qwen3-8b-ft-202508031744-1c46` |
 | `MODEL_DEEP_THINK` | Model for comprehensive deep analysis | `qwen3-8b-ft-202508031744-1c46`, `gpt-4o` |
+| `ZDIC_TIMEOUT` | Timeout (seconds) for ZDIC dictionary scraping | `30` |
+| `ADMIN_USERS` | Admin whitelist (`provider:username`, comma-separated) | `gitee:myuser` |
 
 ### JWT Secret
 
@@ -215,7 +228,9 @@ exam-char-key/
 │   │   ├── assets/
 │   │   │   └── main.css             # Global TailwindCSS styles
 │   │   ├── components/
+│   │   │   ├── DeepAnalysisSplit.vue # Deep analysis split display
 │   │   │   ├── DictDisplay.vue      # Dictionary lookup display
+│   │   │   ├── LoginButtons.vue     # Login button group
 │   │   │   ├── QueryPanel.vue       # Main query interface
 │   │   │   ├── SelectionTooltip.vue # Text selection tooltip
 │   │   │   └── TextContent.vue      # Text content viewer
@@ -223,8 +238,10 @@ exam-char-key/
 │   │   │   └── index.ts             # Vue Router configuration
 │   │   ├── stores/
 │   │   │   ├── auth.ts              # Authentication state (Pinia)
+│   │   │   ├── theme.ts             # Dark mode state (Pinia)
 │   │   │   └── words.ts             # Query/words state (Pinia)
 │   │   └── views/
+│   │       ├── AdminView.vue        # Admin panel
 │   │       ├── HomeView.vue         # Main search/query view
 │   │       ├── HistoryView.vue      # Query history view
 │   │       └── ProfileView.vue      # User profile & export
@@ -236,13 +253,19 @@ exam-char-key/
 │   ├── main.py                      # App entry, routes, CORS, SSE pipeline
 │   ├── config.py                    # Pydantic settings from .env
 │   ├── auth.py                      # GitHub/Gitee OAuth + JWT auth
+│   ├── admin.py                     # SQLAdmin后台 (ModelView + JWT鉴权)
 │   ├── db_helper.py                 # SQLite database helpers (dict cache, quota, history, corpus)
 │   ├── spider.py                    # ZDIC scraping + AI structuring pipeline
 │   ├── prompt.py                    # LLM prompt templates
 │   ├── log_helper.py                # Logging configuration
 │   ├── import_corpus.py             # Corpus import utility
 │   ├── requirements.txt
-│   └── .env.example                 # Environment variable template
+│   ├── .env.example                 # Environment variable template
+│   ├── pytest.ini                   # Pytest configuration
+│   └── tests/                       # Test suite
+│       ├── conftest.py
+│       ├── test_admin.py
+│       └── test_db_helper.py
 ├── train/                           # ML training pipeline
 │   ├── extractor/                   # PDF textbook extraction & classification
 │   │   ├── textbook_extractor.py

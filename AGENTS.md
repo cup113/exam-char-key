@@ -1,15 +1,15 @@
 # exam-char-key
 
-Exam Char Key — 面向文言文学习的 AI 辅助平台，提供精准的汉字释义，助力高效学习与研究。现代前后端技术栈，支持容器化部署与学习进度管理。
+AI-assisted Classical Chinese learning platform. See [CONTEXT.md](./CONTEXT.md) for domain model and [docs/adr/](./docs/adr/) for architecture decisions.
 
 ## 项目架构
 
 ```
 client (Vite + Vue 3 + Pinia + TypeScript + Tailwind CSS v4)
   └─ src/
-      ├─ stores/     Pinia 状态管理（words.ts 查询状态，auth.ts 登录/配额）
-      ├─ views/      页面：HomeView（主页面）、HistoryView、ProfileView
-      ├─ components/ 组件：TextContent、SelectionTooltip、QueryPanel、DictDisplay
+      ├─ stores/     Pinia 状态管理（words.ts 查询状态，auth.ts 登录/配额，theme.ts 深色模式）
+      ├─ views/      页面：AdminView（管理后台）、HomeView（主页面）、HistoryView、ProfileView
+      ├─ components/ 组件：DeepAnalysisSplit、DictDisplay、LoginButtons、QueryPanel、SelectionTooltip、TextContent
       └─ router/     路由配置
 
 server (FastAPI + SQLite + OpenAI SDK)
@@ -18,15 +18,18 @@ server (FastAPI + SQLite + OpenAI SDK)
   ├─ spider.py      汉典爬虫 + LLM 结构化 + dict 格式化
   ├─ db_helper.py   Database 类（缓存、配额、历史记录）+ 模块级默认实例
   ├─ auth.py        GitHub/Gitee OAuth + JWT
-  ├─ config.py      配置（含 ADMIN_USERS 白名单）
   ├─ admin.py       SQLAdmin 后台（ModelView + JWT 鉴权）
+  ├─ config.py      配置（含 ADMIN_USERS 白名单）
   ├─ prompt.py      LLM 提示词模板
+  ├─ log_helper.py  日志配置
+  ├─ import_corpus.py  语料导入工具
   ├─ tests/
   │   ├── conftest.py              测试环境（临时 DB + JWT fixture）
   │   ├── test_admin.py            14 个用例（鉴权、模型列表、admin API、导入语料）
   │   └── test_db_helper.py        30 个用例（Database 类全覆盖 — 表创建、配额、缓存、历史记录、语料、隔离性）
-  └─ pytest.ini     配置 (pythonpath = .)
-
+  ├─ pytest.ini     配置 (pythonpath = .)
+  ├─ requirements.txt
+  └─ .env.example
 ```
 
 ## 环境变量配置流程
@@ -41,26 +44,13 @@ server (FastAPI + SQLite + OpenAI SDK)
 | 4 | `docker-compose.yml` | `environment` 块添加 `- XXX=${XXX:-}`，确保容器内可用 |
 | 5 | `server/tests/conftest.py` | 若变量影响未 mock 的逻辑，需覆盖测试值 |
 
-现有完整环境变量列表见 `server/.env.example`（共 15 项），此文件可公开读取，`.env` 禁止读取。
+现有完整环境变量列表见 `server/.env.example`（共 16 项），此文件可公开读取，`.env` 禁止读取。
 
 train (Fine-tuning on DashScope, inactive now)
 
 docker-compose.yml, Dockerfile (Linux Coolify Deployment)
 
 run_dev.py (Windows Local Development)
-
-## 数据流转
-
-```
-用户选词 → SelectionTooltip (mode: quick/deep)
-  └─ wordsStore.queryWord()
-       ├─ GET /api/query/quick     ← SSE 流 → quickAnswer
-       ├─ GET /api/query/corpus    ← JSON    → corpusEntries
-       ├─ GET /api/query/dictionary← JSON    → dictResult
-       └─ (deep 模式) GET /api/query/deep ← SSE 流 → deepThink
-              ↑ deep 需等待 dictionary 完成后由服务端从缓存取 dict_data，格式化为文本后拼入 prompt
-       └─ status: done → QueryPanel 展示
-```
 
 ## 常用命令
 
