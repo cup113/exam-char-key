@@ -83,7 +83,9 @@ class TestAdminApi:
             json.dumps(
                 {
                     "word": "之",
-                    "notes": [{"context": "知之者", "detail": "代词", "name_passage": ""}],
+                    "notes": [
+                        {"context": "知之者", "detail": "代词", "name_passage": ""}
+                    ],
                 }
             ),
             json.dumps(

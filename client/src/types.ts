@@ -1,3 +1,21 @@
+export interface TrackedWord {
+  id: string
+  word: string
+  context: string
+  offset: number
+  mode: 'quick' | 'deep'
+  status: 'pending' | 'loading' | 'done' | 'error'
+  quickAnswer: string
+  dictResult: string
+  deepThink: string
+  corpusEntries: CorpusEntry[]
+  quickStatus: 'idle' | 'loading' | 'done' | 'error'
+  corpusStatus: 'idle' | 'loading' | 'done' | 'error'
+  dictStatus: 'idle' | 'loading' | 'done' | 'error'
+  deepStatus: 'idle' | 'loading' | 'done' | 'error'
+  startTime: number
+}
+
 export interface SelectionState {
   word: string
   context: string
@@ -27,8 +45,6 @@ export interface ExportResponse {
   docx_filename?: string
   apkg_filename?: string
 }
-
-import type { TrackedWord } from '@/stores/words'
 
 export interface UserInfo {
   logged_in: boolean

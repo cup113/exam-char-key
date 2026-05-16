@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import DictDisplay from '@/components/DictDisplay.vue'
 import DeepAnalysisSplit from '@/components/DeepAnalysisSplit.vue'
 import { useWordsStore } from '@/stores/words'
-import type { TrackedWord } from '@/stores/words'
+import type { TrackedWord } from '@/types'
 
 const wordsStore = useWordsStore()
 

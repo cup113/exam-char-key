@@ -31,8 +31,10 @@ from db_helper import (
     get_corpus_by_word,
     log_api_usage,
     get_dict_cache,
+    ingest_corpus_lines,
 )
 from spider import get_dict_entry, format_dict_for_prompt
+from export_service import build_export_document, ANKI_API_URL, ANKI_BASE_URL
 from auth import router as auth_router, callback_router, decode_jwt
 from admin import setup_admin
 from config import get_admin_users
@@ -59,11 +61,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.middleware("http")
 async def trust_forwarded_proto(request: Request, call_next):
     if request.headers.get("x-forwarded-proto") == "https":
         request.scope["scheme"] = "https"
     return await call_next(request)
+
 
 setup_admin(app)
 
@@ -89,16 +93,20 @@ def get_identifier_and_limit(request: Request):
     return "ip:guest", settings.QUOTA_GUEST_DAILY, None
 
 
-# --- 依赖注入：限流（count 可指定）---
+# --- 限流 ---
+def consume_quota(request: Request, count: int = 1) -> str:
+    identifier, limit, _ = get_identifier_and_limit(request)
+    if not check_and_decrease_quota(identifier, limit, count):
+        logger.warning("额度耗尽 | %s", identifier)
+        raise HTTPException(status_code=429, detail="今日额度已耗尽")
+    log_api_usage(identifier, request.url.path)
+    logger.debug("额度扣除成功 | %s | count=%d", identifier, count)
+    return identifier
+
+
 def verify_quota(count: int = 1):
     def _verify(request: Request):
-        identifier, limit, _ = get_identifier_and_limit(request)
-        if not check_and_decrease_quota(identifier, limit, count):
-            logger.warning("额度耗尽 | %s", identifier)
-            raise HTTPException(status_code=429, detail="今日额度已耗尽")
-        log_api_usage(identifier, request.url.path)
-        logger.debug("额度扣除成功 | %s | count=%d", identifier, count)
-        return identifier
+        return consume_quota(request, count)
 
     return _verify
 
@@ -152,11 +160,7 @@ async def query_dictionary(word: str, request: Request) -> dict[str, Any]:
         logger.debug("字典缓存命中 | word=%s", word)
         return {"result": cached, "cached": True}
 
-    identifier, limit, _ = get_identifier_and_limit(request)
-    if not check_and_decrease_quota(identifier, limit, 1):
-        logger.warning("额度耗尽 | %s | dictionary", identifier)
-        raise HTTPException(status_code=429, detail="今日额度已耗尽")
-    log_api_usage(identifier, request.url.path)
+    consume_quota(request, 1)
 
     result = await get_dict_entry(word)
     logger.info("字典查询完成 | word=%s | data_len=%d", word, len(result))
@@ -299,44 +303,7 @@ async def migrate_legacy_data(request: Request) -> dict[str, Any]:
 
 
 # --- 导出（query_history → JSON / Word / Anki）---
-ANKI_API_URL = "https://anki.cup11.top/api/generate"
-ANKI_BASE_URL = "https://anki.cup11.top"
-
-
-def _build_export_document(records: list[dict[str, Any]]) -> dict[str, Any]:
-    today = date.today().isoformat()
-    now = f"{date.today().isoformat()} 00:00:00"
-
-    doc_records: list[dict[str, Any]] = []
-    for r in records:
-        context = r.get("context", "")
-        word = r.get("word", "")
-        front = context
-        if word and word in front:
-            front = front.replace(word, f"<strong>{word}</strong>")
-        front = f"<p>{front}</p>"
-        back = f"<p>{r.get('quick_answer', '')}</p>"
-
-        doc_records.append(
-            {
-                "id": str(r["id"]),
-                "level": "-",
-                "front": front,
-                "back": back,
-                "additions": [],
-            }
-        )
-
-    return {
-        "version": 4,
-        "title": f"Chinese Ancient {today}",
-        "records": doc_records,
-        "sections": [],
-        "footer": "",
-        "deckType": "one-side",
-        "createdAt": now,
-        "modifiedAt": now,
-    }
+# TODO: extract format dispatch + external HTTP calls into export_service.py
 
 
 @app.post("/api/export")
@@ -356,7 +323,7 @@ async def export_history(request: Request):
     if not records:
         raise HTTPException(400, "暂无历史记录可导出")
 
-    doc = _build_export_document(records)
+    doc = build_export_document(records)
 
     if fmt == "json":
         title = doc["title"]
@@ -402,6 +369,7 @@ async def export_history(request: Request):
 
 # --- 管理员接口 ---
 
+
 def verify_admin(request: Request):
     token = request.cookies.get("auth_token")
     if not token:
@@ -433,27 +401,7 @@ async def admin_import_corpus(request: Request):
     except Exception:
         raise HTTPException(400, "文件读取失败")
 
-    count = 0
-    for line in content.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            entry = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        word = entry.get("word", "")
-        for note in entry.get("notes", []):
-            name_passage = note.get("name_passage", "").strip()
-            type_ = "textbook" if name_passage else "mock_exam"
-            save_corpus(
-                type_=type_,
-                context=note.get("context", ""),
-                word=word,
-                answer=note.get("detail", ""),
-            )
-            count += 1
-
+    count = ingest_corpus_lines(content.splitlines())
     return {"success": True, "count": count, "filename": file.filename}
 
 

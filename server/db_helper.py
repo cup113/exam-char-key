@@ -1,7 +1,10 @@
+import json
 import sqlite3
+from collections.abc import Iterable
 from datetime import date
 
 from config import settings
+from schema import init_db as schema_init_db
 
 
 class Database:
@@ -9,65 +12,11 @@ class Database:
         self._db_path = db_path or settings.DB_PATH
 
     def init_db(self):
-        with sqlite3.connect(self._db_path) as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS dict_cache (
-                    word TEXT PRIMARY KEY,
-                    structured_data TEXT
-                )
-            """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS daily_usage (
-                    identifier TEXT,
-                    date TEXT,
-                    used_count INTEGER,
-                    PRIMARY KEY (identifier, date)
-                )
-            """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS query_history (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id TEXT NOT NULL,
-                    word TEXT NOT NULL,
-                    context TEXT DEFAULT '',
-                    mode TEXT DEFAULT 'quick',
-                    quick_answer TEXT DEFAULT '',
-                    dict_result TEXT DEFAULT '',
-                    deep_think TEXT DEFAULT '',
-                    created_at TEXT DEFAULT (datetime('now','localtime'))
-                )
-            """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS usage_log (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    identifier TEXT NOT NULL,
-                    endpoint TEXT NOT NULL,
-                    created_at TEXT DEFAULT (datetime('now','localtime'))
-                )
-            """
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS corpus (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    type TEXT NOT NULL,
-                    context TEXT DEFAULT '',
-                    word TEXT NOT NULL,
-                    answer TEXT DEFAULT ''
-                )
-            """
-            )
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_corpus_word ON corpus(word)")
-            conn.execute("PRAGMA journal_mode=WAL;")
+        schema_init_db(self._db_path)
 
-    def check_and_decrease_quota(self, identifier: str, limit: int, count: int = 1) -> bool:
+    def check_and_decrease_quota(
+        self, identifier: str, limit: int, count: int = 1
+    ) -> bool:
         today = date.today().isoformat()
         with sqlite3.connect(self._db_path) as conn:
             cursor = conn.cursor()
@@ -103,7 +52,9 @@ class Database:
     def get_dict_cache(self, word: str):
         with sqlite3.connect(self._db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT structured_data FROM dict_cache WHERE word=?", (word,))
+            cursor.execute(
+                "SELECT structured_data FROM dict_cache WHERE word=?", (word,)
+            )
             row = cursor.fetchone()
             return row[0] if row else None
 
@@ -147,7 +98,15 @@ class Database:
                     """INSERT INTO query_history
                        (user_id, word, context, mode, quick_answer, dict_result, deep_think)
                        VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                    (user_id, word, context, mode, quick_answer, dict_result, deep_think),
+                    (
+                        user_id,
+                        word,
+                        context,
+                        mode,
+                        quick_answer,
+                        dict_result,
+                        deep_think,
+                    ),
                 )
             conn.commit()
             assert cursor.lastrowid is not None
@@ -243,3 +202,27 @@ delete_query_history_batch = _db.delete_query_history_batch
 save_corpus = _db.save_corpus
 get_corpus_by_word = _db.get_corpus_by_word
 init_db = _db.init_db
+
+
+def ingest_corpus_lines(lines: Iterable[str]) -> int:
+    count = 0
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        word = entry.get("word", "")
+        for note in entry.get("notes", []):
+            name_passage = note.get("name_passage", "").strip()
+            type_ = "textbook" if name_passage else "mock_exam"
+            save_corpus(
+                type_=type_,
+                context=note.get("context", ""),
+                word=word,
+                answer=note.get("detail", ""),
+            )
+            count += 1
+    return count

@@ -1,26 +1,8 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useLocalStorage } from '@vueuse/core'
-import type { CorpusEntry } from '@/types'
+import type { TrackedWord } from '@/types'
 import { useAuthStore } from './auth'
-
-export interface TrackedWord {
-  id: string
-  word: string
-  context: string
-  offset: number
-  mode: 'quick' | 'deep'
-  status: 'pending' | 'loading' | 'done' | 'error'
-  quickAnswer: string
-  dictResult: string
-  deepThink: string
-  corpusEntries: CorpusEntry[]
-  quickStatus: 'idle' | 'loading' | 'done' | 'error'
-  corpusStatus: 'idle' | 'loading' | 'done' | 'error'
-  dictStatus: 'idle' | 'loading' | 'done' | 'error'
-  deepStatus: 'idle' | 'loading' | 'done' | 'error'
-  startTime: number
-}
 
 async function readSSEStream(
   response: Response,

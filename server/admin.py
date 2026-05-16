@@ -1,65 +1,10 @@
-from pathlib import Path
-
 from fastapi import Request
 from sqladmin import Admin, ModelView
 from sqladmin.authentication import AuthenticationBackend
-from sqlalchemy import Column, Integer, String, Text, create_engine, text
-from sqlalchemy.orm import declarative_base
 
 from auth import decode_jwt
 from config import settings, get_admin_users
-
-_db_path = Path(settings.DB_PATH).resolve().as_posix()
-engine = create_engine(f"sqlite:///{_db_path}")
-Base = declarative_base()
-
-
-class DictCache(Base):
-    __tablename__ = "dict_cache"
-
-    word = Column(String, primary_key=True)
-    structured_data = Column(Text, nullable=True)
-
-
-class DailyUsage(Base):
-    __tablename__ = "daily_usage"
-
-    identifier = Column(String, primary_key=True)
-    date = Column(String, primary_key=True)
-    used_count = Column(Integer)
-
-
-class QueryHistory(Base):
-    __tablename__ = "query_history"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(String, nullable=False)
-    word = Column(String, nullable=False)
-    context = Column(String, default="")
-    mode = Column(String, default="quick")
-    quick_answer = Column(String, default="")
-    dict_result = Column(String, default="")
-    deep_think = Column(String, default="")
-    created_at = Column(String, server_default=text("(datetime('now','localtime'))"))
-
-
-class UsageLog(Base):
-    __tablename__ = "usage_log"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    identifier = Column(String, nullable=False)
-    endpoint = Column(String, nullable=False)
-    created_at = Column(String, server_default=text("(datetime('now','localtime'))"))
-
-
-class Corpus(Base):
-    __tablename__ = "corpus"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    type = Column(String, nullable=False)
-    context = Column(String, default="")
-    word = Column(String, nullable=False)
-    answer = Column(String, default="")
+from schema import engine, DictCache, DailyUsage, QueryHistory, UsageLog, Corpus
 
 
 class DictCacheAdmin(ModelView, model=DictCache):

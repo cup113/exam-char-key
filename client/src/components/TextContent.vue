@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useWordsStore, type TrackedWord } from '@/stores/words'
+import { useWordsStore } from '@/stores/words'
+import type { TrackedWord } from '@/types'
 import { useAuthStore } from '@/stores/auth'
 import type { TextSegment } from '@/types'
 
