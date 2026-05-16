@@ -9,12 +9,12 @@ class Settings(BaseSettings):
     GITEE_CLIENT_ID: str = ""
     GITEE_CLIENT_SECRET: str = ""
 
-    LLM_BASE_URL: str = "https://api.openai.com/v1"
+    LLM_BASE_URL: str = "https://openrouter.ai/api/v1"
     LLM_API_KEY: str | None = None
 
-    MODEL_DICT_PREPROCESS: str = "gpt-3.5-turbo"
-    MODEL_QUICK_ANSWER: str = "gpt-3.5-turbo"
-    MODEL_DEEP_THINK: str = "gpt-4o"
+    MODEL_DICT_PREPROCESS: str = "xiaomi/mimo-v2.5"
+    MODEL_QUICK_ANSWER: str = "xiaomi/mimo-v2.5"
+    MODEL_DEEP_THINK: str = "tencent/hy3-preview"
 
     APP_BASE_URL: str = "http://localhost:5173"
     JWT_SECRET: str = ""

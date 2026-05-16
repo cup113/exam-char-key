@@ -173,7 +173,13 @@ const handleUpgrade = () => {
           <div v-if="activeWord?.dictStatus === 'loading' && !activeWord?.dictResult"
             class="animate-pulse h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
           <div v-if="activeWord?.dictStatus === 'error' && !activeWord?.dictResult"
-            class="text-sm text-red-500">汉典查询失败</div>
+            class="flex items-center gap-2">
+            <span class="text-sm text-red-500">汉典查询失败</span>
+            <button @click="wordsStore.retryDictionary(activeWord!.id)"
+              class="text-xs text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded px-1.5 py-0.5 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors">
+              重试汉典
+            </button>
+          </div>
           <DictDisplay v-if="activeWord?.dictResult"
             :dict-result="activeWord.dictResult"
             :ai-answer="aiAnswerForDict"

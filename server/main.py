@@ -59,6 +59,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def trust_forwarded_proto(request: Request, call_next):
+    if request.headers.get("x-forwarded-proto") == "https":
+        request.scope["scheme"] = "https"
+    return await call_next(request)
+
 setup_admin(app)
 
 app.include_router(auth_router, prefix="/api")

@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useLocalStorage } from '@vueuse/core'
 import type { CorpusEntry } from '@/types'
+import { useAuthStore } from './auth'
 
 export interface TrackedWord {
   id: string
@@ -246,6 +247,7 @@ export const useWordsStore = defineStore('words', () => {
       updateWord(wordId, { status: 'error' })
     } finally {
       activeControllers.delete(wordId)
+      useAuthStore().fetchQuota()
     }
   }
 
@@ -296,6 +298,32 @@ export const useWordsStore = defineStore('words', () => {
     runQuery(id, word.word, word.context, word.mode)
   }
 
+  async function retryDictionary(id: string) {
+    const word = trackedWords.value.find(w => w.id === id)
+    if (!word) return
+
+    const controller = new AbortController()
+    activeControllers.set(id, controller)
+    const signal = controller.signal
+
+    word.dictResult = ''
+    word.dictStatus = 'loading'
+
+    try {
+      await fetchDictionary(id, word.word, signal)
+      const updated = trackedWords.value.find(w => w.id === id)
+      if (updated && updated.dictStatus === 'done' && updated.quickStatus === 'done' && updated.corpusStatus === 'done') {
+        updated.status = 'done'
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      console.error('retry dictionary failed', err)
+      updateWord(id, { dictStatus: 'error' })
+    } finally {
+      activeControllers.delete(id)
+    }
+  }
+
   function upgradeToDeep(id: string) {
     const word = trackedWords.value.find(w => w.id === id)
     if (!word) return
@@ -338,6 +366,7 @@ export const useWordsStore = defineStore('words', () => {
     abortAll,
     queryWord,
     retryWord,
+    retryDictionary,
     upgradeToDeep,
     startEditing,
     saveEditing,
