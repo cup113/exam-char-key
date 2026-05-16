@@ -175,9 +175,16 @@ The application supports any OpenAI-compatible API service. Configure via `serve
 | `ZDIC_TIMEOUT` | Timeout (seconds) for ZDIC dictionary scraping | `30` |
 | `ADMIN_USERS` | Admin whitelist (`provider:username`, comma-separated) | `gitee:myuser` |
 
+### Admin Panel
+
+Access the management interface at `/admin/`. Two variables must be set:
+
+- `ADMIN_USERS` — who can access (e.g. `github:alice,gitee:bob`)
+- `JWT_SECRET` — signs auth tokens; also required for admin login
+
 ### JWT Secret
 
-`JWT_SECRET` is used to sign authentication tokens. Generate a secure random value:
+Generate a secure random value:
 
 ```bash
 # Option 1: openssl (Linux/macOS/Git Bash)
