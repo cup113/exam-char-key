@@ -1,6 +1,5 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { useLocalStorage } from '@vueuse/core'
 import type { UserInfo } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -8,14 +7,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   const quota = ref<{ used: number; limit: number; remaining: number } | null>(null)
   const quotaLoading = ref(false)
-  const quotaPromptDismissed = useLocalStorage('ECK_quota-prompt-dismissed', false)
-
-  const showQuotaPrompt = computed(() => {
-    if (quotaPromptDismissed.value) return false
-    if (user.value.logged_in) return false
-    if (!quota.value) return false
-    return quota.value.remaining <= 15
-  })
 
   async function fetchUser() {
     try {
@@ -37,10 +28,6 @@ export const useAuthStore = defineStore('auth', () => {
     quotaLoading.value = false
   }
 
-  function dismissQuotaPrompt() {
-    quotaPromptDismissed.value = true
-  }
-
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' })
     user.value = { logged_in: false }
@@ -51,11 +38,8 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     quota,
     quotaLoading,
-    quotaPromptDismissed,
-    showQuotaPrompt,
     fetchUser,
     fetchQuota,
-    dismissQuotaPrompt,
     logout,
   }
 })

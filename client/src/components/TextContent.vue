@@ -118,15 +118,20 @@ const getTrackedWordClass = (w: TrackedWord) => {
 </script>
 
 <template>
-  <div class="flex items-center justify-between mb-4">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-1">
     <div class="flex items-center gap-2 min-w-0">
       <h1 class="text-xl sm:text-2xl font-bold shrink-0">划词阅读</h1>
-      <span v-if="auth.quota && auth.user.logged_in" title="已用查询次数/每日总配额 · 剩余免费次数"
-        class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
+      <span v-if="auth.quota" title="已用查询次数/每日总配额 · 剩余免费次数"
+        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
                bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-        <span>{{ auth.quota.used }}/{{ auth.quota.limit }}</span>
-        <span>·</span>
-        <span :class="auth.quota.remaining < 5 ? 'text-red-500' : ''">剩{{ auth.quota.remaining }}</span>
+        <template v-if="auth.user.logged_in">
+          <span>{{ auth.quota.used }}/{{ auth.quota.limit }}</span>
+          <span>·</span>
+          <span :class="auth.quota.remaining < 5 ? 'text-red-500' : ''">剩{{ auth.quota.remaining }}</span>
+        </template>
+        <template v-else>
+          <span :class="auth.quota.remaining < 5 ? 'text-red-500' : ''">游客共享免费额度 · 剩{{ auth.quota.remaining }} 次</span>
+        </template>
       </span>
     </div>
     <div v-if="!readonly" class="flex gap-2 text-sm shrink-0">

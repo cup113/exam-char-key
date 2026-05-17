@@ -7,7 +7,6 @@ import type { TextSegment } from '@/types'
 import TextContent from '@/components/TextContent.vue'
 import SelectionTooltip from '@/components/SelectionTooltip.vue'
 import QueryPanel from '@/components/QueryPanel.vue'
-import LoginButtons from '@/components/LoginButtons.vue'
 
 let hideTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -244,12 +243,6 @@ const saveToHistory = async () => {
     <main class="flex-1 min-w-0 p-10 transition-all duration-300"
       :class="showPanel ? 'lg:mr-108' : ''">
       <div class="max-w-3xl mx-auto">
-        <div v-if="auth.showQuotaPrompt"
-          class="mb-3 px-3 py-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-xs flex items-center justify-between gap-2">
-          <span>免费剩余 <strong>{{ auth.quota!.remaining }}</strong> 次 · <LoginButtons size="sm" /></span>
-          <button @click="auth.dismissQuotaPrompt"
-            class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-lg leading-none">&times;</button>
-        </div>
         <TextContent
           :editableText="wordsStore.editableText"
           :editing="wordsStore.editing"
