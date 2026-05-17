@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWordsStore } from '@/stores/words'
 import { useDocumentLoader } from '@/composables/useDocumentLoader'
 import type { DocumentRecord, TrackedWordSnapshot, TextSegment } from '@/types'
+import * as documentService from '@/services/documentService'
 import TextContent from '@/components/TextContent.vue'
 import WordAnalysisCard from '@/components/WordAnalysisCard.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -20,11 +21,7 @@ const activeSnapshot = ref<TrackedWordSnapshot | null>(null)
 
 onMounted(async () => {
   try {
-    const resp = await fetch(`/api/documents/public/${route.params.uuid}`, {
-      credentials: 'include',
-    })
-    if (!resp.ok) throw new Error('文档不存在或未公开')
-    doc.value = await resp.json()
+    doc.value = await documentService.getPublicDoc(route.params.uuid as string)
   } catch (e) {
     error.value = e instanceof Error ? e.message : '加载失败'
   } finally {

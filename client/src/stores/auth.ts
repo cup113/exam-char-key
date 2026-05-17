@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { UserInfo } from '@/types'
+import * as authService from '@/services/authService'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserInfo>({ logged_in: false })
@@ -10,8 +11,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function fetchUser() {
     try {
-      const resp = await fetch('/api/auth/me')
-      user.value = await resp.json()
+      user.value = await authService.fetchMe()
     } catch {
       user.value = { logged_in: false }
     }
@@ -20,16 +20,13 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchQuota() {
     quotaLoading.value = true
     try {
-      const resp = await fetch('/api/quota', { credentials: 'include' })
-      if (resp.ok) {
-        quota.value = await resp.json()
-      }
+      quota.value = await authService.fetchQuota()
     } catch { /* ignore */ }
     quotaLoading.value = false
   }
 
   async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
+    await authService.logout()
     user.value = { logged_in: false }
     location.reload()
   }

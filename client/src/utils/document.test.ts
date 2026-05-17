@@ -108,6 +108,6 @@ describe('fromSnapshot', () => {
     expect(word.dictResult).toBe('{"basic":[]}')
     expect(word.deepThink).toBe('表示判断')
     expect(word.corpusEntries).toHaveLength(1)
-    expect(word.corpusEntries[0].answer).toBe('语气助词')
+    expect(word.corpusEntries[0]?.answer).toBe('语气助词')
   })
 })

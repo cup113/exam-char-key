@@ -3,6 +3,7 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useWordsStore } from '@/stores/words'
 import { useAuthStore } from '@/stores/auth'
 import type { TextSegment } from '@/types'
+import * as historyService from '@/services/historyService'
 
 import TextContent from '@/components/TextContent.vue'
 import SelectionTooltip from '@/components/SelectionTooltip.vue'
@@ -215,23 +216,16 @@ const saveToHistory = async () => {
   const answer = savedAnswer.value.trim() || w.quickAnswer
 
   try {
-    const resp = await fetch('/api/history', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        word: w.word,
-        context: w.context,
-        mode: w.mode,
-        quick_answer: answer,
-        dict_result: w.dictResult,
-        deep_think: w.deepThink,
-      }),
+    await historyService.createHistory({
+      word: w.word,
+      context: w.context,
+      mode: w.mode,
+      quick_answer: answer,
+      dict_result: w.dictResult,
+      deep_think: w.deepThink,
     })
-    if (resp.ok) {
-      saveSuccess.value = true
-      setTimeout(() => { saveSuccess.value = false }, 2000)
-    }
+    saveSuccess.value = true
+    setTimeout(() => { saveSuccess.value = false }, 2000)
   } catch {
     // ignore
   }

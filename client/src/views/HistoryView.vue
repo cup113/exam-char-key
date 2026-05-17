@@ -5,6 +5,9 @@ import { useRangeSelection } from '@/composables/useRangeSelection'
 import LoginButtons from '@/components/LoginButtons.vue'
 import DictDisplay from '@/components/DictDisplay.vue'
 import type { ECHistoryEntry } from '@/types'
+import * as historyService from '@/services/historyService'
+import { exportRecords } from '@/services/exportService'
+import { migrateLegacyData } from '@/services/migrateService'
 
 const auth = useAuthStore()
 
@@ -60,16 +63,7 @@ async function handleMigrate() {
   migrating.value = true
   migrateError.value = ''
   try {
-    const res = await fetch('/api/migrate', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entries: legacyData.value }),
-    })
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.detail || '迁移失败')
-    }
+    await migrateLegacyData(legacyData.value)
     localStorage.removeItem('EC_history')
     legacyData.value = null
     migrateDone.value = true
@@ -88,30 +82,8 @@ async function handleExport(format: 'json' | 'word' | 'apkg', scope: 'selected' 
   exporting.value = true
   exportError.value = ''
   try {
-    const body: Record<string, any> = { format }
-    if (scope === 'selected' && selectedCount.value > 0) {
-      body.ids = [...checkedIds.value]
-    }
-    const res = await fetch('/api/export', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.detail || '导出失败')
-    }
-    const blob = await res.blob()
-    const disposition = res.headers.get('Content-Disposition') || ''
-    const match = disposition.match(/filename="?(.+?)"?$/)
-    const filename = match?.[1] ?? `学习记录.${format === 'json' ? 'json' : (format === 'word' ? 'docx' : 'apkg')}`
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(url)
+    const ids = scope === 'selected' && selectedCount.value > 0 ? [...checkedIds.value] : undefined
+    await exportRecords(format, ids)
   } catch (e: any) {
     exportError.value = e.message
   } finally {
@@ -125,8 +97,7 @@ const deleteError = ref('')
 async function handleDelete(id: number) {
   if (!confirm('确定删除这条记录？')) return
   try {
-    const res = await fetch(`/api/history/${id}`, { method: 'DELETE', credentials: 'include' })
-    if (!res.ok) throw new Error('删除失败')
+    await historyService.deleteHistory(id)
     records.value = records.value.filter(r => r.id !== id)
     removeId(id)
   } catch {
@@ -138,13 +109,7 @@ async function handleBatchDelete() {
   if (selectedCount.value === 0) return
   if (!confirm(`确定删除选中的 ${selectedCount.value} 条记录？`)) return
   try {
-    const res = await fetch('/api/history/delete', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: [...checkedIds.value] }),
-    })
-    if (!res.ok) throw new Error('批量删除失败')
+    await historyService.batchDeleteHistory([...checkedIds.value])
     records.value = records.value.filter(r => !checkedIds.value.has(r.id))
     clearSelection()
   } catch {
@@ -160,11 +125,8 @@ onMounted(async () => {
     return
   }
   try {
-    const resp = await fetch('/api/history', { credentials: 'include' })
-    if (resp.ok) {
-      const data = await resp.json()
-      records.value = (data.records || []) as HistoryRecord[]
-    }
+    const data = await historyService.listHistory()
+    records.value = (data.records || []) as HistoryRecord[]
   } catch { /* ignore */ }
   loading.value = false
   detectLegacyData()

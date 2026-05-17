@@ -1,22 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import type { DocumentRecord } from '@/types'
+import * as documentService from '@/services/documentService'
+import type { DocListItem } from '@/services/documentService'
 
 const emit = defineEmits<{
   load: [doc: DocumentRecord]
   cancel: []
 }>()
-
-interface DocListItem {
-  id: number
-  user_id: string
-  title: string
-  source_text: string
-  tracked_words: unknown[]
-  is_public: boolean
-  public_uuid: string | null
-  created_at: string
-}
 
 const documents = ref<DocListItem[]>([])
 const loading = ref(true)
@@ -28,9 +19,7 @@ async function fetchDocs() {
   loading.value = true
   error.value = ''
   try {
-    const resp = await fetch('/api/documents?limit=50&offset=0', { credentials: 'include' })
-    if (!resp.ok) throw new Error('获取文档列表失败')
-    const data = await resp.json()
+    const data = await documentService.listDocs()
     documents.value = data.documents || []
   } catch (e) {
     error.value = e instanceof Error ? e.message : '未知错误'
@@ -53,11 +42,7 @@ async function deleteDoc(doc: DocListItem) {
   if (!window.confirm(`确认删除「${doc.title}」？`)) return
   actionError.value = ''
   try {
-    const resp = await fetch(`/api/documents/${doc.id}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    })
-    if (!resp.ok) throw new Error('删除失败')
+    await documentService.deleteDoc(doc.id)
     await fetchDocs()
   } catch (e) {
     actionError.value = e instanceof Error ? e.message : '删除失败'
@@ -68,13 +53,7 @@ async function togglePublic(doc: DocListItem) {
   actionError.value = ''
   const nextPublic = !doc.is_public
   try {
-    const resp = await fetch(`/api/documents/${doc.id}`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_public: nextPublic }),
-    })
-    if (!resp.ok) throw new Error('操作失败')
+    await documentService.updateDoc(doc.id, { is_public: nextPublic })
     await fetchDocs()
   } catch (e) {
     actionError.value = e instanceof Error ? e.message : '操作失败'

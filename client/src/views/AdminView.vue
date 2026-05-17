@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import * as adminService from '@/services/adminService'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -24,23 +25,8 @@ async function handleImport() {
   importing.value = true
   importResult.value = null
 
-  const form = new FormData()
-  form.append('file', file)
-
   try {
-    const resp = await fetch('/api/admin/import-corpus', {
-      method: 'POST',
-      credentials: 'include',
-      body: form,
-    })
-    if (resp.ok) {
-      importResult.value = await resp.json()
-    } else if (resp.status === 401 || resp.status === 403) {
-      importResult.value = { success: false, error: '无管理员权限' }
-    } else {
-      const text = await resp.text()
-      importResult.value = { success: false, error: text || `请求失败 (${resp.status})` }
-    }
+    importResult.value = await adminService.importCorpus(file)
   } catch (e) {
     importResult.value = { success: false, error: String(e) }
   } finally {

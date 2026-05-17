@@ -3,44 +3,9 @@ import { defineStore } from 'pinia'
 import { useLocalStorage } from '@vueuse/core'
 import type { TrackedWord, TrackedWordSnapshot, DocumentRecord } from '@/types'
 import { toSnapshot, fromSnapshot } from '@/utils/document'
+import * as queryService from '@/services/queryService'
+import * as documentService from '@/services/documentService'
 import { useAuthStore } from './auth'
-
-async function readSSEStream(
-  response: Response,
-  onChunk: (chunk: string) => void,
-): Promise<void> {
-  const reader = response.body!.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (!trimmed.startsWith('data: ')) continue
-        const payload = trimmed.slice(6)
-        if (payload === '[DONE]') return
-        try {
-          const data = JSON.parse(payload)
-          if (data.chunk) onChunk(data.chunk)
-        } catch {
-          // skip malformed JSON
-        }
-      }
-    }
-  } catch (err) {
-    if (err instanceof DOMException && err.name === 'AbortError') throw err
-    console.error('SSE read error:', err)
-    throw err
-  }
-}
 
 export const useWordsStore = defineStore('words', () => {
   const trackedWords = useLocalStorage<TrackedWord[]>('ECK_tracked-words', [])
@@ -127,17 +92,7 @@ export const useWordsStore = defineStore('words', () => {
 
   async function fetchQuick(wordId: string, word: string, context: string, signal: AbortSignal) {
     updateWord(wordId, { quickStatus: 'loading' })
-    const url = new URL('/api/query/quick', location.origin)
-    url.searchParams.set('word', word)
-    url.searchParams.set('context', context)
-
-    const resp = await fetch(url.toString(), { signal })
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ detail: '快速查询失败' }))
-      throw new Error(err.detail || `HTTP ${resp.status}`)
-    }
-
-    await readSSEStream(resp, (chunk) => {
+    await queryService.queryQuick(word, context, signal, (chunk) => {
       const current = trackedWords.value.find(w => w.id === wordId)
       updateWord(wordId, { quickAnswer: (current?.quickAnswer || '') + chunk })
     })
@@ -146,47 +101,19 @@ export const useWordsStore = defineStore('words', () => {
 
   async function fetchCorpus(wordId: string, word: string, signal: AbortSignal) {
     updateWord(wordId, { corpusStatus: 'loading' })
-    const url = new URL('/api/query/corpus', location.origin)
-    url.searchParams.set('word', word)
-
-    const resp = await fetch(url.toString(), { signal })
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ detail: '语料库查询失败' }))
-      throw new Error(err.detail || `HTTP ${resp.status}`)
-    }
-
-    const data = await resp.json()
-    updateWord(wordId, { corpusEntries: data.entries, corpusStatus: 'done' })
+    const entries = await queryService.queryCorpus(word, signal)
+    updateWord(wordId, { corpusEntries: entries, corpusStatus: 'done' })
   }
 
   async function fetchDictionary(wordId: string, word: string, signal: AbortSignal) {
     updateWord(wordId, { dictStatus: 'loading' })
-    const url = new URL('/api/query/dictionary', location.origin)
-    url.searchParams.set('word', word)
-
-    const resp = await fetch(url.toString(), { signal })
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ detail: '汉典查询失败' }))
-      throw new Error(err.detail || `HTTP ${resp.status}`)
-    }
-
-    const data = await resp.json()
-    updateWord(wordId, { dictResult: data.result, dictStatus: 'done' })
+    const result = await queryService.queryDictionary(word, signal)
+    updateWord(wordId, { dictResult: result, dictStatus: 'done' })
   }
 
   async function fetchDeep(wordId: string, word: string, context: string, signal: AbortSignal) {
     updateWord(wordId, { deepStatus: 'loading' })
-    const url = new URL('/api/query/deep', location.origin)
-    url.searchParams.set('word', word)
-    url.searchParams.set('context', context)
-
-    const resp = await fetch(url.toString(), { signal })
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ detail: '深度分析失败' }))
-      throw new Error(err.detail || `HTTP ${resp.status}`)
-    }
-
-    await readSSEStream(resp, (chunk) => {
+    await queryService.queryDeep(word, context, signal, (chunk) => {
       const current = trackedWords.value.find(w => w.id === wordId)
       updateWord(wordId, { deepThink: (current?.deepThink || '') + chunk })
     })
@@ -342,20 +269,14 @@ export const useWordsStore = defineStore('words', () => {
 
   async function saveSnapshot(title: string, isPublic = false) {
     const snapshots: TrackedWordSnapshot[] = trackedWords.value.map(toSnapshot)
-    const resp = await fetch('/api/documents', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: title || editableText.value.slice(0, 20),
-        source_text: editableText.value,
-        tracked_words: snapshots,
-        is_public: isPublic,
-      }),
+    const result = await documentService.createDoc({
+      title: title || editableText.value.slice(0, 20),
+      source_text: editableText.value,
+      tracked_words: snapshots,
+      is_public: isPublic,
     })
-    if (!resp.ok) throw new Error('保存文档失败')
     isDirty.value = false
-    return resp.json()
+    return result
   }
 
   function importDocument(doc: DocumentRecord) {
