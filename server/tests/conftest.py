@@ -6,10 +6,10 @@ os.environ["DB_PATH"] = _db_path
 os.environ["JWT_SECRET"] = "test-jwt-secret"
 os.environ["LLM_API_KEY"] = "sk-test-key"
 
-from fastapi.testclient import TestClient
-from auth import create_jwt
-from main import app
-import pytest
+from fastapi.testclient import TestClient  # noqa: E402
+from auth import create_jwt  # noqa: E402
+from main import app  # noqa: E402
+import pytest  # noqa: E402
 
 
 @pytest.fixture

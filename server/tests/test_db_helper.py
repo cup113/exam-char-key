@@ -155,7 +155,7 @@ class TestQueryHistory:
 
     def test_delete_query_history_batch(self, db):
         id1 = db.save_query_history("user:1", "a")
-        id2 = db.save_query_history("user:1", "b")
+        _ = db.save_query_history("user:1", "b")
         id3 = db.save_query_history("user:1", "c")
         db.delete_query_history_batch("user:1", [id1, id3])
         records = db.get_query_history("user:1")

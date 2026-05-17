@@ -1,8 +1,6 @@
 import io
 import json
 
-import pytest
-
 
 class TestAdminAuth:
     def test_redirects_when_unauth(self, client):
