@@ -15,6 +15,7 @@ A comprehensive Chinese language learning platform that specializes in **ancient
 - **Frequency Analysis**: Statistical analysis of character usage across different contexts
 - **External Text Search**: Search external repositories (ctext, 识典古籍, 古文岛) for classical Chinese passages
 - **Per-endpoint Status**: Independent real-time status indicators for each query step (quick, corpus, dictionary, deep)
+- **Retry on Failure**: One-click retry for dictionary fetch failures without losing context
 - **Admin Panel**: SQLAdmin-based management interface for model overview and corpus import
 
 ### 🤖 AI Capabilities
@@ -28,7 +29,7 @@ A comprehensive Chinese language learning platform that specializes in **ancient
 ### 🔐 Authentication & Quota
 
 - **OAuth Login**: Sign in with GitHub or Gitee
-- **Daily Quota**: Configurable query limits for authenticated users and guests
+- **Daily Quota**: Configurable query limits for authenticated users and guests; inline display with real-time updates on each query
 - **History Sync**: Per-user query history backed by SQLite
 
 ### 🎨 User Experience
