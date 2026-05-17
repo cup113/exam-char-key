@@ -12,3 +12,4 @@ train/word-frequency.json
 train/*.jsonl
 
 db/*
+.coverage

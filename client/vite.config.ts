@@ -17,6 +17,15 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  test: {
+    environment: 'happy-dom',
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,vue}'],
+      exclude: ['src/**/*.{test,spec}.{ts,tsx}', 'src/main.ts', 'src/types.ts'],
+    },
+  },
   server: {
     proxy: {
       '/api': {
