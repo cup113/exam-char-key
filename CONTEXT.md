@@ -29,6 +29,10 @@ Daily usage limit. Authenticated users: 50/day per user. Unauthenticated users: 
 **Identifier**:
 Identity in the quota system. Authenticated: `user:{sub}`. Guest: `ip:guest` (single shared identifier for all unauthenticated users).
 
+**Document**:
+A saved snapshot of a reading session containing the source text and all word queries performed on it (quick answers, dictionary results, deep analyses, corpus entries). Created explicitly by the user; private by default. Can be shared via a public UUID link.
+_Avoid_: 笔记, 收藏, 文章
+
 **Mode**:
 Either "quick" or "deep". Both modes fetch Quick Answer + Dictionary + Corpus in parallel. Deep mode additionally runs Deep Answer after the dictionary is cached.
 

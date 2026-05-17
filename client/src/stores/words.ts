@@ -1,7 +1,8 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useLocalStorage } from '@vueuse/core'
-import type { TrackedWord } from '@/types'
+import type { TrackedWord, TrackedWordSnapshot, DocumentRecord } from '@/types'
+import { toSnapshot, fromSnapshot } from '@/utils/document'
 import { useAuthStore } from './auth'
 
 async function readSSEStream(
@@ -44,6 +45,8 @@ async function readSSEStream(
 export const useWordsStore = defineStore('words', () => {
   const trackedWords = useLocalStorage<TrackedWord[]>('ECK_tracked-words', [])
 
+  const isDirty = ref(false)
+
   const activeWordId = ref<string | null>(null)
 
   const activeWord = computed(() =>
@@ -68,6 +71,7 @@ export const useWordsStore = defineStore('words', () => {
     editableText.value = editText.value
     editing.value = false
     clearAll()
+    isDirty.value = true
   }
 
   function cancelEditing() {
@@ -93,6 +97,7 @@ export const useWordsStore = defineStore('words', () => {
       deepStatus: 'idle',
       startTime: Date.now(),
     })
+    isDirty.value = true
     return id
   }
 
@@ -258,6 +263,7 @@ export const useWordsStore = defineStore('words', () => {
     abortAll()
     trackedWords.value = []
     activeWordId.value = null
+    isDirty.value = true
   }
 
   function retryWord(id: string) {
@@ -334,10 +340,38 @@ export const useWordsStore = defineStore('words', () => {
       })
   }
 
+  async function saveSnapshot(title: string, isPublic = false) {
+    const snapshots: TrackedWordSnapshot[] = trackedWords.value.map(toSnapshot)
+    const resp = await fetch('/api/documents', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: title || editableText.value.slice(0, 20),
+        source_text: editableText.value,
+        tracked_words: snapshots,
+        is_public: isPublic,
+      }),
+    })
+    if (!resp.ok) throw new Error('保存文档失败')
+    isDirty.value = false
+    return resp.json()
+  }
+
+  function importDocument(doc: DocumentRecord) {
+    abortAll()
+    trackedWords.value = []
+    activeWordId.value = null
+    editableText.value = doc.source_text
+    trackedWords.value = doc.tracked_words.map(fromSnapshot)
+    isDirty.value = false
+  }
+
   return {
     trackedWords,
     activeWordId,
     activeWord,
+    isDirty,
     editableText,
     editing,
     editText,
@@ -353,5 +387,7 @@ export const useWordsStore = defineStore('words', () => {
     startEditing,
     saveEditing,
     cancelEditing,
+    saveSnapshot,
+    importDocument,
   }
 })

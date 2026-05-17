@@ -7,16 +7,19 @@ AI-assisted Classical Chinese learning platform. See [CONTEXT.md](./CONTEXT.md) 
 ```
 client (Vite + Vue 3 + Pinia + TypeScript + Tailwind CSS v4)
   └─ src/
-      ├─ stores/     Pinia 状态管理（words.ts 查询状态，auth.ts 登录/配额，theme.ts 深色模式）
-      ├─ views/      页面：AdminView（管理后台）、HomeView（主页面）、HistoryView、ProfileView
-      ├─ components/ 组件：DeepAnalysisSplit、DictDisplay、LoginButtons、QueryPanel、SelectionTooltip、TextContent
-      └─ router/     路由配置
+      ├─ stores/      Pinia 状态管理（words.ts 查询状态，auth.ts 登录/配额，theme.ts 深色模式）
+      ├─ views/       页面：AdminView、HomeView、HistoryView、ProfileView、SharedDocumentView
+      ├─ components/  组件：DeepAnalysisSplit、DictDisplay、LoadDocumentDialog、LoginButtons
+      │                QueryPanel、SaveDocumentDialog、SelectionTooltip、TextContent、WordAnalysisCard
+      ├─ composables/ 逻辑：useDocumentLoader（统一文档加载 + 冲突检测）
+      ├─ utils/       工具：document.ts（toSnapshot / fromSnapshot 序列化）
+      └─ router/      路由配置（含 /shared/:uuid）
 
 server (FastAPI + SQLite + OpenAI SDK)
   ├─ .env.example   示例环境变量（此文件可读，.env 不允许读取）
-  ├─ main.py        FastAPI 应用入口，路由定义
+  ├─ main.py        FastAPI 应用入口，路由定义（含 /api/documents 6 条路由）
   ├─ spider.py      汉典爬虫 + LLM 结构化 + dict 格式化
-  ├─ db_helper.py   Database 类（缓存、配额、历史记录）+ 模块级默认实例
+  ├─ db_helper.py   Database 类（缓存、配额、历史记录、语料、documents CRUD）+ 模块级默认实例
   ├─ auth.py        GitHub/Gitee OAuth + JWT
   ├─ admin.py       SQLAdmin 后台（ModelView + JWT 鉴权）
   ├─ config.py      配置（含 ADMIN_USERS 白名单）

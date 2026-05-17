@@ -61,6 +61,20 @@ class Corpus(Base):
     __table_args__ = (Index("idx_corpus_word", "word"),)
 
 
+class Document(Base):
+    __tablename__ = "documents"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, nullable=False)
+    title = Column(String, nullable=False, default="")
+    source_text = Column(String, nullable=False)
+    tracked_words = Column(String, nullable=False)
+    is_public = Column(Integer, nullable=False, default=0)
+    public_uuid = Column(String, unique=True, nullable=True)
+    created_at = Column(String, server_default=text("(datetime('now','localtime'))"))
+    updated_at = Column(String, server_default=text("(datetime('now','localtime'))"))
+
+
 def init_db(db_path: str | None = None):
     if db_path is not None:
         _p = Path(db_path).resolve().as_posix()

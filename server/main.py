@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import Scope
 import httpx
@@ -21,6 +22,12 @@ from db_helper import (
     init_db,
     check_and_decrease_quota,
     get_quota_usage,
+    save_document,
+    get_documents,
+    get_document,
+    get_public_document,
+    update_document,
+    delete_document,
     save_query_history,
     save_corpus,
     get_query_history,
@@ -365,6 +372,93 @@ async def export_history(request: Request):
             )
 
     raise HTTPException(400, f"不支持的导出格式: {fmt}")
+
+
+# --- 文档接口 ---
+
+
+class CreateDocumentRequest(BaseModel):
+    title: str
+    source_text: str
+    tracked_words: list
+    is_public: bool = False
+
+
+class UpdateDocumentRequest(BaseModel):
+    title: str | None = None
+    is_public: bool | None = None
+
+
+@app.post("/api/documents")
+async def create_document(req: CreateDocumentRequest, request: Request):
+    _, _, user_id = get_identifier_and_limit(request)
+    if not user_id:
+        raise HTTPException(401, "请先登录")
+    doc_id = save_document(
+        user_id=user_id,
+        title=req.title,
+        source_text=req.source_text,
+        tracked_words=req.tracked_words,
+        is_public=req.is_public,
+    )
+    return {"id": doc_id, "title": req.title, "message": "保存成功"}
+
+
+@app.get("/api/documents")
+async def list_documents(request: Request, limit: int = 50, offset: int = 0):
+    _, _, user_id = get_identifier_and_limit(request)
+    if not user_id:
+        raise HTTPException(401, "请先登录")
+    docs = get_documents(user_id, limit, offset)
+    return {"documents": docs}
+
+
+@app.get("/api/documents/{doc_id}")
+async def read_document(doc_id: int, request: Request):
+    _, _, user_id = get_identifier_and_limit(request)
+    if not user_id:
+        raise HTTPException(401, "请先登录")
+    doc = get_document(doc_id, user_id)
+    if not doc:
+        raise HTTPException(404, "文档不存在")
+    return doc
+
+
+@app.patch("/api/documents/{doc_id}")
+async def update_document_route(
+    doc_id: int, req: UpdateDocumentRequest, request: Request
+):
+    _, _, user_id = get_identifier_and_limit(request)
+    if not user_id:
+        raise HTTPException(401, "请先登录")
+    kwargs = {}
+    if req.title is not None:
+        kwargs["title"] = req.title
+    if req.is_public is not None:
+        import uuid
+
+        kwargs["is_public"] = int(req.is_public)
+        kwargs["public_uuid"] = str(uuid.uuid4()) if req.is_public else None
+    update_document(doc_id, user_id, **kwargs)
+    return {"message": "更新成功"}
+
+
+@app.delete("/api/documents/{doc_id}")
+async def delete_document_route(doc_id: int, request: Request):
+    _, _, user_id = get_identifier_and_limit(request)
+    if not user_id:
+        raise HTTPException(401, "请先登录")
+    if not delete_document(doc_id, user_id):
+        raise HTTPException(404, "文档不存在")
+    return {"message": "删除成功"}
+
+
+@app.get("/api/documents/public/{uuid}")
+async def read_public_document(uuid: str):
+    doc = get_public_document(uuid)
+    if not doc:
+        raise HTTPException(404, "文档不存在或未公开")
+    return doc
 
 
 # --- 管理员接口 ---

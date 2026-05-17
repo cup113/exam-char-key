@@ -39,6 +39,7 @@ A comprehensive Chinese language learning platform that specializes in **ancient
 ### 📚 Educational Tools
 
 - **History Tracking**: Keep track of your queries and learning progress
+- **Document Management**: Save reading sessions as documents for later review; share them via public links
 - **Export**: Export history to JSON, Word (.docx), or Anki (.apkg) format
 - **Legacy Migration**: Import history from the old localStorage-based version
 - **Corpus Collection**: Automatically builds a searchable corpus from user queries
@@ -209,6 +210,7 @@ To enable GitHub/Gitee login, register OAuth applications and set the correspond
 3. **Character Lookup**: Click on characters for detailed dictionary definitions (sourced from ZDIC and AI-structured)
 4. **Deep Analysis**: Access comprehensive annotations and contextual information
 5. **History Review**: Track your learning progress through the history feature
+6. **Document Save/Share**: Save your analysis session as a document, optionally share it via a public link
 
 ### Authentication
 
@@ -235,14 +237,21 @@ exam-char-key/
 │   │   ├── assets/
 │   │   │   └── main.css             # Global TailwindCSS styles
 │   │   ├── components/
-│   │   │   ├── DeepAnalysisSplit.vue # Deep analysis split display
-│   │   │   ├── DictDisplay.vue      # Dictionary lookup display
-│   │   │   ├── LoginButtons.vue     # Login button group
-│   │   │   ├── QueryPanel.vue       # Main query interface
-│   │   │   ├── SelectionTooltip.vue # Text selection tooltip
-│   │   │   └── TextContent.vue      # Text content viewer
+│   │   │   ├── DeepAnalysisSplit.vue    # Deep analysis split display
+│   │   │   ├── DictDisplay.vue         # Dictionary lookup display
+│   │   │   ├── LoadDocumentDialog.vue  # Document list browser & loader
+│   │   │   ├── LoginButtons.vue        # Login button group
+│   │   │   ├── QueryPanel.vue          # Main query interface
+│   │   │   ├── SaveDocumentDialog.vue  # Save snapshot dialog
+│   │   │   ├── SelectionTooltip.vue    # Text selection tooltip
+│   │   │   ├── TextContent.vue         # Text content viewer
+│   │   │   └── WordAnalysisCard.vue    # Reusable word analysis display
 │   │   ├── router/
 │   │   │   └── index.ts             # Vue Router configuration
+│   │   ├── composables/
+│   │   │   └── useDocumentLoader.ts # Unified document load logic
+│   │   ├── utils/
+│   │   │   └── document.ts          # Snapshot serialisation helpers
 │   │   ├── stores/
 │   │   │   ├── auth.ts              # Authentication state (Pinia)
 │   │   │   ├── theme.ts             # Dark mode state (Pinia)
@@ -251,7 +260,8 @@ exam-char-key/
 │   │       ├── AdminView.vue        # Admin panel
 │   │       ├── HomeView.vue         # Main search/query view
 │   │       ├── HistoryView.vue      # Query history view
-│   │       └── ProfileView.vue      # User profile & export
+│   │       ├── ProfileView.vue      # User profile & export
+│   │       └── SharedDocumentView.vue # Read-only public document view
 │   ├── index.html
 │   ├── package.json
 │   ├── vite.config.ts               # Vite config with /api proxy

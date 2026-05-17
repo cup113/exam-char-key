@@ -2,6 +2,7 @@ import json
 import sqlite3
 from collections.abc import Iterable
 from datetime import date
+from uuid import uuid4
 
 from config import settings
 from schema import init_db as schema_init_db
@@ -64,6 +65,96 @@ class Database:
                 "INSERT OR REPLACE INTO dict_cache (word, structured_data) VALUES (?, ?)",
                 (word, data),
             )
+
+    # --- Document CRUD ---
+
+    def save_document(
+        self,
+        user_id: str,
+        title: str,
+        source_text: str,
+        tracked_words: list,
+        is_public: bool = False,
+    ) -> int:
+        uuid_str = str(uuid4()) if is_public else None
+        with sqlite3.connect(self._db_path) as conn:
+            cursor = conn.execute(
+                "INSERT INTO documents (user_id, title, source_text, tracked_words, is_public, public_uuid) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    user_id,
+                    title,
+                    source_text,
+                    json.dumps(tracked_words),
+                    int(is_public),
+                    uuid_str,
+                ),
+            )
+            conn.commit()
+            assert cursor.lastrowid is not None
+            return cursor.lastrowid
+
+    def get_documents(self, user_id: str, limit: int = 50, offset: int = 0):
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                "SELECT * FROM documents WHERE user_id=? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                (user_id, limit, offset),
+            )
+            return [self._doc_row(row) for row in cursor.fetchall()]
+
+    def get_document(self, doc_id: int, user_id: str):
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                "SELECT * FROM documents WHERE id=? AND user_id=?",
+                (doc_id, user_id),
+            )
+            row = cursor.fetchone()
+            return self._doc_row(row) if row else None
+
+    def get_public_document(self, uuid: str):
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                "SELECT * FROM documents WHERE public_uuid=?",
+                (uuid,),
+            )
+            row = cursor.fetchone()
+            return self._doc_row(row) if row else None
+
+    def update_document(self, doc_id: int, user_id: str, **kwargs):
+        allowed = {"title", "is_public", "public_uuid"}
+        sets, vals = [], []
+        for k, v in kwargs.items():
+            if k in allowed:
+                sets.append(f"{k}=?")
+                vals.append(v)
+        if not sets:
+            return
+        vals.extend([doc_id, user_id])
+        with sqlite3.connect(self._db_path) as conn:
+            conn.execute(
+                f"UPDATE documents SET {', '.join(sets)}, updated_at=datetime('now','localtime') "
+                "WHERE id=? AND user_id=?",
+                vals,
+            )
+            conn.commit()
+
+    def delete_document(self, doc_id: int, user_id: str) -> bool:
+        with sqlite3.connect(self._db_path) as conn:
+            cursor = conn.execute(
+                "DELETE FROM documents WHERE id=? AND user_id=?",
+                (doc_id, user_id),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+
+    @staticmethod
+    def _doc_row(row: sqlite3.Row) -> dict:
+        d = dict(row)
+        d["tracked_words"] = json.loads(d["tracked_words"])
+        return d
 
     def save_query_history(
         self,
@@ -192,6 +283,12 @@ check_and_decrease_quota = _db.check_and_decrease_quota
 get_quota_usage = _db.get_quota_usage
 get_dict_cache = _db.get_dict_cache
 set_dict_cache = _db.set_dict_cache
+save_document = _db.save_document
+get_documents = _db.get_documents
+get_document = _db.get_document
+get_public_document = _db.get_public_document
+update_document = _db.update_document
+delete_document = _db.delete_document
 save_query_history = _db.save_query_history
 log_api_usage = _db.log_api_usage
 get_query_history = _db.get_query_history

@@ -4,7 +4,15 @@ from sqladmin.authentication import AuthenticationBackend
 
 from auth import decode_jwt
 from config import settings, get_admin_users
-from schema import engine, DictCache, DailyUsage, QueryHistory, UsageLog, Corpus
+from schema import (
+    engine,
+    DictCache,
+    DailyUsage,
+    QueryHistory,
+    UsageLog,
+    Corpus,
+    Document,
+)
 
 
 class DictCacheAdmin(ModelView, model=DictCache):
@@ -99,6 +107,37 @@ class CorpusAdmin(ModelView, model=Corpus):
     column_sortable_list = [Corpus.word, Corpus.type]
 
 
+class DocumentAdmin(ModelView, model=Document):
+    name = "Document"
+    name_plural = "Documents"
+    icon = "fa-solid fa-file"
+    column_list = [
+        Document.id,
+        Document.user_id,
+        Document.title,
+        Document.is_public,
+        Document.created_at,
+    ]
+    column_details_list = [
+        Document.id,
+        Document.user_id,
+        Document.title,
+        Document.source_text,
+        Document.tracked_words,
+        Document.is_public,
+        Document.public_uuid,
+        Document.created_at,
+        Document.updated_at,
+    ]
+    can_create = False
+    can_edit = True
+    can_delete = True
+    column_searchable_list = [Document.title, Document.user_id]
+    column_sortable_list = [Document.created_at, Document.id]
+    column_default_sort = [(Document.created_at, True)]
+    form_excluded_columns = [Document.created_at, Document.updated_at]
+
+
 class AdminAuth(AuthenticationBackend):
     async def login(self, request: Request) -> bool:
         token = request.cookies.get("auth_token")
@@ -126,5 +165,6 @@ def setup_admin(app):
     admin.add_view(QueryHistoryAdmin)
     admin.add_view(UsageLogAdmin)
     admin.add_view(CorpusAdmin)
+    admin.add_view(DocumentAdmin)
 
     return admin

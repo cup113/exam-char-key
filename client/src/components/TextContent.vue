@@ -1,16 +1,23 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useWordsStore } from '@/stores/words'
-import type { TrackedWord } from '@/types'
+import type { TrackedWord, DocumentRecord } from '@/types'
 import { useAuthStore } from '@/stores/auth'
 import type { TextSegment } from '@/types'
+import { useDocumentLoader } from '@/composables/useDocumentLoader'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import SaveDocumentDialog from '@/components/SaveDocumentDialog.vue'
+import LoadDocumentDialog from '@/components/LoadDocumentDialog.vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   editableText: string
   editing: boolean
   editText: string
   textSegments: TextSegment[]
-}>()
+  readonly?: boolean
+}>(), {
+  readonly: false,
+})
 
 const emit = defineEmits<{
   startEditing: []
@@ -22,6 +29,39 @@ const emit = defineEmits<{
 
 const wordsStore = useWordsStore()
 const auth = useAuthStore()
+const { loadDocument, confirmState } = useDocumentLoader()
+
+const showDocMenu = ref(false)
+const showSaveDialog = ref(false)
+const showLoadDialog = ref(false)
+const docMenuError = ref('')
+const saveResult = ref<{ id: number; title: string; public_uuid?: string | null } | null>(null)
+
+function toggleDocMenu() {
+  showDocMenu.value = !showDocMenu.value
+}
+
+async function handleSave(payload: { title: string; isPublic: boolean }) {
+  try {
+    const result = await wordsStore.saveSnapshot(payload.title, payload.isPublic)
+    saveResult.value = result
+  } catch (e) {
+    docMenuError.value = e instanceof Error ? e.message : '保存失败'
+    setTimeout(() => { docMenuError.value = '' }, 3000)
+    showDocMenu.value = false
+  }
+}
+
+function handleDismiss() {
+  showSaveDialog.value = false
+  saveResult.value = null
+}
+
+function handleLoad(doc: DocumentRecord) {
+  showLoadDialog.value = false
+  showDocMenu.value = false
+  loadDocument(doc)
+}
 
 const searchQuery = ref('')
 
@@ -89,12 +129,29 @@ const getTrackedWordClass = (w: TrackedWord) => {
         <span :class="auth.quota.remaining < 5 ? 'text-red-500' : ''">剩{{ auth.quota.remaining }}</span>
       </span>
     </div>
-    <div class="flex gap-2 text-sm shrink-0">
+    <div v-if="!readonly" class="flex gap-2 text-sm shrink-0">
+      <div class="relative">
+        <button v-if="!editing && auth.user.logged_in"
+          @click="toggleDocMenu"
+          class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          data-umami-event="home-doc-menu">📄 文档</button>
+        <div v-if="showDocMenu"
+          class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-40 py-1">
+          <button v-if="wordsStore.trackedWords.length > 0" @click="showSaveDialog = true; showDocMenu = false"
+            class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">💾 保存当前分析</button>
+          <button v-if="wordsStore.trackedWords.length === 0" disabled
+            class="w-full text-left px-4 py-2 text-sm text-gray-400 cursor-not-allowed">💾 保存当前分析</button>
+          <button @click="showLoadDialog = true; showDocMenu = false"
+            class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">📂 打开文档</button>
+
+        </div>
+      </div>
       <button v-if="!editing && wordsStore.trackedWords.length > 0" @click="wordsStore.clearAll"
         class="text-gray-400 dark:text-gray-500 hover:text-red-500" data-umami-event="home-text-untrack">清空追踪</button>
       <button v-if="!editing" @click="emit('startEditing')"
         class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-800" data-umami-event="home-text-edit">编辑文本</button>
     </div>
+    <p v-if="docMenuError" class="text-red-500 text-xs">{{ docMenuError }}</p>
   </div>
 
   <div v-if="editing" class="space-y-3">
@@ -129,11 +186,11 @@ const getTrackedWordClass = (w: TrackedWord) => {
     </template>
   </div>
 
-  <p class="text-sm text-gray-400 dark:text-gray-500 mt-4">💡 提示：选中任意词语，即可触发查询。</p>
+  <p v-if="!readonly" class="text-sm text-gray-400 dark:text-gray-500 mt-4">💡 提示：选中任意词语，即可触发查询。</p>
 
-      <p class="text-xs text-gray-400 dark:text-gray-500 mt-4">需要查找其他文章？输入篇名、作者或文章开头几个字搜索全文，复制后粘贴到上方阅读区即可。</p>
+  <p v-if="!readonly" class="text-xs text-gray-400 dark:text-gray-500 mt-4">需要查找其他文章？输入篇名、作者或文章开头几个字搜索全文，复制后粘贴到上方阅读区即可。</p>
 
-  <div class="mt-2 flex flex-wrap items-start gap-2 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+  <div v-if="!readonly" class="mt-2 flex flex-wrap items-start gap-2 p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/50">
     <div class="flex items-center gap-1.5 w-full sm:w-auto">
       <span class="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">📖 搜索</span>
       <input v-model="searchQuery" placeholder="篇名、作者或文章开头…"
@@ -153,6 +210,19 @@ const getTrackedWordClass = (w: TrackedWord) => {
       </button>
     </div>
   </div>
+
+  <SaveDocumentDialog v-if="showSaveDialog"
+    :default-title="wordsStore.editableText.slice(0, 20)"
+    :saved-result="saveResult"
+    @save="handleSave"
+    @cancel="handleDismiss"
+    @dismiss="handleDismiss" />
+
+  <LoadDocumentDialog v-if="showLoadDialog"
+    @load="handleLoad"
+    @cancel="showLoadDialog = false" />
+
+  <ConfirmDialog v-if="confirmState" :state="confirmState" />
 </template>
 
 <style scoped>

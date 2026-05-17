@@ -53,6 +53,29 @@ export interface UserInfo {
   is_admin?: boolean
 }
 
+export interface TrackedWordSnapshot {
+  word: string
+  context: string
+  offset: number
+  mode: 'quick' | 'deep'
+  quickAnswer: string
+  dictResult: string
+  deepThink: string
+  corpusEntries: CorpusEntry[]
+}
+
+export interface DocumentRecord {
+  id: number
+  user_id: string
+  title: string
+  source_text: string
+  tracked_words: TrackedWordSnapshot[]
+  is_public: boolean
+  public_uuid: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type TextSegment =
   | { type: 'text'; content: string }
   | { type: 'word'; word: TrackedWord }
