@@ -8,6 +8,7 @@ import { useDocumentLoader } from '@/composables/useDocumentLoader'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import SaveDocumentDialog from '@/components/SaveDocumentDialog.vue'
 import LoadDocumentDialog from '@/components/LoadDocumentDialog.vue'
+import UsageGuide from '@/components/UsageGuide.vue'
 
 const props = withDefaults(defineProps<{
   editableText: string
@@ -36,6 +37,7 @@ const showSaveDialog = ref(false)
 const showLoadDialog = ref(false)
 const docMenuError = ref('')
 const saveResult = ref<{ id: number; title: string; public_uuid?: string | null } | null>(null)
+const showUsageGuide = ref(false)
 
 function toggleDocMenu() {
   showDocMenu.value = !showDocMenu.value
@@ -142,19 +144,18 @@ const getTrackedWordClass = (w: TrackedWord) => {
           data-umami-event="home-doc-menu">📄 文档</button>
         <div v-if="showDocMenu"
           class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-40 py-1">
-          <button v-if="wordsStore.trackedWords.length > 0" @click="showSaveDialog = true; showDocMenu = false"
+          <button @click="showSaveDialog = true; showDocMenu = false"
             class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">💾 保存当前分析</button>
-          <button v-if="wordsStore.trackedWords.length === 0" disabled
-            class="w-full text-left px-4 py-2 text-sm text-gray-400 cursor-not-allowed">💾 保存当前分析</button>
           <button @click="showLoadDialog = true; showDocMenu = false"
             class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">📂 打开文档</button>
 
         </div>
       </div>
-      <button v-if="!editing && wordsStore.trackedWords.length > 0" @click="wordsStore.clearAll"
-        class="text-gray-400 dark:text-gray-500 hover:text-red-500" data-umami-event="home-text-untrack">清空追踪</button>
       <button v-if="!editing" @click="emit('startEditing')"
         class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-800" data-umami-event="home-text-edit">编辑文本</button>
+      <button @click="showUsageGuide = true"
+        class="w-7 h-7 flex items-center justify-center rounded-full border border-gray-300 dark:border-gray-600 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        title="使用指南">?</button>
     </div>
     <p v-if="docMenuError" class="text-red-500 text-xs">{{ docMenuError }}</p>
   </div>
@@ -228,6 +229,8 @@ const getTrackedWordClass = (w: TrackedWord) => {
     @cancel="showLoadDialog = false" />
 
   <ConfirmDialog v-if="confirmState" :state="confirmState" />
+
+  <UsageGuide :show="showUsageGuide" @dismiss="showUsageGuide = false" />
 </template>
 
 <style scoped>

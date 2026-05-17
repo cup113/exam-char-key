@@ -36,7 +36,7 @@ function btnClass(variant?: string): string {
 <template>
   <Teleport to="body">
     <div v-if="state.show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30" @click.self="handleClick('cancel')">
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 w-96 space-y-4 shadow-2xl">
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 w-[90vw] max-w-96 space-y-4 shadow-2xl">
         <h3 class="text-lg font-bold">{{ state.title }}</h3>
         <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{{ state.message }}</p>
         <div class="flex justify-end gap-2">

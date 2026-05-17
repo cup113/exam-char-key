@@ -97,7 +97,7 @@ async function copyPublicLink(doc: DocListItem) {
 <template>
   <Teleport to="body">
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30" @click.self="emit('cancel')">
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 w-[520px] max-h-[75vh] flex flex-col shadow-2xl">
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 w-[90vw] max-w-[520px] max-h-[75vh] flex flex-col shadow-2xl">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-bold">文档管理</h3>
           <button @click="emit('cancel')"

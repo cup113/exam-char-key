@@ -38,7 +38,7 @@ function selectInput(e: FocusEvent) {
 <template>
   <Teleport to="body">
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30" @click.self="emit('cancel')">
-      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 w-96 space-y-4 shadow-2xl">
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 w-[90vw] max-w-96 space-y-4 shadow-2xl">
         <h3 class="text-lg font-bold">保存文档</h3>
 
         <div v-if="!savedResult">
