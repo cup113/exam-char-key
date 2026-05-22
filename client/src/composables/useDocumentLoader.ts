@@ -34,7 +34,11 @@ export function useDocumentLoader() {
       if (action === 'save') {
         try {
           await wordsStore.saveSnapshot(wordsStore.editableText.slice(0, 20), false)
-        } catch {
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : '自动保存失败，请手动保存后再加载'
+          await confirm('保存失败', msg, [
+            { label: '返回', value: 'cancel' },
+          ])
           return false
         }
       }

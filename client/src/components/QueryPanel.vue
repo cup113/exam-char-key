@@ -38,13 +38,23 @@ const aiAnswerForDict = computed(() => {
   return answers.length > 0 ? answers : ''
 })
 
-const showEmpty = computed(() => {
+const allIdle = computed(() => {
   if (!props.activeWord) return true
   return (
     props.activeWord.quickStatus === 'idle' &&
     props.activeWord.corpusStatus === 'idle' &&
     props.activeWord.dictStatus === 'idle' &&
     props.activeWord.deepStatus === 'idle'
+  )
+})
+
+const allFailed = computed(() => {
+  if (!props.activeWord) return false
+  return (
+    props.activeWord.quickStatus === 'error' &&
+    props.activeWord.corpusStatus === 'error' &&
+    props.activeWord.dictStatus === 'error' &&
+    props.activeWord.deepStatus === 'error'
   )
 })
 
@@ -208,9 +218,17 @@ const handleUpgrade = () => {
         </div>
       </div>
 
-      <div v-if="showEmpty"
+      <div v-if="!activeWord"
         class="text-center text-gray-400 dark:text-gray-500 text-sm mt-20">
         选中词语后点击查询
+      </div>
+      <div v-else-if="allIdle"
+        class="text-center text-gray-400 dark:text-gray-500 text-sm mt-20">
+        选中词语后点击查询
+      </div>
+      <div v-else-if="allFailed"
+        class="text-center text-gray-400 dark:text-gray-500 text-sm mt-20">
+        全部查询失败，请重试或清除后重新选择
       </div>
     </div>
 

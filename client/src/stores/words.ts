@@ -61,6 +61,7 @@ export const useWordsStore = defineStore('words', () => {
       dictStatus: 'idle',
       deepStatus: 'idle',
       startTime: Date.now(),
+      errorMessage: undefined,
     })
     isDirty.value = true
     return id
@@ -158,7 +159,7 @@ export const useWordsStore = defineStore('words', () => {
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
       const message = err instanceof Error ? err.message : '未知错误'
-      updateWord(wordId, { status: 'error' })
+      updateWord(wordId, { status: 'error', errorMessage: message })
     } finally {
       activeControllers.delete(wordId)
       useAuthStore().fetchQuota()

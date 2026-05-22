@@ -14,6 +14,7 @@ export interface TrackedWord {
   dictStatus: 'idle' | 'loading' | 'done' | 'error'
   deepStatus: 'idle' | 'loading' | 'done' | 'error'
   startTime: number
+  errorMessage?: string
 }
 
 export interface SelectionState {

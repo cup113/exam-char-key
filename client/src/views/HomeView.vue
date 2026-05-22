@@ -19,6 +19,7 @@ const selection = reactive({
   offset: 0,
   context: '',
   showTooltip: false,
+  tooLong: false,
   x: 0,
   y: 0,
 })
@@ -165,9 +166,18 @@ function scheduleHide() {
   }, 300)
 }
 
+let tooLongTimer: ReturnType<typeof setTimeout> | null = null
+
 function showTooltipFromSelection(sel: Selection) {
   const text = sel.toString().trim()
-  if (!text || text.length > 20) return
+  if (!text || text.length > 20) {
+    if (text.length > 20) {
+      selection.tooLong = true
+      if (tooLongTimer) clearTimeout(tooLongTimer)
+      tooLongTimer = setTimeout(() => { selection.tooLong = false }, 3000)
+    }
+    return
+  }
 
   const offset = getTextOffsetFromSelection()
   if (offset === -1) return
@@ -249,6 +259,13 @@ const saveToHistory = async () => {
           @wordClick="wordClick" />
       </div>
     </main>
+
+    <Teleport to="body">
+      <div v-if="selection.tooLong"
+        class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm animate-in fade-in">
+        选中文本过长（限 20 字以内）
+      </div>
+    </Teleport>
 
     <SelectionTooltip
       :show="selection.showTooltip"

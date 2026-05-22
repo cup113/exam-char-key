@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 interface DictEntry {
   brief: string
+  pos?: string
   english?: string
   examples?: string[]
 }
@@ -51,6 +52,24 @@ function scoreStyle(score: number): string {
   return 'text-gray-400 dark:text-gray-500'
 }
 
+const posColors: Record<string, string> = {
+  '名': 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300',
+  '动': 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300',
+  '形': 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300',
+  '副': 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300',
+  '代': 'bg-pink-100 dark:bg-pink-900/50 text-pink-700 dark:text-pink-300',
+  '介': 'bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300',
+  '连': 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300',
+  '助': 'bg-slate-100 dark:bg-slate-900/50 text-slate-700 dark:text-slate-300',
+  '叹': 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300',
+  '量': 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300',
+  '数': 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300',
+}
+
+function posClass(pos: string | undefined): string {
+  return pos ? (posColors[pos] || 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300') : ''
+}
+
 function badgeClass(score: number): string {
   if (score >= 0.5) return 'bg-blue-500 text-white'
   if (score >= 0.25) return 'bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300'
@@ -90,11 +109,13 @@ const sections = computed(() => [
         class="mb-2 last:mb-0 flex gap-2 px-2 py-1.5 -mx-2 rounded-lg">
         <span
           class="shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold transition-colors"
-          :class="badgeClass(sec.scores[i]?.score || 0)">
+          :class="badgeClass(sec.scores[i]?.score || 0)"
+          :title="`与当前词语相关度: ${Math.round((sec.scores[i]?.score || 0) * 100)}%`">
           {{ i + 1 }}
         </span>
         <div class="min-w-0">
           <p class="text-sm" :class="scoreStyle(sec.scores[i]?.score || 0)">
+            <span v-if="item.pos" class="pos-tag" :class="posClass(item.pos)">{{ item.pos }}</span>
             {{ item.brief }}
             <span v-if="sec.showEnglish && item.english" class="text-xs text-gray-400 dark:text-gray-500 ml-1">[{{ item.english }}]</span>
           </p>
@@ -110,3 +131,19 @@ const sections = computed(() => [
   </template>
   <p v-else-if="dictResult" class="text-sm leading-relaxed whitespace-pre-wrap">{{ dictResult }}</p>
 </template>
+
+<style scoped>
+.pos-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-right: 0.25rem;
+  vertical-align: middle;
+}
+</style>
