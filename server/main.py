@@ -167,9 +167,11 @@ async def query_dictionary(word: str, request: Request) -> dict[str, Any]:
         logger.debug("字典缓存命中 | word=%s", word)
         return {"result": cached, "cached": True}
 
-    consume_quota(request, 1)
+    # 字典 HTML 解析免费；回退 LLM 时自动扣额度（由 scrape_zdic 内部处理）
+    identifier, limit, _ = get_identifier_and_limit(request)
+    logger.info("字典查询 | word=%s | identifier=%s", word, identifier)
 
-    result = await get_dict_entry(word)
+    result = await get_dict_entry(word, identifier, limit)
     logger.info("字典查询完成 | word=%s | data_len=%d", word, len(result))
     return {"result": result, "cached": False}
 

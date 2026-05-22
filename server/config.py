@@ -22,8 +22,8 @@ class Settings(BaseSettings):
     DB_PATH: str = "../db/data.db"
     ZDIC_TIMEOUT: int = 30
 
-    QUOTA_USER_DAILY: int = 50
-    QUOTA_GUEST_DAILY: int = 50  # Total Pool
+    QUOTA_USER_DAILY: int = 200
+    QUOTA_GUEST_DAILY: int = 100  # Total Pool
 
     def __init__(self):
         super().__init__()
