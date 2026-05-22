@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0 (2026-05-22)
+
+### Features
+- Improved UI/UX with better loading states, error handling, and POS display in query results
+- Migrated dictionary parsing to HTML parser with LLM fallback for more robust ZDIC scraping
+
+### Refactors
+- Extracted API layer — centralized `apiClient` + 7 service modules for cleaner separation of concerns
+
+### Tests
+- Added frontend test infra (vitest + @vue/test-utils + happy-dom) and first 25 tests
+- Added 49 tests for services layer + utils (20.72% coverage)
+
+### Chores
+- Fixed ruff lints — E402, F401, F841
+
 ## 0.3.0 (2026-05-17)
 
 ### Features

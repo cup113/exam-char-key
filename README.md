@@ -17,6 +17,8 @@ A comprehensive Chinese language learning platform that specializes in **ancient
 - **Per-endpoint Status**: Independent real-time status indicators for each query step (quick, corpus, dictionary, deep)
 - **Retry on Failure**: One-click retry for dictionary fetch failures without losing context
 - **Admin Panel**: SQLAdmin-based management interface for model overview and corpus import
+- **Mobile-Responsive**: Fully responsive design that adapts to mobile, tablet, and desktop
+- **In-App Usage Guide**: Interactive guide to help new users navigate the platform
 
 ### 🤖 AI Capabilities
 
@@ -35,6 +37,8 @@ A comprehensive Chinese language learning platform that specializes in **ancient
 ### 🎨 User Experience
 
 - **Dark Mode**: System-aware dark mode with manual toggle and persisted preference
+- **Mobile-Responsive**: Fully responsive design that adapts to mobile, tablet, and desktop
+- **In-App Usage Guide**: Interactive guide to help new users navigate the platform
 - **Umami Analytics**: Privacy-focused event tracking for usage insights
 
 ### 📚 Educational Tools
