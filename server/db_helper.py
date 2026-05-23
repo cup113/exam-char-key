@@ -134,12 +134,13 @@ class Database:
             return
         vals.extend([doc_id, user_id])
         with sqlite3.connect(self._db_path) as conn:
-            conn.execute(
+            cur = conn.execute(
                 f"UPDATE documents SET {', '.join(sets)}, updated_at=datetime('now','localtime') "
                 "WHERE id=? AND user_id=?",
                 vals,
             )
             conn.commit()
+        return cur.rowcount > 0
 
     def delete_document(self, doc_id: int, user_id: str) -> bool:
         with sqlite3.connect(self._db_path) as conn:

@@ -28,6 +28,12 @@ def user_token():
     return create_jwt("github:12345", "github")
 
 
+@pytest.fixture
+def user_token_b():
+    """不同的用户，用于隔离测试。"""
+    return create_jwt("github:user_b", "github")
+
+
 def pytest_unconfigure():
     os.close(_db_fd)
     try:

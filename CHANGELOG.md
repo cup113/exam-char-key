@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.1 (2026-05-23)
+
+### Features
+- Tabbed usage guide with collapsible sections and new About & Credits tab
+- Document update endpoint now returns 404 when document not found
+
+### Fixes
+- `update_document` returns success status; route respects it with proper HTTP error
+
+### Tests
+- Added frontend tests: TextContent, useDocumentLoader, words store
+- Added backend tests: document API routes and spider module
+- Added `user_token_b` fixture for user isolation testing
+
 ## 0.4.0 (2026-05-22)
 
 ### Features
