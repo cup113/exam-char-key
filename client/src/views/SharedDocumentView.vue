@@ -3,7 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWordsStore } from '@/stores/words'
 import { useDocumentLoader } from '@/composables/useDocumentLoader'
-import type { DocumentRecord, TrackedWordSnapshot, TextSegment } from '@/types'
+import { buildTextSegments } from '@/utils/textSegments'
+import type { DocumentRecord, TrackedWordSnapshot, TextSegment, TrackedWord } from '@/types'
 import * as documentService from '@/services/documentService'
 import TextContent from '@/components/TextContent.vue'
 import WordAnalysisCard from '@/components/WordAnalysisCard.vue'
@@ -31,36 +32,24 @@ onMounted(async () => {
 
 const textSegments = computed<TextSegment[]>(() => {
   if (!doc.value) return []
-  const text = doc.value.source_text
-  const src = doc.value.tracked_words
-  const indexed = src
-    .map((w, i) => ({ w, i }))
-    .filter(({ w }) => text.indexOf(w.word, w.offset) === w.offset)
-    .sort((a, b) => a.w.offset - b.w.offset)
-
-  const segments: TextSegment[] = []
-  let cursor = 0
-  for (const { w, i } of indexed) {
-    if (w.offset < cursor) continue
-    if (w.offset > cursor) {
-      segments.push({ type: 'text', content: text.slice(cursor, w.offset) })
-    }
-    segments.push({ type: 'word', word: {
-      id: `doc-${i}`,
-      ...w,
-      status: 'done',
-      quickStatus: 'done',
-      corpusStatus: 'done',
-      dictStatus: 'done',
-      deepStatus: w.deepThink ? 'done' : 'idle',
-      startTime: Date.now(),
-    }})
-    cursor = w.offset + w.word.length
-  }
-  if (cursor < text.length) {
-    segments.push({ type: 'text', content: text.slice(cursor) })
-  }
-  return segments
+  const words: TrackedWord[] = doc.value.tracked_words.map((w, i) => ({
+    id: `doc-${i}`,
+    word: w.word,
+    context: w.context,
+    offset: w.offset,
+    mode: w.mode,
+    quickAnswer: w.quickAnswer,
+    dictResult: w.dictResult,
+    deepThink: w.deepThink,
+    corpusEntries: w.corpusEntries,
+    status: 'done',
+    quickStatus: 'done',
+    corpusStatus: 'done',
+    dictStatus: 'done',
+    deepStatus: w.deepThink ? 'done' : 'idle',
+    startTime: Date.now(),
+  }))
+  return buildTextSegments(doc.value.source_text, words)
 })
 
 function onWordClick(id: string) {

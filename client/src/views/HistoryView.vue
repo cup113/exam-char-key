@@ -6,6 +6,8 @@ import LoginButtons from '@/components/LoginButtons.vue'
 import DictDisplay from '@/components/DictDisplay.vue'
 import type { ECHistoryEntry } from '@/types'
 import * as historyService from '@/services/historyService'
+import { formatTime } from '@/utils/format'
+import { detectLegacyData, clearLegacyData } from '@/utils/history'
 import { exportRecords } from '@/services/exportService'
 import { migrateLegacyData } from '@/services/migrateService'
 
@@ -46,16 +48,11 @@ const migrating = ref(false)
 const migrateDone = ref(false)
 const migrateError = ref('')
 
-function detectLegacyData() {
-  try {
-    const raw = localStorage.getItem('EC_history')
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        legacyData.value = parsed
-      }
-    }
-  } catch { /* ignore */ }
+function doDetectLegacyData() {
+  const data = detectLegacyData()
+  if (data) {
+    legacyData.value = data
+  }
 }
 
 async function handleMigrate() {
@@ -64,7 +61,7 @@ async function handleMigrate() {
   migrateError.value = ''
   try {
     await migrateLegacyData(legacyData.value)
-    localStorage.removeItem('EC_history')
+    clearLegacyData()
     legacyData.value = null
     migrateDone.value = true
   } catch (e: any) {
@@ -129,16 +126,14 @@ onMounted(async () => {
     records.value = (data.records || []) as HistoryRecord[]
   } catch { /* ignore */ }
   loading.value = false
-  detectLegacyData()
+  doDetectLegacyData()
 })
 
 function toggleExpand(id: number) {
   expandedId.value = expandedId.value === id ? null : id
 }
 
-function formatTime(iso: string) {
-  return iso.replace('T', ' ').slice(0, 16)
-}
+
 </script>
 
 <template>

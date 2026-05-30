@@ -218,4 +218,141 @@ describe('useWordsStore', () => {
     expect(store.trackedWords[0]!.status).toBe('loading')
     expect(store.trackedWords[0]!.deepStatus).toBe('loading')
   })
+
+  it('removeWord clears reference when activeWordId matches', () => {
+    const store = useWordsStore()
+    const id = store.addWord('之', '', 'quick', 0)
+    store.activeWordId = id
+    store.removeWord(id)
+    expect(store.activeWordId).toBeNull()
+  })
+
+  it('queryWord returns correct id', () => {
+    const store = useWordsStore()
+    const id = store.queryWord('之', '学而时习之', 'quick', 0)
+    expect(typeof id).toBe('string')
+    expect(id.length).toBeGreaterThan(0)
+  })
+
+  it('runQuery with deep mode calls fetchDeep on success', async () => {
+    vi.mocked(queryService.queryQuick).mockImplementation((_word, _context, _signal, onChunk) => {
+      onChunk('快速回答')
+      return Promise.resolve()
+    })
+    vi.mocked(queryService.queryDeep).mockImplementation((_word, _context, _signal, onChunk) => {
+      onChunk('深度分析')
+      return Promise.resolve()
+    })
+
+    const store = useWordsStore()
+    store.queryWord('之', '学而时习之', 'deep', 0)
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const w = store.trackedWords[0]!
+    expect(w.status).toBe('done')
+    expect(w.quickAnswer).toBe('快速回答')
+    expect(w.deepThink).toBe('深度分析')
+  })
+
+  it('runQuery handles individual endpoint failures', async () => {
+    vi.mocked(queryService.queryQuick).mockRejectedValue(new Error('quick fail'))
+    vi.mocked(queryService.queryCorpus).mockRejectedValue(new Error('corpus fail'))
+    vi.mocked(queryService.queryDictionary).mockRejectedValue(new Error('dict fail'))
+
+    const store = useWordsStore()
+    store.queryWord('之', '学而时习之', 'quick', 0)
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const w = store.trackedWords[0]!
+    expect(w.quickStatus).toBe('error')
+    expect(w.corpusStatus).toBe('error')
+    expect(w.dictStatus).toBe('error')
+  })
+
+  it('runQuery handles deep fetch failure', async () => {
+    vi.mocked(queryService.queryQuick).mockResolvedValue(undefined)
+    vi.mocked(queryService.queryCorpus).mockResolvedValue([])
+    vi.mocked(queryService.queryDictionary).mockResolvedValue('')
+    vi.mocked(queryService.queryDeep).mockRejectedValue(new Error('deep analysis failed'))
+
+    const store = useWordsStore()
+    store.queryWord('之', '学而时习之', 'deep', 0)
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const w = store.trackedWords[0]!
+    expect(w.status).toBe('error')
+    expect(w.errorMessage).toBe('deep analysis failed')
+  })
+
+  it('runQuery with quick mode succeeds without calling fetchDeep', async () => {
+    vi.mocked(queryService.queryQuick).mockImplementation((_word, _context, _signal, onChunk) => {
+      onChunk('回答')
+      return Promise.resolve()
+    })
+    vi.mocked(queryService.queryDeep).mockRejectedValue(new Error('should not be called'))
+
+    const store = useWordsStore()
+    store.queryWord('之', '学而时习之', 'quick', 0)
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const w = store.trackedWords[0]!
+    expect(w.status).toBe('done')
+    expect(w.quickAnswer).toBe('回答')
+  })
+
+  it('upgradeToDeep completes successfully', async () => {
+    vi.mocked(queryService.queryDeep).mockImplementation((_word, _context, _signal, onChunk) => {
+      onChunk('深度结果')
+      return Promise.resolve()
+    })
+
+    const store = useWordsStore()
+    const id = store.addWord('之', '', 'quick', 0)
+    store.upgradeToDeep(id)
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const w = store.trackedWords[0]!
+    expect(w.mode).toBe('deep')
+    expect(w.status).toBe('done')
+    expect(w.deepThink).toBe('深度结果')
+  })
+
+  it('upgradeToDeep handles error', async () => {
+    vi.mocked(queryService.queryDeep).mockRejectedValue(new Error('upgrade failed'))
+
+    const store = useWordsStore()
+    const id = store.addWord('之', '', 'quick', 0)
+    store.upgradeToDeep(id)
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const w = store.trackedWords[0]!
+    expect(w.status).toBe('error')
+    expect(w.deepStatus).toBe('error')
+  })
+
+  it('retryDictionary promotes status when all done', async () => {
+    vi.mocked(queryService.queryDictionary).mockResolvedValue('新字典结果')
+
+    const store = useWordsStore()
+    const id = store.addWord('之', '', 'quick', 0)
+    store.updateWord(id, { status: 'loading', quickStatus: 'done', corpusStatus: 'done', dictStatus: 'error' })
+    store.retryDictionary(id)
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const w = store.trackedWords[0]!
+    expect(w.dictResult).toBe('新字典结果')
+    expect(w.status).toBe('done')
+  })
+
+  it('retryDictionary handles non-AbortError', async () => {
+    vi.mocked(queryService.queryDictionary).mockRejectedValue(new Error('dict error'))
+
+    const store = useWordsStore()
+    const id = store.addWord('之', '', 'quick', 0)
+    store.retryDictionary(id)
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    const w = store.trackedWords[0]!
+    expect(w.dictStatus).toBe('error')
+  })
 })

@@ -3,6 +3,8 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useWordsStore } from '@/stores/words'
 import { useAuthStore } from '@/stores/auth'
 import type { TextSegment } from '@/types'
+import { getContextAround } from '@/utils/context'
+import { buildTextSegments } from '@/utils/textSegments'
 import * as historyService from '@/services/historyService'
 
 import TextContent from '@/components/TextContent.vue'
@@ -30,35 +32,10 @@ const saveSuccess = ref(false)
 
 const textSegments = computed<TextSegment[]>(() => {
   if (wordsStore.editing) return []
-  const text = wordsStore.editableText
-  const words = [...wordsStore.trackedWords]
-    .filter(w => text.indexOf(w.word, w.offset) === w.offset)
-    .sort((a, b) => a.offset - b.offset)
-
-  const segments: TextSegment[] = []
-  let cursor = 0
-  for (const w of words) {
-    if (w.offset < cursor) continue
-    if (w.offset > cursor) {
-      segments.push({ type: 'text', content: text.slice(cursor, w.offset) })
-    }
-    segments.push({ type: 'word', word: w })
-    cursor = w.offset + w.word.length
-  }
-  if (cursor < text.length) {
-    segments.push({ type: 'text', content: text.slice(cursor) })
-  }
-  return segments
+  return buildTextSegments(wordsStore.editableText, wordsStore.trackedWords)
 })
 
-const getContextAround = (offset: number, wordLen: number, windowSize = 30): string => {
-  const start = Math.max(0, offset - windowSize)
-  const end = Math.min(wordsStore.editableText.length, offset + wordLen + windowSize)
-  let result = wordsStore.editableText.slice(start, end)
-  if (start > 0) result = '...' + result
-  if (end < wordsStore.editableText.length) result = result + '...'
-  return result
-}
+
 
 onMounted(async () => {
   await auth.fetchUser()
@@ -194,7 +171,7 @@ function showTooltipFromSelection(sel: Selection) {
 
   selection.word = text
   selection.offset = offset
-  selection.context = getContextAround(offset, text.length)
+  selection.context = getContextAround(wordsStore.editableText, offset, text.length)
   selection.x = clampedX
   selection.y = Math.max(10, pos.y - 50)
   selection.showTooltip = true
