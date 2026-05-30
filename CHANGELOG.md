@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.2 (2026-05-31)
+
+### Refactors
+- Extracted shared `typeLabel`/`deepMeaning`/`aiAnswerForDict` into `utils/wordAnalysis.ts`
+
+### Tests
+- Added frontend tests: auth/theme stores, router, 3 dialog components, 5 more components
+- Raised client coverage from 57% to 79%
+- Added type annotations and non-null assertions for vue-tsc compliance
+
+### Chores
+- Updated zdic.net User-Agent header; removed unused pytest import
+
 ## 0.4.1 (2026-05-23)
 
 ### Features
