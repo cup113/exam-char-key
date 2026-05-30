@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import DictDisplay from '@/components/DictDisplay.vue'
 import DeepAnalysisSplit from '@/components/DeepAnalysisSplit.vue'
 import type { CorpusEntry } from '@/types'
+import { typeLabel, deepMeaning, aiAnswerForDict as buildAiAnswer } from '@/utils/wordAnalysis'
 
 interface WordLike {
   word: string
@@ -24,32 +25,8 @@ const props = withDefaults(defineProps<{
   readonly: false,
 })
 
-function typeLabel(type: string | undefined): string {
-  if (!type) return ''
-  const map: Record<string, string> = {
-    textbook: '教材',
-    mock_exam: '模考',
-    user_query: '用户查询',
-  }
-  return map[type] || type
-}
-
-function deepMeaning(word: WordLike): string {
-  if (!word.deepThink) return ''
-  for (const line of word.deepThink.split('\n')) {
-    const trimmed = line.trim()
-    const match = trimmed.match(/^\[词义\]\s*(.*)$/)
-    if (match) return match[1] || ''
-  }
-  return ''
-}
-
 function aiAnswerForDict(word: WordLike): string[] | string {
-  const answers: string[] = []
-  if (word.quickAnswer) answers.push(word.quickAnswer)
-  const dm = deepMeaning(word)
-  if (dm) answers.push(dm)
-  return answers.length > 0 ? answers : ''
+  return buildAiAnswer(word.quickAnswer, word.deepThink)
 }
 
 const allFailed = computed(() => {
@@ -93,13 +70,13 @@ const idle = computed(() => {
           <span class="text-base shrink-0 mt-0.5">⚡</span>
           <p class="text-base font-bold leading-relaxed">{{ word.quickAnswer }}</p>
         </div>
-        <div v-if="!readonly && word.deepStatus === 'loading' && !deepMeaning(word)"
+        <div v-if="!readonly && word.deepStatus === 'loading' && !deepMeaning(word.deepThink)"
           class="animate-pulse h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
-        <div v-if="!readonly && word.deepStatus === 'error' && !deepMeaning(word)"
+        <div v-if="!readonly && word.deepStatus === 'error' && !deepMeaning(word.deepThink)"
           class="text-sm text-red-500">深度分析失败</div>
-        <div v-if="deepMeaning(word)" class="flex items-start gap-2">
+        <div v-if="deepMeaning(word.deepThink)" class="flex items-start gap-2">
           <span class="text-base shrink-0 mt-0.5">🧠</span>
-          <p class="text-base font-bold leading-relaxed">{{ deepMeaning(word) }}</p>
+          <p class="text-base font-bold leading-relaxed">{{ deepMeaning(word.deepThink) }}</p>
         </div>
       </div>
     </div>

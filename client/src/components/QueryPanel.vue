@@ -4,6 +4,7 @@ import DictDisplay from '@/components/DictDisplay.vue'
 import DeepAnalysisSplit from '@/components/DeepAnalysisSplit.vue'
 import { useWordsStore } from '@/stores/words'
 import type { TrackedWord } from '@/types'
+import { typeLabel, deepMeaning as parseDeep } from '@/utils/wordAnalysis'
 
 const wordsStore = useWordsStore()
 
@@ -21,15 +22,7 @@ const emit = defineEmits<{
   save: []
 }>()
 
-const deepMeaning = computed(() => {
-  if (!props.activeWord?.deepThink) return ''
-  for (const line of props.activeWord.deepThink.split('\n')) {
-    const trimmed = line.trim()
-    const match = trimmed.match(/^\[词义\]\s*(.*)$/)
-    if (match) return match[1]
-  }
-  return ''
-})
+const deepMeaning = computed(() => parseDeep(props.activeWord?.deepThink ?? ''))
 
 const aiAnswerForDict = computed(() => {
   const answers: string[] = []
@@ -57,15 +50,6 @@ const allFailed = computed(() => {
     props.activeWord.deepStatus === 'error'
   )
 })
-
-function typeLabel(type: string): string {
-  const map: Record<string, string> = {
-    textbook: '教材',
-    mock_exam: '模考',
-    user_query: '用户查询',
-  }
-  return map[type] || type
-}
 
 const handleCancel = () => {
   if (props.activeWord) {
