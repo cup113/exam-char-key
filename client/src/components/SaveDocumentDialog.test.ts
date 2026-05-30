@@ -36,13 +36,13 @@ describe('SaveDocumentDialog', () => {
 
   it('default title is pre-filled', () => {
     mountDialog({ defaultTitle: '论语' })
-    const input = wrapper.findAll('input')[0]
+    const input = wrapper.findAll('input')[0]!
     expect((input.element as HTMLInputElement).value).toBe('论语')
   })
 
   it('emits save with title and isPublic on save button', async () => {
     mountDialog({ defaultTitle: '论语' })
-    const input = wrapper.findAll('input')[0]
+    const input = wrapper.findAll('input')[0]!
     await input.setValue('新标题')
     const checkbox = wrapper.find('input[type="checkbox"]')
     await checkbox.setValue(true)
@@ -54,7 +54,7 @@ describe('SaveDocumentDialog', () => {
 
   it('emits save with trimmed title falling back to default', async () => {
     mountDialog({ defaultTitle: '论语' })
-    const input = wrapper.findAll('input')[0]
+    const input = wrapper.findAll('input')[0]!
     await input.setValue('   ')
     const saveBtn = wrapper.findAll('button').find(b => b.text() === '保存')
     await saveBtn!.trigger('click')

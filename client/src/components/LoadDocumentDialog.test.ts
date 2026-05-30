@@ -87,9 +87,9 @@ describe('LoadDocumentDialog', () => {
     mountDialog()
     await flushPromises()
     const docEl = wrapper.findAll('div').filter(d => d.attributes('class')?.includes('cursor-pointer'))
-    await docEl[0].trigger('click')
+    await docEl[0]!.trigger('click')
     expect(wrapper.emitted('load')).toBeTruthy()
-    expect(wrapper.emitted('load')![0][0]).toMatchObject({ id: 1, title: '论语' })
+    expect(wrapper.emitted('load')![0]![0]).toMatchObject({ id: 1, title: '论语' })
   })
 
   it('emits cancel on close button', async () => {

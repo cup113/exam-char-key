@@ -7,15 +7,15 @@ describe('LoginButtons', () => {
     const wrapper = mount(LoginButtons)
     const links = wrapper.findAll('a')
     expect(links).toHaveLength(2)
-    expect(links[0].text()).toBe('GitHub 登录')
-    expect(links[1].text()).toBe('Gitee 登录')
+    expect(links[0]!.text()).toBe('GitHub 登录')
+    expect(links[1]!.text()).toBe('Gitee 登录')
   })
 
   it('links point to correct OAuth URLs', () => {
     const wrapper = mount(LoginButtons)
     const links = wrapper.findAll('a')
-    expect(links[0].attributes('href')).toBe('/api/auth/github/login')
-    expect(links[1].attributes('href')).toBe('/api/auth/gitee/login')
+    expect(links[0]!.attributes('href')).toBe('/api/auth/github/login')
+    expect(links[1]!.attributes('href')).toBe('/api/auth/gitee/login')
   })
 
   it('uses sm classes when size is sm', () => {

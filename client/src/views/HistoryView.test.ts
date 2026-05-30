@@ -152,7 +152,7 @@ describe('HistoryView', () => {
 
     const expandBtns = wrapper.findAll('button').filter(b => /展开/.test(b.text()))
     expect(expandBtns.length).toBeGreaterThan(0)
-    await expandBtns[0].trigger('click')
+    await expandBtns[0]!.trigger('click')
     await flushMicrotasks()
 
     expect(wrapper.text()).toContain('收起')
@@ -172,7 +172,7 @@ describe('HistoryView', () => {
 
     const deleteBtns = wrapper.findAll('button[title="删除"]')
     expect(deleteBtns.length).toBeGreaterThan(0)
-    await deleteBtns[0].trigger('click')
+    await deleteBtns[0]!.trigger('click')
     await flushMicrotasks()
 
     expect(historyService.deleteHistory).toHaveBeenCalledWith(1)
@@ -192,7 +192,7 @@ describe('HistoryView', () => {
 
     const jsonBtns = wrapper.findAll('button').filter(b => b.text().trim() === 'JSON')
     expect(jsonBtns.length).toBeGreaterThan(0)
-    await jsonBtns[0].trigger('click')
+    await jsonBtns[0]!.trigger('click')
     await flushMicrotasks()
 
     expect(exportRecords).toHaveBeenCalledWith('json', undefined)
@@ -225,7 +225,7 @@ describe('HistoryView', () => {
 
     const migrateBtns = wrapper.findAll('button').filter(b => /迁移/.test(b.text()))
     expect(migrateBtns.length).toBeGreaterThan(0)
-    await migrateBtns[0].trigger('click')
+    await migrateBtns[0]!.trigger('click')
     await flushMicrotasks()
 
     expect(migrateLegacyData).toHaveBeenCalled()
@@ -245,7 +245,7 @@ describe('HistoryView', () => {
 
     const jsonBtns = wrapper.findAll('button').filter(b => b.text().trim() === 'JSON')
     expect(jsonBtns.length).toBeGreaterThan(0)
-    await jsonBtns[0].trigger('click')
+    await jsonBtns[0]!.trigger('click')
     await flushMicrotasks()
 
     expect(wrapper.text()).toContain('导出失败')

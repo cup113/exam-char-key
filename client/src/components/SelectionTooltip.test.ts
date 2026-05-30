@@ -39,7 +39,7 @@ describe('SelectionTooltip', () => {
   it('emits deep on deep button click', async () => {
     mountTooltip({ show: true, x: 0, y: 0 })
     const buttons = wrapper.findAll('button')
-    await buttons[1].trigger('click')
+    await buttons[1]!.trigger('click')
     expect(wrapper.emitted('deep')).toBeTruthy()
   })
 })

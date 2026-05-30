@@ -33,14 +33,14 @@ describe('UsageGuide', () => {
   it('switches to about tab', async () => {
     mountGuide(true)
     const buttons = wrapper.findAll('button')
-    await buttons[2].trigger('click')
+    await buttons[2]!.trigger('click')
     expect(wrapper.text()).toContain('关于本应用')
   })
 
   it('emits dismiss on close button', async () => {
     mountGuide(true)
     const buttons = wrapper.findAll('button')
-    await buttons[0].trigger('click')
+    await buttons[0]!.trigger('click')
     expect(wrapper.emitted('dismiss')).toBeTruthy()
   })
 
@@ -53,7 +53,7 @@ describe('UsageGuide', () => {
   it('displays version in about tab', async () => {
     mountGuide(true)
     const buttons = wrapper.findAll('button')
-    await buttons[2].trigger('click')
+    await buttons[2]!.trigger('click')
     expect(wrapper.text()).toContain('1.0.0')
   })
 })

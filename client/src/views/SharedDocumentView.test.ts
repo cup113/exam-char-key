@@ -38,7 +38,7 @@ function makeDoc(overrides = {}) {
     title: '论语选段',
     source_text: '学而时习之',
     tracked_words: [
-      { word: '学而', offset: 0, context: '学而时习之', mode: 'quick', quickAnswer: '学习', dictResult: '', deepThink: '', corpusEntries: [] },
+      { word: '学而', offset: 0, context: '学而时习之', mode: 'quick' as const, quickAnswer: '学习', dictResult: '', deepThink: '', corpusEntries: [] },
     ],
     is_public: true,
     public_uuid: 'test-uuid',
