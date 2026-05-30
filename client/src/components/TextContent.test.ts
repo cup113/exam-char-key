@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
+import type { TrackedWord } from '@/types'
 
 vi.mock('@/services/queryService', () => ({
   queryQuick: vi.fn(),
@@ -20,7 +21,7 @@ vi.mock('@/composables/useDocumentLoader', () => ({
 
 import TextContent from './TextContent.vue'
 
-function createWord(overrides = {}) {
+function createWord(overrides: Partial<TrackedWord> = {}): TrackedWord {
   return {
     id: 'word-1',
     word: '之',

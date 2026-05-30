@@ -68,13 +68,13 @@ describe('useWordsStore', () => {
     const store = useWordsStore()
     const id = store.addWord('之', '学而时习之', 'quick', 3)
     expect(store.trackedWords).toHaveLength(1)
-    expect(store.trackedWords[0].word).toBe('之')
-    expect(store.trackedWords[0].context).toBe('学而时习之')
-    expect(store.trackedWords[0].mode).toBe('quick')
-    expect(store.trackedWords[0].offset).toBe(3)
-    expect(store.trackedWords[0].status).toBe('pending')
-    expect(store.trackedWords[0].quickStatus).toBe('idle')
-    expect(store.trackedWords[0].id).toBe(id)
+    expect(store.trackedWords[0]!.word).toBe('之')
+    expect(store.trackedWords[0]!.context).toBe('学而时习之')
+    expect(store.trackedWords[0]!.mode).toBe('quick')
+    expect(store.trackedWords[0]!.offset).toBe(3)
+    expect(store.trackedWords[0]!.status).toBe('pending')
+    expect(store.trackedWords[0]!.quickStatus).toBe('idle')
+    expect(store.trackedWords[0]!.id).toBe(id)
     expect(store.isDirty).toBe(true)
   })
 
@@ -84,7 +84,7 @@ describe('useWordsStore', () => {
     store.addWord('乎', '', 'quick', 0)
     store.removeWord(id1)
     expect(store.trackedWords).toHaveLength(1)
-    expect(store.trackedWords[0].word).toBe('乎')
+    expect(store.trackedWords[0]!.word).toBe('乎')
   })
 
   it('removes active word and clears reference', () => {
@@ -118,7 +118,7 @@ describe('useWordsStore', () => {
     const store = useWordsStore()
     const id = store.addWord('之', '', 'quick', 0)
     store.updateWord(id, { quickAnswer: '代词' })
-    expect(store.trackedWords[0].quickAnswer).toBe('代词')
+    expect(store.trackedWords[0]!.quickAnswer).toBe('代词')
   })
 
   it('handles editing lifecycle', () => {
@@ -140,7 +140,7 @@ describe('useWordsStore', () => {
   it('queryWord sets loading state and starts query', async () => {
     const store = useWordsStore()
     const id = store.queryWord('之', '学而时习之', 'quick', 0)
-    const word = store.trackedWords[0]
+    const word = store.trackedWords[0]!
     expect(word.status).toBe('loading')
     expect(word.quickStatus).toBe('loading')
     expect(word.corpusStatus).toBe('loading')
@@ -176,7 +176,7 @@ describe('useWordsStore', () => {
     store.importDocument(doc as any)
     expect(store.editableText).toBe('新文本')
     expect(store.trackedWords).toHaveLength(1)
-    expect(store.trackedWords[0].word).toBe('新词')
+    expect(store.trackedWords[0]!.word).toBe('新词')
     expect(store.isDirty).toBe(false)
   })
 
@@ -185,7 +185,7 @@ describe('useWordsStore', () => {
     const id = store.addWord('之', '', 'quick', 0)
     store.updateWord(id, { status: 'done', quickAnswer: '旧结果', dictResult: '旧' })
     store.retryWord(id)
-    const w = store.trackedWords[0]
+    const w = store.trackedWords[0]!
     expect(w.status).toBe('loading')
     expect(w.quickAnswer).toBe('')
     expect(w.dictResult).toBe('')
@@ -206,16 +206,16 @@ describe('useWordsStore', () => {
     const id = store.addWord('之', '', 'quick', 0)
     store.updateWord(id, { dictResult: '旧字典', dictStatus: 'done' })
     store.retryDictionary(id)
-    expect(store.trackedWords[0].dictResult).toBe('')
-    expect(store.trackedWords[0].dictStatus).toBe('loading')
+    expect(store.trackedWords[0]!.dictResult).toBe('')
+    expect(store.trackedWords[0]!.dictStatus).toBe('loading')
   })
 
   it('upgradeToDeep sets deep mode', () => {
     const store = useWordsStore()
     const id = store.addWord('之', '', 'quick', 0)
     store.upgradeToDeep(id)
-    expect(store.trackedWords[0].mode).toBe('deep')
-    expect(store.trackedWords[0].status).toBe('loading')
-    expect(store.trackedWords[0].deepStatus).toBe('loading')
+    expect(store.trackedWords[0]!.mode).toBe('deep')
+    expect(store.trackedWords[0]!.status).toBe('loading')
+    expect(store.trackedWords[0]!.deepStatus).toBe('loading')
   })
 })
