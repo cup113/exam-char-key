@@ -43,7 +43,7 @@ function selectInput(e: FocusEvent) {
 
         <div v-if="!savedResult">
           <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">标题</label>
-          <input v-model="title"
+          <input v-model="title" type="text"
             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 dark:bg-gray-800 dark:text-gray-100">
         </div>
 
