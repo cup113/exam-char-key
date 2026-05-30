@@ -1,5 +1,4 @@
 import json
-import pytest
 from spider import format_dict_for_prompt
 
 
