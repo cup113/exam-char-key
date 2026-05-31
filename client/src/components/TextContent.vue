@@ -54,6 +54,17 @@ async function handleSave(payload: { title: string; isPublic: boolean }) {
   }
 }
 
+async function handleUpdate(payload: { title: string; isPublic: boolean }) {
+  try {
+    await wordsStore.updateCurrentDoc(payload.title, payload.isPublic)
+    showSaveDialog.value = false
+    saveResult.value = null
+  } catch (e) {
+    docMenuError.value = e instanceof Error ? e.message : '更新失败'
+    setTimeout(() => { docMenuError.value = '' }, 3000)
+  }
+}
+
 function handleDismiss() {
   showSaveDialog.value = false
   saveResult.value = null
@@ -68,12 +79,12 @@ function handleLoad(doc: DocumentRecord) {
 const searchQuery = ref('')
 
 const searchSites = [
+  { key: 'shidianguji', label: '识典古籍',
+    url: (q: string) => `https://www.shidianguji.com/search/${encodeURIComponent(q)}` },
   { key: 'ctext-pre-qin', label: 'ctext 秦汉',
     url: (q: string) => `https://ctext.org/pre-qin-and-han?searchu=${encodeURIComponent(q)}` },
   { key: 'ctext-post-han', label: 'ctext 汉后',
     url: (q: string) => `https://ctext.org/post-han?searchu=${encodeURIComponent(q)}` },
-  { key: 'shidianguji', label: '识典古籍',
-    url: (q: string) => `https://www.shidianguji.com/search/${encodeURIComponent(q)}` },
   { key: 'guwendao', label: '古文岛',
     url: (q: string) => `https://www.guwendao.net/search.aspx?value=${encodeURIComponent(q)}` },
 ]
@@ -123,6 +134,9 @@ const getTrackedWordClass = (w: TrackedWord) => {
   <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-1">
     <div class="flex items-center gap-2 min-w-0">
       <h1 class="text-xl sm:text-2xl font-bold shrink-0">划词阅读</h1>
+      <span v-if="wordsStore.currentDocId"
+        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 whitespace-nowrap">
+        📄 {{ wordsStore.currentDocTitle }}</span>
       <span v-if="auth.quota" title="已用查询次数/每日总配额 · 剩余免费次数"
         class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
                bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 whitespace-nowrap">
@@ -145,7 +159,7 @@ const getTrackedWordClass = (w: TrackedWord) => {
         <div v-if="showDocMenu"
           class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-40 py-1">
           <button @click="showSaveDialog = true; showDocMenu = false"
-            class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">💾 保存当前分析</button>
+            class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">💾 保存文档...</button>
           <button @click="showLoadDialog = true; showDocMenu = false"
             class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">📂 打开文档</button>
 
@@ -203,7 +217,7 @@ const getTrackedWordClass = (w: TrackedWord) => {
         class="flex-1 min-w-0 px-2.5 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm
                focus:outline-none focus:ring-2 focus:ring-blue-300 dark:bg-gray-800 dark:text-gray-100
                placeholder-gray-400 dark:placeholder-gray-500"
-        @keyup.enter="searchOn('ctext-pre-qin')">
+        @keyup.enter="searchOn('shidianguji')">
     </div>
     <div class="flex flex-wrap gap-1.5">
       <button v-for="site in searchSites" :key="site.key" @click="searchOn(site.key)"
@@ -220,7 +234,9 @@ const getTrackedWordClass = (w: TrackedWord) => {
   <SaveDocumentDialog v-if="showSaveDialog"
     :default-title="wordsStore.editableText.slice(0, 20)"
     :saved-result="saveResult"
+    :current-doc="wordsStore.currentDocId ? { id: wordsStore.currentDocId, title: wordsStore.currentDocTitle, is_public: wordsStore.currentDocIsPublic } : null"
     @save="handleSave"
+    @update="handleUpdate"
     @cancel="handleDismiss"
     @dismiss="handleDismiss" />
 

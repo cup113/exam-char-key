@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 
 vi.mock('@/services/documentService', () => ({
-  createDoc: vi.fn(),
+  createDoc: vi.fn(() => Promise.resolve({ id: 1, title: 'auto-save' })),
 }))
 
 vi.mock('@/stores/auth', () => ({

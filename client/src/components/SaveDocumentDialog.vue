@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 const props = defineProps<{
   defaultTitle: string
   savedResult?: { id: number; title: string; public_uuid?: string | null } | null
+  currentDoc?: { id: number; title: string; is_public: boolean } | null
 }>()
 
 const emit = defineEmits<{
   save: [payload: { title: string; isPublic: boolean }]
+  update: [payload: { title: string; isPublic: boolean }]
   cancel: []
   dismiss: []
 }>()
 
-const title = ref(props.defaultTitle)
-const isPublic = ref(false)
+const isUpdating = computed(() => !props.savedResult && !!props.currentDoc)
+const title = ref(isUpdating.value ? props.currentDoc!.title : props.defaultTitle)
+const isPublic = ref(props.currentDoc?.is_public ?? false)
 const copied = ref(false)
 
 const shareUrl = computed(() => {
@@ -39,7 +42,7 @@ function selectInput(e: FocusEvent) {
   <Teleport to="body">
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30" @click.self="emit('cancel')">
       <div class="bg-white dark:bg-gray-900 rounded-xl p-6 w-[90vw] max-w-96 space-y-4 shadow-2xl">
-        <h3 class="text-lg font-bold">保存文档</h3>
+        <h3 class="text-lg font-bold">{{ isUpdating ? '保存文档更新' : '保存文档' }}</h3>
 
         <div v-if="!savedResult">
           <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">标题</label>
@@ -64,13 +67,21 @@ function selectInput(e: FocusEvent) {
           </div>
         </div>
 
-        <div v-if="!savedResult" class="flex justify-end gap-2">
+        <div v-if="!savedResult && isUpdating" class="flex justify-end gap-2">
+          <button @click="emit('cancel')"
+            class="px-4 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-300">取消</button>
+          <button @click="emit('save', { title: title.trim() || props.defaultTitle, isPublic })"
+            class="px-4 py-1.5 border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 rounded text-sm hover:bg-blue-50 dark:hover:bg-blue-950/30">另存为新</button>
+          <button @click="emit('update', { title: title.trim() || props.defaultTitle, isPublic })"
+            class="px-4 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-500">更新文档</button>
+        </div>
+        <div v-if="!savedResult && !isUpdating" class="flex justify-end gap-2">
           <button @click="emit('cancel')"
             class="px-4 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-300">取消</button>
           <button @click="emit('save', { title: title.trim() || props.defaultTitle, isPublic })"
             class="px-4 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-500">保存</button>
         </div>
-        <div v-else class="flex justify-end">
+        <div v-else-if="savedResult" class="flex justify-end">
           <button @click="emit('dismiss')"
             class="px-4 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-300">关闭</button>
         </div>

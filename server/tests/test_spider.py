@@ -11,12 +11,14 @@ class TestFormatDictForPrompt:
         assert result == ""
 
     def test_basic_explanation_only(self):
-        data = json.dumps({
-            "basic_explanation": [
-                {"brief": "代词：这、此"},
-                {"brief": "连词：表示顺承", "examples": ["例一", "例二"]},
-            ]
-        })
+        data = json.dumps(
+            {
+                "basic_explanation": [
+                    {"brief": "代词：这、此"},
+                    {"brief": "连词：表示顺承", "examples": ["例一", "例二"]},
+                ]
+            }
+        )
         result = format_dict_for_prompt(data)
         assert "【基本解释】" in result
         assert "代词：这、此" in result
@@ -26,17 +28,19 @@ class TestFormatDictForPrompt:
         assert "【详细解释】" not in result
 
     def test_detailed_explanation_with_pos_and_english(self):
-        data = json.dumps({
-            "detailed_explanation": [
-                {
-                    "brief": "用在动词前",
-                    "pos": "助词",
-                    "english": "used before a verb",
-                    "citations": ["《论语》——学而时习之"],
-                    "examples": ["学而时习之"],
-                }
-            ]
-        })
+        data = json.dumps(
+            {
+                "detailed_explanation": [
+                    {
+                        "brief": "用在动词前",
+                        "pos": "助词",
+                        "english": "used before a verb",
+                        "citations": ["《论语》——学而时习之"],
+                        "examples": ["学而时习之"],
+                    }
+                ]
+            }
+        )
         result = format_dict_for_prompt(data)
         assert "【详细解释】" in result
         assert "用在动词前" in result
@@ -47,36 +51,42 @@ class TestFormatDictForPrompt:
         assert "【基本解释】" not in result
 
     def test_detailed_explanation_with_citations_only(self):
-        data = json.dumps({
-            "detailed_explanation": [
-                {
-                    "brief": "指示代词",
-                    "citations": ["此——《诗经》"],
-                }
-            ]
-        })
+        data = json.dumps(
+            {
+                "detailed_explanation": [
+                    {
+                        "brief": "指示代词",
+                        "citations": ["此——《诗经》"],
+                    }
+                ]
+            }
+        )
         result = format_dict_for_prompt(data)
         assert "指示代词" in result
         assert "书证：此——《诗经》" in result
 
     def test_old_schema_examples_fallback(self):
-        data = json.dumps({
-            "detailed_explanation": [
-                {
-                    "brief": "旧义项",
-                    "examples": ["旧例"],
-                }
-            ]
-        })
+        data = json.dumps(
+            {
+                "detailed_explanation": [
+                    {
+                        "brief": "旧义项",
+                        "examples": ["旧例"],
+                    }
+                ]
+            }
+        )
         result = format_dict_for_prompt(data)
         assert "旧义项" in result
         assert "例：旧例" in result
 
     def test_both_sections(self):
-        data = json.dumps({
-            "basic_explanation": [{"brief": "基本义"}],
-            "detailed_explanation": [{"brief": "详细义"}],
-        })
+        data = json.dumps(
+            {
+                "basic_explanation": [{"brief": "基本义"}],
+                "detailed_explanation": [{"brief": "详细义"}],
+            }
+        )
         result = format_dict_for_prompt(data)
         assert "【基本解释】" in result
         assert "【详细解释】" in result
@@ -120,6 +130,7 @@ class TestParseCharSection:
     def test_parse_full_char(self):
         from bs4 import BeautifulSoup
         from spider import _parse_char_section
+
         soup = BeautifulSoup(CHAR_HTML, "html.parser")
         result = _parse_char_section(soup)
         assert result["pinyin"] == ["zhī", "zhì"]
@@ -139,6 +150,7 @@ class TestParseCharSection:
     def test_parse_empty_char(self):
         from bs4 import BeautifulSoup
         from spider import _parse_char_section
+
         soup = BeautifulSoup("<div></div>", "html.parser")
         result = _parse_char_section(soup)
         assert result["pinyin"] == []
@@ -168,6 +180,7 @@ class TestParseWordSection:
     def test_parse_full_word(self):
         from bs4 import BeautifulSoup
         from spider import _parse_word_section
+
         soup = BeautifulSoup(WORD_HTML, "html.parser")
         result = _parse_word_section(soup)
         assert result["word"] == "明府"
@@ -179,6 +192,7 @@ class TestParseWordSection:
     def test_parse_empty_word(self):
         from bs4 import BeautifulSoup
         from spider import _parse_word_section
+
         soup = BeautifulSoup("<div></div>", "html.parser")
         result = _parse_word_section(soup)
         assert result["word"] == ""
@@ -190,17 +204,20 @@ class TestParseWordSection:
 class TestParseZdicHtml:
     def test_parse_char_html(self):
         from spider import parse_zdic_html
+
         result = parse_zdic_html(CHAR_HTML)
         assert result is not None
         assert result["pinyin"] == ["zhī", "zhì"]
 
     def test_parse_word_html(self):
         from spider import parse_zdic_html
+
         result = parse_zdic_html(WORD_HTML)
         assert result is not None
         assert result["word"] == "明府"
 
     def test_parse_404_html(self):
         from spider import parse_zdic_html
+
         result = parse_zdic_html("<html><body>404 Not Found</body></html>")
         assert result is None

@@ -196,6 +196,37 @@ class TestUsageLog:
         assert rows[0][2] == "/api/query/quick"
 
 
+class TestDocument:
+    def test_save_and_get(self, db):
+        doc_id = db.save_document("user:1", "论语", "学而时习之", [])
+        doc = db.get_document(doc_id, "user:1")
+        assert doc["title"] == "论语"
+        assert doc["source_text"] == "学而时习之"
+
+    def test_update_source_text(self, db):
+        doc_id = db.save_document("user:1", "t", "原文", [])
+        db.update_document(doc_id, "user:1", source_text="更新后")
+        doc = db.get_document(doc_id, "user:1")
+        assert doc["source_text"] == "更新后"
+        assert doc["title"] == "t"
+
+    def test_update_tracked_words(self, db):
+        doc_id = db.save_document("user:1", "t", "s", [{"word": "之"}])
+        new_words = [{"word": "乎", "quickAnswer": "语气词"}]
+        db.update_document(doc_id, "user:1", tracked_words=new_words)
+        doc = db.get_document(doc_id, "user:1")
+        assert len(doc["tracked_words"]) == 1
+        assert doc["tracked_words"][0]["word"] == "乎"
+        assert doc["tracked_words"][0]["quickAnswer"] == "语气词"
+
+    def test_update_respects_user_id(self, db):
+        doc_id = db.save_document("user:a", "t", "s", [])
+        result = db.update_document(doc_id, "user:b", source_text="hack")
+        assert result is False
+        doc = db.get_document(doc_id, "user:a")
+        assert doc["source_text"] == "s"
+
+
 class TestMultipleDatabases:
     def test_isolated_instances(self, tmp_path):
         d1 = Database(str(tmp_path / "db1.db"))

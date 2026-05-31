@@ -389,6 +389,8 @@ class CreateDocumentRequest(BaseModel):
 class UpdateDocumentRequest(BaseModel):
     title: str | None = None
     is_public: bool | None = None
+    source_text: str | None = None
+    tracked_words: list | None = None
 
 
 @app.post("/api/documents")
@@ -441,6 +443,10 @@ async def update_document_route(
 
         kwargs["is_public"] = int(req.is_public)
         kwargs["public_uuid"] = str(uuid.uuid4()) if req.is_public else None
+    if req.source_text is not None:
+        kwargs["source_text"] = req.source_text
+    if req.tracked_words is not None:
+        kwargs["tracked_words"] = req.tracked_words
     if not update_document(doc_id, user_id, **kwargs):
         raise HTTPException(404, "文档不存在")
     return {"message": "更新成功"}

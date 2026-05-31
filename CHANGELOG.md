@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.3 (2026-05-31)
+
+### Features
+- Document content update: `PATCH /api/documents/{id}` now accepts `source_text` and `tracked_words`; frontend tracks `currentDocId` and shows update-or-save-as-new dialog
+- UI: search bar reordered (识典古籍 first); help guide renumbered ①→7; credits now show real logos (汉典, 识典古籍 long logos; ctext, 古文岛 icons)
+
+### Fixes
+- Public shared doc "Continue querying" no longer binds another user's doc ID, preventing confusing 404 on save
+
+### Tests
+- Added 7 backend tests for document content update, JSON roundtrip, and cross-user isolation
+- Fixed frontend test mocks for new `closeDocument` and `createDoc` response shape
+
 ## 0.4.2 (2026-05-31)
 
 ### Refactors

@@ -35,7 +35,15 @@ export function deleteDoc(id: number): Promise<void> {
   return apiClient.delete(`/api/documents/${id}`)
 }
 
-export function updateDoc(id: number, data: { is_public: boolean }): Promise<void> {
+export function updateDoc(
+  id: number,
+  data: {
+    title?: string
+    is_public?: boolean
+    source_text?: string
+    tracked_words?: unknown[]
+  },
+): Promise<void> {
   return apiClient.patch(`/api/documents/${id}`, data)
 }
 

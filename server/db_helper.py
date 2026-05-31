@@ -124,12 +124,12 @@ class Database:
             return self._doc_row(row) if row else None
 
     def update_document(self, doc_id: int, user_id: str, **kwargs):
-        allowed = {"title", "is_public", "public_uuid"}
+        allowed = {"title", "is_public", "public_uuid", "source_text", "tracked_words"}
         sets, vals = [], []
         for k, v in kwargs.items():
             if k in allowed:
                 sets.append(f"{k}=?")
-                vals.append(v)
+                vals.append(json.dumps(v) if k == "tracked_words" else v)
         if not sets:
             return
         vals.extend([doc_id, user_id])

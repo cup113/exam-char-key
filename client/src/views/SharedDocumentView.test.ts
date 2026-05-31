@@ -105,7 +105,7 @@ describe('SharedDocumentView', () => {
     const loadDocument = vi.fn().mockResolvedValue(true)
     const push = vi.fn()
     vi.mocked(useRouter).mockReturnValue({ push } as any)
-    vi.mocked(useWordsStore).mockReturnValue({} as any)
+    vi.mocked(useWordsStore).mockReturnValue({ closeDocument: vi.fn() } as any)
     vi.mocked(useDocumentLoader).mockReturnValue({ loadDocument, confirmState: ref(null) })
     vi.mocked(documentService.getPublicDoc).mockResolvedValue(makeDoc())
 
@@ -114,5 +114,6 @@ describe('SharedDocumentView', () => {
 
     await wrapper.find('[data-umami-event="shared-continue"]').trigger('click')
     expect(loadDocument).toHaveBeenCalled()
+    expect(vi.mocked(useWordsStore)().closeDocument).toHaveBeenCalled()
   })
 })

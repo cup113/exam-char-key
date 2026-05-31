@@ -69,6 +69,7 @@ async function handleContinueQuery() {
   if (!doc.value) return
   const ok = await loadDocument(doc.value)
   if (ok) {
+    wordsStore.closeDocument()
     router.push('/')
   }
 }

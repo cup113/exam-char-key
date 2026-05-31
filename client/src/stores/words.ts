@@ -12,6 +12,10 @@ export const useWordsStore = defineStore('words', () => {
 
   const isDirty = ref(false)
 
+  const currentDocId = ref<number | null>(null)
+  const currentDocTitle = ref('')
+  const currentDocIsPublic = ref(false)
+
   const activeWordId = ref<string | null>(null)
 
   const activeWord = computed(() =>
@@ -276,8 +280,31 @@ export const useWordsStore = defineStore('words', () => {
       tracked_words: snapshots,
       is_public: isPublic,
     })
+    currentDocId.value = result.id
+    currentDocTitle.value = result.title
+    currentDocIsPublic.value = isPublic
     isDirty.value = false
     return result
+  }
+
+  async function updateCurrentDoc(title: string, isPublic: boolean) {
+    if (!currentDocId.value) return
+    const snapshots: TrackedWordSnapshot[] = trackedWords.value.map(toSnapshot)
+    await documentService.updateDoc(currentDocId.value, {
+      title,
+      is_public: isPublic,
+      source_text: editableText.value,
+      tracked_words: snapshots,
+    })
+    currentDocTitle.value = title
+    currentDocIsPublic.value = isPublic
+    isDirty.value = false
+  }
+
+  function closeDocument() {
+    currentDocId.value = null
+    currentDocTitle.value = ''
+    currentDocIsPublic.value = false
   }
 
   function importDocument(doc: DocumentRecord) {
@@ -286,6 +313,9 @@ export const useWordsStore = defineStore('words', () => {
     activeWordId.value = null
     editableText.value = doc.source_text
     trackedWords.value = doc.tracked_words.map(fromSnapshot)
+    currentDocId.value = doc.id
+    currentDocTitle.value = doc.title
+    currentDocIsPublic.value = doc.is_public
     isDirty.value = false
   }
 
@@ -294,6 +324,9 @@ export const useWordsStore = defineStore('words', () => {
     activeWordId,
     activeWord,
     isDirty,
+    currentDocId,
+    currentDocTitle,
+    currentDocIsPublic,
     editableText,
     editing,
     editText,
@@ -310,6 +343,8 @@ export const useWordsStore = defineStore('words', () => {
     saveEditing,
     cancelEditing,
     saveSnapshot,
+    updateCurrentDoc,
+    closeDocument,
     importDocument,
   }
 })
